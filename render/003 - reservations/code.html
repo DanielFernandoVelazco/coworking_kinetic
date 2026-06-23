@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Kinetic Workspace | Space Details</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Work+Sans:wght@400;500&family=JetBrains+Mono:wght@500&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..900&family=Manrope:wght@100..900&family=Work+Sans:wght@100..900&display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(221, 192, 186, 0.3);
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+        .day-cell:hover {
+            background-color: #ffdad2; /* primary-fixed */
+            cursor: pointer;
+        }
+        .sticky-sidebar {
+            position: sticky;
+            top: 104px;
+            height: fit-content;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f5f3f6;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ddc0ba;
+            border-radius: 4px;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-secondary-fixed-variant": "#6e3900",
+                      "on-secondary-fixed": "#2f1500",
+                      "inverse-surface": "#303033",
+                      "on-background": "#1b1b1e",
+                      "primary-container": "#c0573e",
+                      "primary-fixed-dim": "#ffb4a3",
+                      "surface-bright": "#fbf8fc",
+                      "surface-container": "#f0edf1",
+                      "on-secondary-container": "#663500",
+                      "on-primary": "#ffffff",
+                      "tertiary": "#934a23",
+                      "outline-variant": "#ddc0ba",
+                      "tertiary-fixed-dim": "#ffb693",
+                      "on-tertiary": "#ffffff",
+                      "on-tertiary-fixed": "#351000",
+                      "on-error": "#ffffff",
+                      "tertiary-container": "#b26138",
+                      "inverse-primary": "#ffb4a3",
+                      "on-secondary": "#ffffff",
+                      "error-container": "#ffdad6",
+                      "on-surface-variant": "#56423d",
+                      "error": "#ba1a1a",
+                      "surface-container-high": "#eae7eb",
+                      "on-surface": "#1b1b1e",
+                      "surface-dim": "#dcd9dd",
+                      "surface-variant": "#e4e1e5",
+                      "secondary-container": "#fe932c",
+                      "surface-tint": "#a03f29",
+                      "on-tertiary-container": "#ffffff",
+                      "outline": "#8a726c",
+                      "surface-container-highest": "#e4e1e5",
+                      "on-primary-fixed-variant": "#812914",
+                      "background": "#fbf8fc",
+                      "tertiary-fixed": "#ffdbcc",
+                      "secondary-fixed": "#ffdcc3",
+                      "secondary": "#904d00",
+                      "primary-fixed": "#ffdad2",
+                      "inverse-on-surface": "#f3f0f4",
+                      "primary": "#a03f28",
+                      "surface-container-low": "#f5f3f6",
+                      "on-tertiary-fixed-variant": "#76330d",
+                      "on-primary-container": "#120100",
+                      "surface": "#fbf8fc",
+                      "on-primary-fixed": "#3d0700",
+                      "surface-container-lowest": "#ffffff",
+                      "on-error-container": "#93000a",
+                      "secondary-fixed-dim": "#ffb77d"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "gutter": "24px",
+                      "margin-tablet": "32px",
+                      "margin-mobile": "16px",
+                      "container-max": "1440px",
+                      "margin-desktop": "64px",
+                      "base": "8px"
+              },
+              "fontFamily": {
+                      "label-caps": ["JetBrains Mono"],
+                      "headline-lg": ["Manrope"],
+                      "body-lg": ["Work Sans"],
+                      "headline-md": ["Manrope"],
+                      "body-md": ["Work Sans"],
+                      "body-sm": ["Work Sans"],
+                      "display-xl": ["Manrope"]
+              },
+              "fontSize": {
+                      "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                      "headline-lg": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                      "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "display-xl": ["60px", {"lineHeight": "72px", "letterSpacing": "-0.02em", "fontWeight": "800"}]
+              }
+            }
+          }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface font-body-md selection:bg-primary-fixed">
+<!-- TopNavBar -->
+<header class="bg-surface dark:bg-on-background border-b border-outline-variant dark:border-outline w-full top-0 sticky z-50">
+<div class="flex justify-between items-center h-20 px-margin-desktop max-w-container-max mx-auto">
+<div class="flex items-center gap-12">
+<span class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim">Kinetic Workspace</span>
+<nav class="hidden md:flex gap-8">
+<a class="text-on-surface-variant dark:text-surface-variant font-body-md hover:text-primary dark:hover:text-primary-fixed-dim transition-colors duration-200" href="#">Workspaces</a>
+<a class="text-primary dark:text-primary-fixed-dim border-b-2 border-primary dark:border-primary-fixed-dim pb-1 font-semibold font-body-md" href="#">Reservations</a>
+<a class="text-on-surface-variant dark:text-surface-variant font-body-md hover:text-primary dark:hover:text-primary-fixed-dim transition-colors duration-200" href="#">Teams</a>
+<a class="text-on-surface-variant dark:text-surface-variant font-body-md hover:text-primary dark:hover:text-primary-fixed-dim transition-colors duration-200" href="#">Analytics</a>
+</nav>
+</div>
+<div class="flex items-center gap-6">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">settings</button>
+<div class="w-10 h-10 rounded-full overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of an executive user in a minimalist studio setting, wearing a sophisticated dark blazer. The lighting is soft and directional, casting a warm glow that aligns with a high-performance, boutique workspace brand. The background is a blurred warm grey architectural interior with natural wood accents." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD4rnhzpBlc-4NLWq03RbwDHLhKzMFL4L00VgOKw7Re8Z22PcurfLYeNRh9tvIra946vGY4xNcGaHTdHorvtgEW8sJobui1sggzrBJIBwIFbeH2WBHbFcGg-wtG0bM91hhg9sXOTsRWtAUTgMHluJF9hOdH5rrLvXqqQYwe4yr4shzb0CDxTxD3iGry_RL1WXSIbO-9GkoufFgG0qS57kGWPjDe75Sf3PaXZbJbU7l3503_O5d4K2qZOWMWkti267dEYfQfdnpLo98"/>
+</div>
+</div>
+</div>
+</header>
+<main class="max-w-container-max mx-auto px-margin-desktop py-12">
+<!-- Breadcrumbs -->
+<div class="flex items-center gap-2 mb-8 text-on-surface-variant font-label-caps">
+<span class="hover:text-primary cursor-pointer">STOCKHOLM</span>
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+<span class="hover:text-primary cursor-pointer">VASASTAN DISTRICT</span>
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+<span class="text-primary font-bold">THE AMBER ATELIER</span>
+</div>
+<div class="grid grid-cols-12 gap-gutter">
+<!-- Left Column: Content -->
+<div class="col-span-8 space-y-12">
+<!-- Gallery Section (Bento Style) -->
+<section class="grid grid-cols-4 grid-rows-2 gap-4 h-[500px]">
+<div class="col-span-3 row-span-2 rounded-xl overflow-hidden group relative">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="A wide-angle shot of a premium, sun-drenched coworking atelier featuring natural oak furniture, large floor-to-ceiling windows, and minimalist architectural lines. The lighting is golden hour warm, highlighting soft terracotta-grey textiles and lush green indoor plants. The atmosphere is serene, focused, and high-performance." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAHZBDrkdiRepgxTkLuImnaAv1YXcHyXyvSoTifISSeFVC9aw3zDeLWWRat8KibtM0-8PieS9G-Ij1EbStFoGKO5ws-8c5Gbq5gpubFqTfozS5Lues9iLJpvQCSAPMBIRZ84K3XAzEnNGCGDT69A1Kj0V45Ggf9VbpbKMC8FYfnTz0Zzq70EsZwzBAEE8IcR6C5DgaLoyjCHnLuIfPzaxylph9GKn2RtkAz6y-nboGU0M9aUWVtO2Esy69FXyenYPArLv6JeyH2dEs"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-8">
+<span class="text-white font-headline-md">The Main Studio</span>
+</div>
+</div>
+<div class="col-span-1 row-span-1 rounded-xl overflow-hidden group">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" data-alt="A macro shot of a sophisticated meeting area with artisanal wood textures and soft amber-tinted ambient lighting. A minimalist ceramic vase and a stack of architecture books sit on a warm grey table. The visual style is tactile modernism with a calm, quiet luxury feel." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDRlvSn2m0RY-zl-KfubKGIP__5gsTHjOvHZfpiF0aGYAJyqRq1FsNDfCE7usJw0P_yjbtzi8aFEyzhLkayfLD-E-VGsNi3vGTmgUT72XirCuXxRdpiKzRsU8vAYC5iw_MJ4sTjxWf9D0n1TibG2XN9yiEBQEPLBMrd7xrIeRls2E-TqpoHeuynPqKfDiXE7DV9i4RWkg-0YYrVBbmIlKn0Q_Q-nyGp41qxxhRvJtiKwBx6jDagFM3cMidxZ5Ow0blebESz1eDuLgU"/>
+</div>
+<div class="col-span-1 row-span-1 rounded-xl overflow-hidden relative group">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" data-alt="An interior view of a private focus booth in a modern workspace. The space is clad in sound-absorbing felt in a soft pale terracotta-grey. A warm light fixture casts a localized pool of light over a clean white desk, creating an atmosphere of deep concentration and quietude." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBjQXQL97NPq1ao10u7i8gJGaFdNdEDtm9nlsSFLJzgPiLA11woYf67KeyY-7zqrPNCW_z2dPKuptGTYg1PyO8dbXQE5NJZPf027oZt5wvthbUj_WyvnKL8uUutSc6KI17K97NtFumNkGakWVoh9vo0q8cnGf-VhjL0hSyVFP62wrX-WmO0oCkgT9ES41pRAxncIbcKcUo09VfQfS7Oi04XItlL8NAC7P1HFR1PymT499qskkNkZlXzKEO8eTe1_mBzkaU6gXt7NbI"/>
+<div class="absolute inset-0 bg-black/50 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="text-white font-label-caps">+ 12 Photos</span>
+</div>
+</div>
+</section>
+<!-- Header Info -->
+<section class="border-b border-outline-variant pb-8">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-primary mb-2">The Amber Atelier</h1>
+<div class="flex items-center gap-4 text-on-surface-variant">
+<span class="flex items-center gap-1 font-body-sm"><span class="material-symbols-outlined text-sm">location_on</span> Vasastan, Stockholm</span>
+<span class="flex items-center gap-1 font-body-sm"><span class="material-symbols-outlined text-sm">group</span> Up to 12 people</span>
+<span class="flex items-center gap-1 font-body-sm"><span class="material-symbols-outlined text-sm">star</span> 4.9 (128 reviews)</span>
+</div>
+</div>
+<div class="flex gap-4">
+<button class="w-12 h-12 rounded-full border border-outline-variant flex items-center justify-center hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-primary">share</span>
+</button>
+<button class="w-12 h-12 rounded-full border border-outline-variant flex items-center justify-center hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-primary">favorite</span>
+</button>
+</div>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">
+                        A bespoke creative sanctuary designed for deep work and high-level collaboration. The Amber Atelier features hand-crafted walnut furniture, state-of-the-art acoustic treatment, and abundant natural light that shifts beautifully throughout the day.
+                    </p>
+</section>
+<!-- Amenities Grid -->
+<section>
+<h2 class="font-headline-md text-headline-md mb-6">World-Class Amenities</h2>
+<div class="grid grid-cols-3 gap-6">
+<div class="p-6 rounded-xl border border-outline-variant bg-surface hover:shadow-lg transition-shadow">
+<span class="material-symbols-outlined text-tertiary mb-4" style="font-size: 32px;">wifi</span>
+<h3 class="font-headline-md text-body-lg mb-2">Gigabit Fiber</h3>
+<p class="font-body-sm text-on-surface-variant">Dedicated symmetrical 1Gbps connection with enterprise-grade security protocols.</p>
+</div>
+<div class="p-6 rounded-xl border border-outline-variant bg-surface hover:shadow-lg transition-shadow">
+<span class="material-symbols-outlined text-tertiary mb-4" style="font-size: 32px;">coffee</span>
+<h3 class="font-headline-md text-body-lg mb-2">Artisan Coffee</h3>
+<p class="font-body-sm text-on-surface-variant">Unlimited access to our selection of single-origin beans and professional espresso bar.</p>
+</div>
+<div class="p-6 rounded-xl border border-outline-variant bg-surface hover:shadow-lg transition-shadow">
+<span class="material-symbols-outlined text-tertiary mb-4" style="font-size: 32px;">print</span>
+<h3 class="font-headline-md text-body-lg mb-2">Print Station</h3>
+<p class="font-body-sm text-on-surface-variant">Large-format archival printers and professional finishing tools for creative teams.</p>
+</div>
+<div class="p-6 rounded-xl border border-outline-variant bg-surface hover:shadow-lg transition-shadow">
+<span class="material-symbols-outlined text-tertiary mb-4" style="font-size: 32px;">kitchen</span>
+<h3 class="font-headline-md text-body-lg mb-2">Executive Kitchen</h3>
+<p class="font-body-sm text-on-surface-variant">Full kitchen equipped with premium appliances, organic snacks, and refreshment bar.</p>
+</div>
+<div class="p-6 rounded-xl border border-outline-variant bg-surface hover:shadow-lg transition-shadow">
+<span class="material-symbols-outlined text-tertiary mb-4" style="font-size: 32px;">videocam</span>
+<h3 class="font-headline-md text-body-lg mb-2">Media Suite</h3>
+<p class="font-body-sm text-on-surface-variant">4K video conferencing system with studio-grade lighting and acoustics.</p>
+</div>
+<div class="p-6 rounded-xl border border-outline-variant bg-surface hover:shadow-lg transition-shadow">
+<span class="material-symbols-outlined text-tertiary mb-4" style="font-size: 32px;">lock</span>
+<h3 class="font-headline-md text-body-lg mb-2">Private Storage</h3>
+<p class="font-body-sm text-on-surface-variant">Secure lockers and dedicated storage for sensitive equipment or materials.</p>
+</div>
+</div>
+</section>
+<!-- Map Section -->
+<section>
+<h2 class="font-headline-md text-headline-md mb-6">Location & Access</h2>
+<div class="h-[400px] rounded-xl overflow-hidden border border-outline-variant">
+<div class="w-full h-full bg-cover bg-center grayscale contrast-75 brightness-110" data-alt="A minimalist, stylized architectural map of the Stockholm Vasastan district. The map uses a sophisticated color palette of warm greys, soft terracotta for key landmarks, and pale wood-tones for parks. The style is clean and professional, focusing on major avenues and proximity to the atelier." data-location="Stockholm" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBEY_L2QTfYLcSb0o3D84-hyhE0MBdER1noOawG_mbXJk7YFX_F11c14I4UUn3QGnOy7Vf0VdlpvZZSH4_luauZsSzVOb2-kFdzE5AFdRXWckpSWAFCyvFJ5JhCr8q_WlpfnRf7GAr753nShTlwx9-g_i6cbPjIUdwvGcJWFvsZIskbabwIMRFRi3Ylt1RtJ2fpVvxH-UvImIxTbSCO_zBUizmvrqv-muVfmkts3522jA83MykHFRSFTj4n1qvNMdj_8rZ7EYTmCLM')"></div>
+</div>
+<div class="mt-4 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary">directions_walk</span>
+<span class="font-body-md">5 min walk to Odenplan Station</span>
+</div>
+<a class="font-label-caps text-primary border-b border-primary pb-1" href="#">Get Directions</a>
+</div>
+</section>
+</div>
+<!-- Right Column: Sticky Sidebar -->
+<aside class="col-span-4">
+<div class="sticky-sidebar glass-card rounded-2xl p-8 shadow-sm">
+<div class="flex justify-between items-end mb-6">
+<div>
+<span class="font-headline-md text-headline-md text-primary">$450</span>
+<span class="text-on-surface-variant font-body-sm"> / day</span>
+</div>
+<div class="text-on-surface-variant font-label-caps">MEMBER RATE</div>
+</div>
+<div class="space-y-6">
+<!-- Date Picker -->
+<div>
+<label class="font-label-caps block mb-3 text-on-surface-variant">SELECT DATES</label>
+<div class="border border-outline-variant rounded-xl p-4 bg-white">
+<div class="flex justify-between items-center mb-4">
+<span class="font-headline-md text-body-md font-bold">November 2024</span>
+<div class="flex gap-2">
+<button class="material-symbols-outlined text-sm p-1 rounded-full hover:bg-surface-container">chevron_left</button>
+<button class="material-symbols-outlined text-sm p-1 rounded-full hover:bg-surface-container">chevron_right</button>
+</div>
+</div>
+<div class="calendar-grid mb-2">
+<span class="text-center font-label-caps text-[10px] text-on-surface-variant">S</span>
+<span class="text-center font-label-caps text-[10px] text-on-surface-variant">M</span>
+<span class="text-center font-label-caps text-[10px] text-on-surface-variant">T</span>
+<span class="text-center font-label-caps text-[10px] text-on-surface-variant">W</span>
+<span class="text-center font-label-caps text-[10px] text-on-surface-variant">T</span>
+<span class="text-center font-label-caps text-[10px] text-on-surface-variant">F</span>
+<span class="text-center font-label-caps text-[10px] text-on-surface-variant">S</span>
+</div>
+<div class="calendar-grid">
+<!-- Days -->
+<div class="text-center p-2 text-outline-variant font-body-sm">27</div>
+<div class="text-center p-2 text-outline-variant font-body-sm">28</div>
+<div class="text-center p-2 text-outline-variant font-body-sm">29</div>
+<div class="text-center p-2 text-outline-variant font-body-sm">30</div>
+<div class="text-center p-2 text-outline-variant font-body-sm">31</div>
+<div class="text-center p-2 day-cell font-body-sm rounded">1</div>
+<div class="text-center p-2 day-cell font-body-sm rounded">2</div>
+<div class="text-center p-2 day-cell font-body-sm rounded">3</div>
+<div class="text-center p-2 day-cell font-body-sm rounded">4</div>
+<div class="text-center p-2 day-cell font-body-sm rounded">5</div>
+<div class="text-center p-2 day-cell font-body-sm rounded">6</div>
+<div class="text-center p-2 day-cell font-body-sm rounded">7</div>
+<div class="text-center p-2 day-cell font-body-sm rounded">8</div>
+<div class="text-center p-2 day-cell font-body-sm rounded">9</div>
+<div class="text-center p-2 day-cell font-body-sm rounded">10</div>
+<div class="text-center p-2 day-cell font-body-sm rounded bg-primary text-white">11</div>
+<div class="text-center p-2 day-cell font-body-sm rounded bg-primary-fixed">12</div>
+<div class="text-center p-2 day-cell font-body-sm rounded bg-primary-fixed">13</div>
+<div class="text-center p-2 day-cell font-body-sm rounded">14</div>
+<div class="text-center p-2 day-cell font-body-sm rounded">15</div>
+<div class="text-center p-2 day-cell font-body-sm rounded">16</div>
+</div>
+</div>
+</div>
+<!-- Guest Selection -->
+<div class="relative">
+<label class="font-label-caps block mb-3 text-on-surface-variant">GUESTS</label>
+<button class="w-full flex items-center justify-between p-4 border border-outline-variant rounded-xl bg-white hover:border-primary transition-colors">
+<span class="font-body-md">4 Guests</span>
+<span class="material-symbols-outlined">expand_more</span>
+</button>
+</div>
+<!-- Price Breakdown -->
+<div class="space-y-3 pt-4 border-t border-outline-variant">
+<div class="flex justify-between font-body-sm">
+<span>$450 x 3 days</span>
+<span>$1,350</span>
+</div>
+<div class="flex justify-between font-body-sm">
+<span>Amenities Fee</span>
+<span>$75</span>
+</div>
+<div class="flex justify-between font-body-sm">
+<span>Member Discount (15%)</span>
+<span class="text-tertiary">-$213</span>
+</div>
+<div class="flex justify-between font-headline-md text-body-lg font-bold pt-3 border-t border-outline-variant">
+<span>Total</span>
+<span class="text-primary">$1,212</span>
+</div>
+</div>
+<button class="w-full bg-primary text-white py-4 rounded-xl font-headline-md text-body-lg hover:opacity-90 transition-opacity active:scale-[0.98] transform transition-transform">
+                            Reserve Now
+                        </button>
+<div class="text-center">
+<p class="text-on-surface-variant font-body-sm">You won't be charged yet</p>
+</div>
+</div>
+</div>
+<!-- Secondary Info Card -->
+<div class="mt-8 p-6 rounded-2xl bg-surface-container-low border border-outline-variant">
+<div class="flex items-start gap-4">
+<span class="material-symbols-outlined text-tertiary">shield</span>
+<div>
+<h4 class="font-headline-md text-body-md font-bold mb-1">Elite Protection</h4>
+<p class="font-body-sm text-on-surface-variant">All bookings are covered by our comprehensive liability and equipment protection policy.</p>
+</div>
+</div>
+</div>
+</aside>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-low dark:bg-surface-dim w-full py-12 border-t border-outline-variant mt-24">
+<div class="flex flex-col md:flex-row justify-between items-center px-margin-desktop max-w-container-max mx-auto space-y-4 md:space-y-0">
+<div class="flex flex-col items-center md:items-start gap-2">
+<span class="font-label-caps text-label-caps text-on-surface-variant dark:text-surface-variant">KINETIC WORKSPACE</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant dark:text-surface-variant">© 2024 Kinetic Workspace. All rights reserved.</p>
+</div>
+<nav class="flex gap-8">
+<a class="text-on-surface-variant dark:text-surface-variant font-body-sm hover:text-secondary dark:hover:text-secondary-fixed-dim transition-all duration-300 hover:underline decoration-2" href="#">About</a>
+<a class="text-on-surface-variant dark:text-surface-variant font-body-sm hover:text-secondary dark:hover:text-secondary-fixed-dim transition-all duration-300 hover:underline decoration-2" href="#">Privacy Policy</a>
+<a class="text-on-surface-variant dark:text-surface-variant font-body-sm hover:text-secondary dark:hover:text-secondary-fixed-dim transition-all duration-300 hover:underline decoration-2" href="#">Terms of Service</a>
+<a class="text-on-surface-variant dark:text-surface-variant font-body-sm hover:text-secondary dark:hover:text-secondary-fixed-dim transition-all duration-300 hover:underline decoration-2" href="#">Help Center</a>
+<a class="text-on-surface-variant dark:text-surface-variant font-body-sm hover:text-secondary dark:hover:text-secondary-fixed-dim transition-all duration-300 hover:underline decoration-2" href="#">Contact</a>
+</nav>
+</div>
+</footer>
+<script>
+        // Micro-interaction for gallery scaling or button hover effects
+        document.querySelectorAll('.day-cell').forEach(cell => {
+            cell.addEventListener('click', () => {
+                // Simplified toggle logic for visual feedback
+                if (!cell.classList.contains('bg-primary')) {
+                    document.querySelectorAll('.day-cell').forEach(c => c.classList.remove('bg-primary', 'text-white', 'bg-primary-fixed'));
+                    cell.classList.add('bg-primary', 'text-white');
+                }
+            });
+        });
+    </script>
+</body></html>
