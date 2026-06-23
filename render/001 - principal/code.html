@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Kinetic Workspace | Home</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&amp;family=Work+Sans:wght@400;500&amp;family=JetBrains+Mono:wght@500&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..900&amp;family=Manrope:wght@100..900&amp;family=Work+Sans:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-fixed-variant": "#6e3900",
+                    "on-secondary-fixed": "#2f1500",
+                    "inverse-surface": "#303033",
+                    "on-background": "#1b1b1e",
+                    "primary-container": "#c0573e",
+                    "primary-fixed-dim": "#ffb4a3",
+                    "surface-bright": "#fbf8fc",
+                    "surface-container": "#f0edf1",
+                    "on-secondary-container": "#663500",
+                    "on-primary": "#ffffff",
+                    "tertiary": "#934a23",
+                    "outline-variant": "#ddc0ba",
+                    "tertiary-fixed-dim": "#ffb693",
+                    "on-tertiary": "#ffffff",
+                    "on-tertiary-fixed": "#351000",
+                    "on-error": "#ffffff",
+                    "tertiary-container": "#b26138",
+                    "inverse-primary": "#ffb4a3",
+                    "on-secondary": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "on-surface-variant": "#56423d",
+                    "error": "#ba1a1a",
+                    "surface-container-high": "#eae7eb",
+                    "on-surface": "#1b1b1e",
+                    "surface-dim": "#dcd9dd",
+                    "surface-variant": "#e4e1e5",
+                    "secondary-container": "#fe932c",
+                    "surface-tint": "#a03f29",
+                    "on-tertiary-container": "#ffffff",
+                    "outline": "#8a726c",
+                    "surface-container-highest": "#e4e1e5",
+                    "on-primary-fixed-variant": "#812914",
+                    "background": "#fbf8fc",
+                    "tertiary-fixed": "#ffdbcc",
+                    "secondary-fixed": "#ffdcc3",
+                    "secondary": "#904d00",
+                    "primary-fixed": "#ffdad2",
+                    "inverse-on-surface": "#f3f0f4",
+                    "primary": "#a03f28",
+                    "surface-container-low": "#f5f3f6",
+                    "on-tertiary-fixed-variant": "#76330d",
+                    "on-primary-container": "#120100",
+                    "surface": "#fbf8fc",
+                    "on-primary-fixed": "#3d0700",
+                    "surface-container-lowest": "#ffffff",
+                    "on-error-container": "#93000a",
+                    "secondary-fixed-dim": "#ffb77d"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "gutter": "24px",
+                    "margin-tablet": "32px",
+                    "margin-mobile": "16px",
+                    "container-max": "1440px",
+                    "margin-desktop": "64px",
+                    "base": "8px"
+            },
+            "fontFamily": {
+                    "label-caps": ["JetBrains Mono"],
+                    "headline-lg": ["Manrope"],
+                    "body-lg": ["Work Sans"],
+                    "headline-md": ["Manrope"],
+                    "body-md": ["Work Sans"],
+                    "body-sm": ["Work Sans"],
+                    "display-xl": ["Manrope"]
+            },
+            "fontSize": {
+                    "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "headline-lg": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "display-xl": ["60px", {"lineHeight": "72px", "letterSpacing": "-0.02em", "fontWeight": "800"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Custom Tactile Shadows */
+        .shadow-tactile {
+            box-shadow: 0 4px 12px rgba(147, 74, 35, 0.05);
+        }
+        .btn-press:active {
+            transform: translateY(1px);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md selection:bg-primary-fixed-dim selection:text-on-primary-fixed">
+<!-- TopNavBar -->
+<nav class="bg-surface w-full top-0 border-b border-outline-variant z-50 sticky">
+<div class="flex justify-between items-center h-20 px-margin-desktop max-w-container-max mx-auto">
+<!-- Brand -->
+<div class="flex items-center gap-8">
+<span class="font-headline-md text-headline-md font-bold text-primary">Kinetic Workspace</span>
+<!-- Nav Links -->
+<div class="hidden md:flex gap-6 items-center">
+<a class="font-body-md text-body-md text-primary border-b-2 border-primary pb-1 font-semibold transition-colors duration-200" href="#">Workspaces</a>
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors duration-200" href="#">Reservations</a>
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors duration-200" href="#">Teams</a>
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors duration-200" href="#">Analytics</a>
+</div>
+</div>
+<!-- Actions -->
+<div class="flex items-center gap-4">
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="ml-2 w-10 h-10 rounded-full overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="Close up studio portrait of a confident executive professional in a tailored charcoal blazer. Soft warm lighting illuminates their facial features against a blurred minimalist office background. The photography is high-end, clean, and professional, maintaining the Kinetic Workspace brand's warm terracotta and cream color palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCiGSEaP7M0GE5O1UD-o9SYGRYBJAcUOUKozwn_Bne0wXtoSd8b7so2UUfzvDiFRdwhf8uE_x6VEkwZu75gjfNr3gglV9I3N8GwU4s73BVu_UlUZFEWjmM7nmPc_3djxILkx5vZJ3O5JYAJszcxYmDeaBaxd-r2sHA2sxkDrtZhycPLaMQfDel9spXnvaVfFC9hYpXx9mvqYFNSIY7Q-FfnSwGjeCDMjQjhvWHASetcW6vEh231tcS3VrMvaxQYxapZYpE4kfFapvM"/>
+</div>
+</div>
+</div>
+</nav>
+<main class="max-w-container-max mx-auto px-margin-desktop">
+<!-- Hero Section -->
+<section class="relative pt-20 pb-32 overflow-hidden">
+<div class="grid grid-cols-12 gap-gutter items-center">
+<div class="col-span-7">
+<span class="font-label-caps text-label-caps text-tertiary mb-4 block">PREMIUM SHARED WORKSPACES</span>
+<h1 class="font-display-xl text-display-xl text-on-surface mb-6">Deep work, designed <br/> for <span class="text-primary italic">performance</span>.</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-xl mb-12">
+                        Bespoke environments for architects, creators, and executive teams. Experience the tactile warmth of a private study with the agility of a global network.
+                    </p>
+</div>
+<!-- Decorative Abstract Shader -->
+<div class="col-span-5 relative h-[500px]">
+<div class="absolute inset-0 rounded-xl overflow-hidden shadow-tactile border border-outline-variant">
+
+<div class="absolute inset-0 bg-gradient-to-tr from-surface/40 to-transparent pointer-events-none"></div>
+</div>
+<!-- Secondary Floating Image -->
+<div class="absolute -bottom-8 -left-20 w-64 h-80 rounded-lg overflow-hidden border-8 border-surface shadow-2xl z-10">
+<img class="w-full h-full object-cover" data-alt="A detailed shot of a high-performance workspace corner featuring a mid-century modern wooden desk, a sleek minimalist lamp, and an open leather-bound journal. The scene is bathed in warm, golden afternoon sunlight filtering through large windows, creating a serene and focused atmosphere. The color palette emphasizes warm terracotta, wood grains, and creamy off-whites." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCgYvezOk_b2uK-iixPtAPio2kh9sRAhFMyZ00WD5Ul2HH17ORF1cBDjBm1TF83zu-Lax2-4TwsBh2TteOulhccI7cdorJTQRAU2ok23-Btg0pbQlKcRnzg1eEntZ5QN8r5lo7QbBjvt8xZ1lulXmsZ2hYlZnlOevet3ZPaxuVEE5KZzm-nSiTFjJuqbZ-QASAkahKlikNa8XZBC50eNz1vodeo-7NdJT4HEllAmDBWEIHEKgiAU0OjyRqah6FY_zN1qOc6vLSX0f4"/>
+</div>
+</div>
+</div>
+<!-- Search Bar Anchor -->
+<div class="absolute bottom-0 left-0 w-full translate-y-1/2 z-20">
+<div class="bg-surface rounded-xl shadow-tactile border border-outline-variant p-2 flex items-center gap-2 max-w-4xl">
+<!-- Location -->
+<div class="flex-1 px-6 py-4 flex flex-col hover:bg-surface-container-low transition-colors rounded-lg cursor-pointer">
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-1">LOCATION</span>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">location_on</span>
+<span class="font-body-md text-on-surface font-medium">New York, Chelsea</span>
+</div>
+</div>
+<div class="w-px h-10 bg-outline-variant"></div>
+<!-- Space Type -->
+<div class="flex-1 px-6 py-4 flex flex-col hover:bg-surface-container-low transition-colors rounded-lg cursor-pointer">
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-1">SPACE TYPE</span>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">meeting_room</span>
+<span class="font-body-md text-on-surface font-medium">Executive Suite</span>
+</div>
+</div>
+<div class="w-px h-10 bg-outline-variant"></div>
+<!-- Date -->
+<div class="flex-1 px-6 py-4 flex flex-col hover:bg-surface-container-low transition-colors rounded-lg cursor-pointer">
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-1">DATE</span>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">calendar_today</span>
+<span class="font-body-md text-on-surface font-medium">Oct 24, 2024</span>
+</div>
+</div>
+<!-- Search Button -->
+<button class="bg-primary text-on-primary px-8 h-16 rounded-lg font-headline-md btn-press transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">search</span>
+<span>Find Space</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Featured Spaces Grid -->
+<section class="pt-40 pb-24">
+<div class="flex justify-between items-end mb-12">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Curated Collections</h2>
+<p class="font-body-md text-on-surface-variant mt-2">Spaces optimized for focus, collaboration, and high-impact meetings.</p>
+</div>
+<div class="flex gap-4">
+<button class="w-12 h-12 rounded-full border border-outline-variant flex items-center justify-center text-on-surface-variant hover:border-primary hover:text-primary transition-all">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="w-12 h-12 rounded-full border border-outline-variant flex items-center justify-center text-on-surface-variant hover:border-primary hover:text-primary transition-all">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+<!-- Bento-ish Grid -->
+<div class="grid grid-cols-12 gap-gutter">
+<!-- Main Feature Card -->
+<div class="col-span-8 group cursor-pointer">
+<div class="relative rounded-xl overflow-hidden aspect-[16/9] mb-4">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="A wide-angle shot of a luxurious executive conference room in a high-rise building. The room features a long, solid walnut table, ergonomic cognac leather chairs, and floor-to-ceiling windows overlooking a modern city skyline at dusk. The interior lighting is warm and indirect, creating an inviting yet professional atmosphere. The design is minimalist, emphasizing quality materials and structured layout." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC7jbU5ETL2wiDnVysxJU2LRYAa20r-J13CO5ZDVVi61V17t9H4DjdvIbp127t3rNQwjUDzfnxdhx1278DtTtpOyApYFjqXdrokFFsjSLiztmSEjVD5zeV-sWDmrWEqOxhmlj27EjuMDxUO4kZRghuJf856PstoAmG22mbmOIyc1t9pcVHyVF5ZRup5yH_WXWK_-SYuutccwHTqpKDazURitGSU3ncasQRsEo_fgLEU28as0Gww9w_iflIyzYtXmQ0PUXTO4uoMRWg"/>
+<div class="absolute top-4 left-4 flex gap-2">
+<span class="bg-surface/90 backdrop-blur-md text-on-surface font-label-caps px-3 py-1 rounded shadow-sm">TOP RATED</span>
+<span class="bg-tertiary text-on-tertiary font-label-caps px-3 py-1 rounded shadow-sm">NEW YORK</span>
+</div>
+</div>
+<div class="flex justify-between items-start">
+<div>
+<h3 class="font-headline-md text-on-surface">The Meridian Boardroom</h3>
+<p class="font-body-sm text-on-surface-variant">Capacity: 12 People • 5th Avenue, NY</p>
+</div>
+<div class="text-right">
+<span class="block font-headline-md text-primary">$180/hr</span>
+<span class="font-label-caps text-on-surface-variant">FULL AMENITIES</span>
+</div>
+</div>
+</div>
+<!-- Secondary Small Card -->
+<div class="col-span-4 flex flex-col gap-gutter">
+<div class="group cursor-pointer">
+<div class="relative rounded-xl overflow-hidden aspect-[4/3] mb-4">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="A cozy, high-end private workspace alcove designed for deep focus. It includes a custom-built oak desk, an ergonomic task chair, and built-in bookshelves filled with architectural volumes. A small ceramic vase with a single branch sits on the desk. The lighting is focused and warm, with a mix of natural light and a brass desk lamp, reflecting a sophisticated minimalist aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvlnzM11xWn9qa7tRKrQ8ICnP0oIk0Y8praGdSym-BVFjkDNqQVyjVZI3ymnukrE1zkl1VhG_eUrxC8vhTY80TdwbCjmYgtnWFwGVZcsNy2xEUdyxVvfX0W77LoqUs7sI8OzD8Fq4i6HMBwB29YgmR2R5WDpwO6CgVVUKJg1yivibKUEyv-Her5hryYjkKzupJFk6dM9bLwhKn5YNUnv8sF5aV7LIApJy53IqvNefce2_pqvuE-mLh-bdmPvdjSu7Zjdy4fWfWmeM"/>
+</div>
+<h3 class="font-body-md font-semibold text-on-surface">Private Focus Pods</h3>
+<p class="font-body-sm text-on-surface-variant">Solo • $45/hr</p>
+</div>
+<div class="group cursor-pointer">
+<div class="relative rounded-xl overflow-hidden aspect-[4/3] mb-4">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="A modern collaborative workspace featuring a modular sofa arrangement in terracotta fabric, a low coffee table made of light stone, and several mobile whiteboards. Large potted plants provide a touch of organic greenery. The space is bright and airy, using a clean color palette of whites, ambers, and warm greys, ideal for creative brainstorming sessions." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBQPmydWXufoYKNn_VUBSgRc3GQaPZtOCpRHf9OpyxIPs_h4zAPXZ0MhqQO9sSI3QZNlFiPSVN6OWlWNuIEsfy9qo7Ynj87z1bHAXJ_HluQdgmJzml-nuS7SJ7iwyqeuhPsuRmYuXrkXpemQ83Dq5lAPFJnTodwdjjgDPGHBHw5AV8cdT_ioZU8z1a8cQU7VEzYkOgkt9wcXjrWY0SXtEaYD2wMaWkf_SyJgNDQ7EgWHmhWN7JMyd4AS43I-jFzisIY1EIJnj5AYco"/>
+</div>
+<h3 class="font-body-md font-semibold text-on-surface">Creative Lounge Suite</h3>
+<p class="font-body-sm text-on-surface-variant">Up to 6 • $90/hr</p>
+</div>
+</div>
+<!-- Three Bottom Cards -->
+<div class="col-span-4 group cursor-pointer">
+<div class="relative rounded-xl overflow-hidden aspect-[3/2] mb-4">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="A minimalist architectural studio space with long white drafting tables, high-end plotters, and abundant natural light from skylights. The flooring is polished concrete, and the walls are a warm sand tone. The overall mood is quiet, productive, and premium, catering to high-performance creative professionals." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBSO9ZlLxVGr4QTp1D8Cm-g0VcXEE-SakNzQ-T7KQKArrPjz5agGABMLPaCtZfUQM1JuFIhgbxrzG6qN9qA3ajIpnOt6Duzt5UV1Xjh0XdTl0LixtauRZOXaMc4MZN4BJPJnkt8FTN3hHWiE6fRRZiaXVB6YvX6DNXYody1LrN6FIFPe3VsbAtBT7Jlpncgs0yqURuGnMWzVUoHNPHRJXVGmW-Js5akASuJy4QiKglDzrzO2ZvMi1wNW73NUnuaGl6CRAeFTz1jtvw"/>
+</div>
+<h3 class="font-body-md font-semibold text-on-surface">Architectural Studio</h3>
+<p class="font-body-sm text-on-surface-variant">Team Hub • Soho, NY</p>
+</div>
+<div class="col-span-4 group cursor-pointer">
+<div class="relative rounded-xl overflow-hidden aspect-[3/2] mb-4">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="A sleek, high-tech recording and podcasting studio with acoustic wood paneling and premium microphones on articulated arms. The lighting is moody and dramatic, with warm amber accents against dark charcoal walls. It feels like a bespoke physical study transformed for modern digital content creation." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDxb63ZM9GKltizQZKLbGtvLVuMSu1ybtX59Kd6AV6I1WH61Z92CUYjSaRs8A2wCzvq8HepGHTCRsDynkda2Im_QTwiFwlXUnygX3r-pR9Citc7hgrWQtMnj6bFsAjkvi-4wxUaUIO53k_CMMh8YbukjEMB5fhcwgFxGTriWS20_1AIrtfU8COGBrxM-V1YhUn1wyu9PDSWZhaWm908HqtFDdclUcWT-SqZCVnMMtHCGLkQMZv08r_0HimNtWweVjJPHJcQLLyCh48"/>
+</div>
+<h3 class="font-body-md font-semibold text-on-surface">Media Production Loft</h3>
+<p class="font-body-sm text-on-surface-variant">Audio/Video • Williamsburg, NY</p>
+</div>
+<div class="col-span-4 group cursor-pointer">
+<div class="relative rounded-xl overflow-hidden aspect-[3/2] mb-4">
+<img class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" data-alt="An open-plan library-style workspace with long communal tables made of reclaimed wood and rows of green glass banker's lamps. The walls are lined with floor-to-ceiling bookshelves. It combines a traditional physical library's quiet dignity with modern high-speed infrastructure and ergonomic comfort." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD83eYeKe2IOtUhBFBMxRpQNEJH3cDsd_Ki2mZOdnppKAmXY2Kl8FLYjJF0aHNDdxJl8cDIQ8QhypQBAyWG3quWmyqxBiw4-mD4CtoucgywRVC1WxGxd1_4zvPfdLsX-lPmr5yI2h_H60-COD5ReMEU8PlvQC7n9H3G7rOUvRH318joI-e9fRy2OTPKCvOgtElHO0Sf_SNXVfUUeED5_Y3SfYmG0Qg5fE_Lc3-kfLHa8ulimqPfGQ0jwNpGrE6zZyun_sLZ-pXPOIg"/>
+</div>
+<h3 class="font-body-md font-semibold text-on-surface">The Library Commons</h3>
+<p class="font-body-sm text-on-surface-variant">Hot Desk • Tribeca, NY</p>
+</div>
+</div>
+</section>
+<!-- CTA Section -->
+<section class="pb-32">
+<div class="bg-on-background rounded-2xl p-16 text-center relative overflow-hidden">
+<!-- Background Decorative Pattern -->
+<div class="absolute inset-0 opacity-10 pointer-events-none">
+<div class="absolute inset-0" style="background-image: radial-gradient(#ffffff 1px, transparent 1px); background-size: 40px 40px;"></div>
+</div>
+<div class="relative z-10 max-w-2xl mx-auto">
+<h2 class="font-display-xl text-display-xl text-surface mb-6">Join the Collective</h2>
+<p class="font-body-lg text-body-lg text-surface-variant mb-10">Access a global network of high-performance spaces with a single membership. Tailored for individuals and scale-ups.</p>
+<div class="flex flex-col md:flex-row gap-4 justify-center">
+<button class="bg-primary text-on-primary px-10 py-5 rounded-lg font-headline-md hover:bg-primary-container transition-all shadow-lg">Start Your Trial</button>
+<button class="border border-outline text-surface px-10 py-5 rounded-lg font-headline-md hover:bg-surface/10 transition-all">View Membership Plans</button>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-low w-full py-12">
+<div class="flex flex-col md:flex-row justify-between items-center px-margin-desktop max-w-container-max mx-auto space-y-4 md:space-y-0">
+<!-- Brand & Copyright -->
+<div class="flex flex-col items-center md:items-start gap-2">
+<span class="font-label-caps text-label-caps text-on-surface-variant">KINETIC WORKSPACE</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">© 2024 Kinetic Workspace. All rights reserved.</span>
+</div>
+<!-- Footer Links -->
+<div class="flex gap-8 items-center">
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-secondary transition-all duration-300 hover:underline decoration-2" href="#">About</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-secondary transition-all duration-300 hover:underline decoration-2" href="#">Privacy Policy</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-secondary transition-all duration-300 hover:underline decoration-2" href="#">Terms of Service</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-secondary transition-all duration-300 hover:underline decoration-2" href="#">Help Center</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant hover:text-secondary transition-all duration-300 hover:underline decoration-2" href="#">Contact</a>
+</div>
+<!-- Social/Utility -->
+<div class="flex gap-4">
+<div class="w-8 h-8 rounded-full bg-outline-variant/30 flex items-center justify-center cursor-pointer hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined text-sm">language</span>
+</div>
+<div class="w-8 h-8 rounded-full bg-outline-variant/30 flex items-center justify-center cursor-pointer hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined text-sm">share</span>
+</div>
+</div>
+</div>
+</footer>
+<script>
+        // Simple micro-interaction for the search bar
+        const searchGroups = document.querySelectorAll('.cursor-pointer.hover\\:bg-surface-container-low');
+        searchGroups.forEach(group => {
+            group.addEventListener('click', () => {
+                // Remove active styling from others
+                searchGroups.forEach(g => g.classList.remove('ring-1', 'ring-primary/30'));
+                // Add active styling
+                group.classList.add('ring-1', 'ring-primary/30');
+            });
+        });
+
+        // Sticky Navbar Scroll Effect
+        window.addEventListener('scroll', () => {
+            const nav = document.querySelector('nav');
+            if (window.scrollY > 20) {
+                nav.classList.add('shadow-tactile');
+                nav.style.height = '72px';
+            } else {
+                nav.classList.remove('shadow-tactile');
+                nav.style.height = '80px';
+            }
+        });
+    </script>
+</body></html>
