@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Profile &amp; History | Kinetic Workspace</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&amp;family=Manrope:wght@600;700;800&amp;family=Work+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-fixed-variant": "#6e3900",
+                    "on-secondary-fixed": "#2f1500",
+                    "inverse-surface": "#303033",
+                    "on-background": "#1b1b1e",
+                    "primary-container": "#c0573e",
+                    "primary-fixed-dim": "#ffb4a3",
+                    "surface-bright": "#fbf8fc",
+                    "surface-container": "#f0edf1",
+                    "on-secondary-container": "#663500",
+                    "on-primary": "#ffffff",
+                    "tertiary": "#934a23",
+                    "outline-variant": "#ddc0ba",
+                    "tertiary-fixed-dim": "#ffb693",
+                    "on-tertiary": "#ffffff",
+                    "on-tertiary-fixed": "#351000",
+                    "on-error": "#ffffff",
+                    "tertiary-container": "#b26138",
+                    "inverse-primary": "#ffb4a3",
+                    "on-secondary": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "on-surface-variant": "#56423d",
+                    "error": "#ba1a1a",
+                    "surface-container-high": "#eae7eb",
+                    "on-surface": "#1b1b1e",
+                    "surface-dim": "#dcd9dd",
+                    "surface-variant": "#e4e1e5",
+                    "secondary-container": "#fe932c",
+                    "surface-tint": "#a03f29",
+                    "on-tertiary-container": "#ffffff",
+                    "outline": "#8a726c",
+                    "surface-container-highest": "#e4e1e5",
+                    "on-primary-fixed-variant": "#812914",
+                    "background": "#fbf8fc",
+                    "tertiary-fixed": "#ffdbcc",
+                    "secondary-fixed": "#ffdcc3",
+                    "secondary": "#904d00",
+                    "primary-fixed": "#ffdad2",
+                    "inverse-on-surface": "#f3f0f4",
+                    "primary": "#a03f28",
+                    "surface-container-low": "#f5f3f6",
+                    "on-tertiary-fixed-variant": "#76330d",
+                    "on-primary-container": "#120100",
+                    "surface": "#fbf8fc",
+                    "on-primary-fixed": "#3d0700",
+                    "surface-container-lowest": "#ffffff",
+                    "on-error-container": "#93000a",
+                    "secondary-fixed-dim": "#ffb77d"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "gutter": "24px",
+                    "margin-tablet": "32px",
+                    "margin-mobile": "16px",
+                    "container-max": "1440px",
+                    "margin-desktop": "64px",
+                    "base": "8px"
+            },
+            "fontFamily": {
+                    "label-caps": ["JetBrains Mono"],
+                    "headline-lg": ["Manrope"],
+                    "body-lg": ["Work Sans"],
+                    "headline-md": ["Manrope"],
+                    "body-md": ["Work Sans"],
+                    "body-sm": ["Work Sans"],
+                    "display-xl": ["Manrope"]
+            },
+            "fontSize": {
+                    "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "headline-lg": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "display-xl": ["60px", {"lineHeight": "72px", "letterSpacing": "-0.02em", "fontWeight": "800"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        body {
+            background-color: #fbf8fc;
+            color: #1b1b1e;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #ddc0ba;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="font-body-md text-body-md selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- TopNavBar -->
+<header class="bg-surface dark:bg-on-background w-full top-0 border-b border-outline-variant dark:border-outline z-50 sticky">
+<nav class="flex justify-between items-center h-20 px-margin-desktop max-w-container-max mx-auto">
+<div class="flex items-center gap-12">
+<span class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim">Kinetic Workspace</span>
+<div class="hidden md:flex gap-8 items-center">
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-colors duration-200" href="#">Workspaces</a>
+<a class="font-body-md text-body-md text-primary dark:text-primary-fixed-dim border-b-2 border-primary dark:border-primary-fixed-dim pb-1 font-semibold" href="#">Reservations</a>
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-colors duration-200" href="#">Teams</a>
+<a class="font-body-md text-body-md text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-colors duration-200" href="#">Analytics</a>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">settings</button>
+<div class="w-10 h-10 rounded-full overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a high-level creative executive in their 40s with a warm and approachable expression. The lighting is soft and cinematic, highlighting their focused yet calm demeanor. The background is a blurred, high-end architectural studio with wood accents and natural light, reflecting the Kinetic Workspace aesthetic of tactile modernism and high performance." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC-_M3haoAYH-HbtLPOkgKbT5DsGRh9S6CWRhOIw2uKgyECo0faapQL2v61h7u7gqpfqCF2Wa0APfZuaicVyZTpfJdTtLfXt-YaNgrcmMp1yOFOVdU_W48J1RuEchBGOHkClkej_5ibDhGxBkTgszzWLr6k50PrIPxM8fmkp4cdQHWrwvEXlHdYCfF6Cyb2zlVRfrHGC-SnXrr_s8ZZss9XnyoPHMw3Jlc82UMNwYLJGD3YQwAMRii1H95uchjpYqoDv0l2EYWNBCs"/>
+</div>
+</div>
+</nav>
+</header>
+<main class="max-w-container-max mx-auto px-margin-desktop py-12 flex gap-gutter min-h-[calc(100vh-80px-160px)]">
+<!-- Sidebar Navigation -->
+<aside class="w-64 hidden lg:block space-y-1">
+<h3 class="font-label-caps text-label-caps text-outline px-4 mb-4">ACCOUNT</h3>
+<a class="flex items-center gap-3 px-4 py-3 rounded bg-secondary-container text-on-secondary-container font-medium transition-all duration-300" href="#">
+<span class="material-symbols-outlined">person</span>
+<span>Profile</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded text-on-surface-variant hover:bg-surface-container-high transition-all duration-300" href="#">
+<span class="material-symbols-outlined">history</span>
+<span>History</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded text-on-surface-variant hover:bg-surface-container-high transition-all duration-300" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span>Billing</span>
+</a>
+<div class="h-8"></div>
+<h3 class="font-label-caps text-label-caps text-outline px-4 mb-4">PREFERENCES</h3>
+<a class="flex items-center gap-3 px-4 py-3 rounded text-on-surface-variant hover:bg-surface-container-high transition-all duration-300" href="#">
+<span class="material-symbols-outlined">palette</span>
+<span>Appearance</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded text-on-surface-variant hover:bg-surface-container-high transition-all duration-300" href="#">
+<span class="material-symbols-outlined">lock</span>
+<span>Privacy</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded text-on-surface-variant hover:bg-surface-container-high transition-all duration-300" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span>Sign Out</span>
+</a>
+</aside>
+<!-- Content Canvas -->
+<section class="flex-1 space-y-gutter">
+<!-- User Summary Hero -->
+<div class="bg-surface-container-lowest p-gutter rounded-xl border border-outline-variant flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden">
+<!-- Subtle Atmosphere Background -->
+<div class="absolute right-0 top-0 w-1/3 h-full opacity-10 pointer-events-none">
+
+</div>
+<div class="flex gap-6 items-center z-10">
+<div class="relative">
+<div class="w-24 h-24 rounded-xl overflow-hidden shadow-lg border-2 border-surface">
+<img class="w-full h-full object-cover" data-alt="Close-up of a sophisticated user profile photo. The person is dressed in high-quality minimalist attire, perhaps a linen shirt in earth tones. The background is a sun-drenched, airy creative workspace with architectural models and plants. The overall mood is professional, high-performance, and calm, perfectly aligning with the Kinetic Workspace brand identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDM-dHCKJw1ClsaiS4mar2-GmfXkGJ2ebKlhqE85prTQ7YUQchY8Tlo2S8mB1G4KssuIxXsQL7h0Ykr_AJAcJRu7cntRKjfTZsgwqRlcrDo8pREiRIrLrTZVY8noXig7kYW1l6lnIcrA6Z-hEi0_IGH9Y0E7SL5xQodnXp4P1_u6gLo34zmbpmIhIUu4zgeO4t1mokHWS4BwdgTWWAqLlAjE32mgmMWbV7eW6AwUWaYczMSvCj_0nlKUUjdn5qmDL3pSrRcXWRrsZk"/>
+</div>
+<button class="absolute -bottom-2 -right-2 bg-primary text-on-primary w-8 h-8 rounded-full flex items-center justify-center border-4 border-surface-container-lowest hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-sm">edit</span>
+</button>
+</div>
+<div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface mb-1">Adrian Thorne</h1>
+<p class="font-body-md text-on-surface-variant">Lead Architect • Thorne &amp; Partners</p>
+<div class="flex gap-4 mt-2">
+<span class="flex items-center gap-1 font-label-caps text-label-caps text-tertiary">
+<span class="material-symbols-outlined text-xs">verified_user</span> Pro Member
+                            </span>
+<span class="flex items-center gap-1 font-label-caps text-label-caps text-on-surface-variant">
+<span class="material-symbols-outlined text-xs">location_on</span> Oslo, Norway
+                            </span>
+</div>
+</div>
+</div>
+<div class="flex gap-4 z-10">
+<div class="bg-surface-container text-center px-6 py-4 rounded-lg">
+<div class="font-headline-md text-headline-md text-primary">24</div>
+<div class="font-label-caps text-label-caps text-outline">RESERVATIONS</div>
+</div>
+<div class="bg-surface-container text-center px-6 py-4 rounded-lg">
+<div class="font-headline-md text-headline-md text-primary">128h</div>
+<div class="font-label-caps text-label-caps text-outline">DEEP WORK</div>
+</div>
+</div>
+</div>
+<!-- Bento Grid - Reservations & History -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+<!-- Reservations Panel -->
+<div class="lg:col-span-2 bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden flex flex-col">
+<div class="p-6 border-b border-outline-variant flex justify-between items-center">
+<div class="flex gap-6">
+<button class="font-label-caps text-label-caps text-primary border-b-2 border-primary pb-1">ACTIVE</button>
+<button class="font-label-caps text-label-caps text-on-surface-variant hover:text-primary transition-colors pb-1">PENDING</button>
+<button class="font-label-caps text-label-caps text-on-surface-variant hover:text-primary transition-colors pb-1">HISTORY</button>
+</div>
+<button class="bg-primary text-on-primary px-4 py-2 rounded-lg font-body-md text-sm hover:opacity-90 transition-opacity">
+                            New Reservation
+                        </button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left">
+<thead class="bg-surface-container-low">
+<tr class="font-label-caps text-label-caps text-outline uppercase">
+<th class="px-6 py-4">Workspace</th>
+<th class="px-6 py-4">Date &amp; Time</th>
+<th class="px-6 py-4">Status</th>
+<th class="px-6 py-4 text-right">Action</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant">
+<!-- Row 1 -->
+<tr class="hover:bg-primary/5 transition-colors group">
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-tertiary-fixed flex items-center justify-center text-tertiary font-bold">L1</div>
+<div>
+<div class="font-body-md font-semibold text-on-surface">The Loft - Suite 402</div>
+<div class="text-body-sm text-on-surface-variant">Focus Room • Oslo</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-5">
+<div class="font-body-md text-on-surface">Oct 24, 2024</div>
+<div class="text-body-sm text-on-surface-variant">09:00 - 13:00</div>
+</td>
+<td class="px-6 py-5">
+<span class="px-2 py-1 rounded-full bg-secondary-container text-on-secondary-container text-xs font-semibold">Active</span>
+</td>
+<td class="px-6 py-5 text-right">
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-primary/5 transition-colors group">
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-primary-fixed flex items-center justify-center text-primary font-bold">O2</div>
+<div>
+<div class="font-body-md font-semibold text-on-surface">Observatory 2</div>
+<div class="text-body-sm text-on-surface-variant">Studio • Stockholm</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-5">
+<div class="font-body-md text-on-surface">Oct 27, 2024</div>
+<div class="text-body-sm text-on-surface-variant">Full Day</div>
+</td>
+<td class="px-6 py-5">
+<span class="px-2 py-1 rounded-full bg-surface-container-highest text-on-surface-variant text-xs font-semibold">Scheduled</span>
+</td>
+<td class="px-6 py-5 text-right">
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-primary/5 transition-colors group opacity-60">
+<td class="px-6 py-5">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-surface-variant flex items-center justify-center text-outline font-bold">A1</div>
+<div>
+<div class="font-body-md font-semibold text-on-surface">Atrium Gallery</div>
+<div class="text-body-sm text-on-surface-variant">Event Space • Berlin</div>
+</div>
+</div>
+</td>
+<td class="px-6 py-5">
+<div class="font-body-md text-on-surface">Oct 12, 2024</div>
+<div class="text-body-sm text-on-surface-variant">18:00 - 21:00</div>
+</td>
+<td class="px-6 py-5">
+<span class="px-2 py-1 rounded-full bg-surface-dim text-on-surface-variant text-xs font-semibold">Completed</span>
+</td>
+<td class="px-6 py-5 text-right">
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">receipt_long</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Stats & Secondary Actions -->
+<div class="space-y-gutter">
+<!-- Quick Actions -->
+<div class="bg-tertiary text-on-tertiary p-8 rounded-xl relative overflow-hidden group hover:shadow-xl transition-all duration-500">
+<div class="relative z-10">
+<h3 class="font-headline-md text-headline-md mb-2">Team Access</h3>
+<p class="font-body-sm opacity-80 mb-6">Manage workspace permissions for Thorne &amp; Partners associates.</p>
+<button class="bg-on-tertiary text-tertiary px-6 py-3 rounded-lg font-semibold hover:bg-tertiary-fixed transition-colors">Manage Team</button>
+</div>
+<span class="material-symbols-outlined absolute -bottom-4 -right-4 text-9xl opacity-10 group-hover:rotate-12 transition-transform duration-500">groups</span>
+</div>
+<!-- Usage Insights Card -->
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant space-y-6">
+<div class="flex justify-between items-center">
+<h3 class="font-headline-md text-lg text-on-surface">Space Usage</h3>
+<span class="material-symbols-outlined text-outline">monitoring</span>
+</div>
+<div class="space-y-4">
+<div>
+<div class="flex justify-between text-body-sm mb-2">
+<span class="text-on-surface-variant">Stockholm Studio</span>
+<span class="text-on-surface font-semibold">75%</span>
+</div>
+<div class="h-2 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 75%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-body-sm mb-2">
+<span class="text-on-surface-variant">Oslo Focus Room</span>
+<span class="text-on-surface font-semibold">42%</span>
+</div>
+<div class="h-2 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-tertiary rounded-full" style="width: 42%"></div>
+</div>
+</div>
+</div>
+<div class="pt-4 border-t border-outline-variant">
+<a class="text-primary font-body-sm font-semibold flex items-center gap-2 hover:gap-3 transition-all" href="#">
+                                View full analytics <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-low dark:bg-surface-dim w-full py-12 mt-12">
+<div class="flex flex-col md:flex-row justify-between items-center px-margin-desktop max-w-container-max mx-auto space-y-4 md:space-y-0">
+<div class="flex flex-col md:items-start items-center gap-2">
+<span class="font-label-caps text-label-caps text-on-surface-variant dark:text-surface-variant">Kinetic Workspace</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant dark:text-surface-variant">© 2024 Kinetic Workspace. All rights reserved.</p>
+</div>
+<div class="flex gap-8">
+<a class="font-body-sm text-body-sm text-on-surface-variant dark:text-surface-variant hover:text-secondary dark:hover:text-secondary-fixed-dim transition-all duration-300" href="#">About</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant dark:text-surface-variant hover:text-secondary dark:hover:text-secondary-fixed-dim transition-all duration-300" href="#">Privacy Policy</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant dark:text-surface-variant hover:text-secondary dark:hover:text-secondary-fixed-dim transition-all duration-300" href="#">Terms of Service</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant dark:text-surface-variant hover:text-secondary dark:hover:text-secondary-fixed-dim transition-all duration-300" href="#">Help Center</a>
+<a class="font-body-sm text-body-sm text-on-surface-variant dark:text-surface-variant hover:text-secondary dark:hover:text-secondary-fixed-dim transition-all duration-300" href="#">Contact</a>
+</div>
+</div>
+</footer>
+<script>
+        // Simple Interaction logic
+        document.querySelectorAll('a, button').forEach(el => {
+            el.addEventListener('mousedown', () => {
+                el.style.transform = 'scale(0.98)';
+                el.style.opacity = '0.8';
+            });
+            el.addEventListener('mouseup', () => {
+                el.style.transform = 'scale(1)';
+                el.style.opacity = '1';
+            });
+            el.addEventListener('mouseleave', () => {
+                el.style.transform = 'scale(1)';
+                el.style.opacity = '1';
+            });
+        });
+
+        // Search Bar Mock Focus Interaction
+        const searchInput = document.querySelector('input');
+        if (searchInput) {
+            searchInput.addEventListener('focus', () => {
+                searchInput.parentElement.classList.add('ring-2', 'ring-secondary');
+            });
+            searchInput.addEventListener('blur', () => {
+                searchInput.parentElement.classList.remove('ring-2', 'ring-secondary');
+            });
+        }
+    </script>
+</body></html>
