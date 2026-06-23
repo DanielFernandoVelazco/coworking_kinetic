@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Kinetic Workspace | Space Catalog</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&amp;family=Work+Sans:wght@400;500&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-fixed-variant": "#6e3900",
+                    "on-secondary-fixed": "#2f1500",
+                    "inverse-surface": "#303033",
+                    "on-background": "#1b1b1e",
+                    "primary-container": "#c0573e",
+                    "primary-fixed-dim": "#ffb4a3",
+                    "surface-bright": "#fbf8fc",
+                    "surface-container": "#f0edf1",
+                    "on-secondary-container": "#663500",
+                    "on-primary": "#ffffff",
+                    "tertiary": "#934a23",
+                    "outline-variant": "#ddc0ba",
+                    "tertiary-fixed-dim": "#ffb693",
+                    "on-tertiary": "#ffffff",
+                    "on-tertiary-fixed": "#351000",
+                    "on-error": "#ffffff",
+                    "tertiary-container": "#b26138",
+                    "inverse-primary": "#ffb4a3",
+                    "on-secondary": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "on-surface-variant": "#56423d",
+                    "error": "#ba1a1a",
+                    "surface-container-high": "#eae7eb",
+                    "on-surface": "#1b1b1e",
+                    "surface-dim": "#dcd9dd",
+                    "surface-variant": "#e4e1e5",
+                    "secondary-container": "#fe932c",
+                    "surface-tint": "#a03f29",
+                    "on-tertiary-container": "#ffffff",
+                    "outline": "#8a726c",
+                    "surface-container-highest": "#e4e1e5",
+                    "on-primary-fixed-variant": "#812914",
+                    "background": "#fbf8fc",
+                    "tertiary-fixed": "#ffdbcc",
+                    "secondary-fixed": "#ffdcc3",
+                    "secondary": "#904d00",
+                    "primary-fixed": "#ffdad2",
+                    "inverse-on-surface": "#f3f0f4",
+                    "primary": "#a03f28",
+                    "surface-container-low": "#f5f3f6",
+                    "on-tertiary-fixed-variant": "#76330d",
+                    "on-primary-container": "#120100",
+                    "surface": "#fbf8fc",
+                    "on-primary-fixed": "#3d0700",
+                    "surface-container-lowest": "#ffffff",
+                    "on-error-container": "#93000a",
+                    "secondary-fixed-dim": "#ffb77d"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "gutter": "24px",
+                    "margin-tablet": "32px",
+                    "margin-mobile": "16px",
+                    "container-max": "1440px",
+                    "margin-desktop": "64px",
+                    "base": "8px"
+            },
+            "fontFamily": {
+                    "label-caps": ["JetBrains Mono"],
+                    "headline-lg": ["Manrope"],
+                    "body-lg": ["Work Sans"],
+                    "headline-md": ["Manrope"],
+                    "body-md": ["Work Sans"],
+                    "body-sm": ["Work Sans"],
+                    "display-xl": ["Manrope"]
+            },
+            "fontSize": {
+                    "label-caps": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "headline-lg": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "display-xl": ["60px", {"lineHeight": "72px", "letterSpacing": "-0.02em", "fontWeight": "800"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: #fbf8fc;
+            color: #1b1b1e;
+            -webkit-font-smoothing: antialiased;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f0edf1;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #a03f28;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="font-body-md text-body-md overflow-x-hidden">
+<!-- TopNavBar -->
+<header class="bg-surface w-full top-0 border-b border-outline-variant z-50 sticky">
+<div class="flex justify-between items-center h-20 px-margin-desktop max-w-container-max mx-auto">
+<div class="flex items-center gap-12">
+<span class="font-headline-md text-headline-md font-bold text-primary">Kinetic Workspace</span>
+<nav class="hidden md:flex gap-8 items-center h-full">
+<a class="text-primary border-b-2 border-primary pb-1 font-semibold font-body-md text-body-md transition-colors duration-200" href="#">Workspaces</a>
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-primary transition-colors duration-200" href="#">Reservations</a>
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-primary transition-colors duration-200" href="#">Teams</a>
+<a class="text-on-surface-variant font-body-md text-body-md hover:text-primary transition-colors duration-200" href="#">Analytics</a>
+</nav>
+</div>
+<div class="flex items-center gap-6">
+<div class="relative group">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary transition-all">search</span>
+</div>
+<div class="flex gap-4 items-center">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary">notifications</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary">settings</span>
+<div class="w-10 h-10 rounded-full overflow-hidden border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="Close-up professional portrait of a high-end executive in a minimalist studio. The lighting is soft and warm, reflecting a premium professional aesthetic. The color palette is composed of soft creams, rich terracottas, and deep wood tones, matching a sophisticated corporate workspace brand." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDN9zqAXFyILRrdAV02pl1TVGfHQ-TmPUErFPmhCa1rjzvXkH_Wxdd3KvzrRnyncwJljF95t64V6QSYVDWsPFKqWZchNHb5epfFjQeVcNnmaQXgeioQP_pBsNllQduKlhhuxT6SSqYYL8BqhouU-fHybumOZDQdk4w8Y1BFMlt35FSApUKS-oYUiyinjgIiCArCK3dB7Mo-z1q1pLgTIgZqGzn7BTFVH6oAxxsjc1E97tCr1esRUk6CtPLMw6g7FTzaalTwYi_Yb4w"/>
+</div>
+</div>
+</div>
+</div>
+</header>
+<main class="max-w-container-max mx-auto px-margin-desktop py-12 flex gap-gutter">
+<!-- Sidebar Filters -->
+<aside class="w-72 flex-shrink-0">
+<div class="sticky top-32 space-y-8">
+<div>
+<h3 class="font-label-caps text-label-caps text-on-surface-variant mb-6">SPACE TYPE</h3>
+<div class="space-y-4">
+<label class="flex items-center gap-3 cursor-pointer group">
+<input checked="" class="w-5 h-5 border-outline rounded text-primary focus:ring-primary" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface hover:text-primary transition-colors">Desks</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-5 h-5 border-outline rounded text-primary focus:ring-primary" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface hover:text-primary transition-colors">Meeting Rooms</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-5 h-5 border-outline rounded text-primary focus:ring-primary" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface hover:text-primary transition-colors">Premium Offices</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="w-5 h-5 border-outline rounded text-primary focus:ring-primary" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface hover:text-primary transition-colors">Focus Pods</span>
+</label>
+</div>
+</div>
+<div>
+<h3 class="font-label-caps text-label-caps text-on-surface-variant mb-6">CAPACITY</h3>
+<div class="grid grid-cols-2 gap-2">
+<button class="py-2 border border-outline-variant rounded text-body-sm font-body-sm hover:border-primary hover:text-primary transition-all">1-2 Pers.</button>
+<button class="py-2 border border-outline-variant rounded text-body-sm font-body-sm hover:border-primary hover:text-primary transition-all">3-6 Pers.</button>
+<button class="py-2 border border-outline-variant rounded text-body-sm font-body-sm hover:border-primary hover:text-primary transition-all">7-12 Pers.</button>
+<button class="py-2 border border-primary bg-primary-container/10 text-primary text-body-sm font-body-sm">12+ Pers.</button>
+</div>
+</div>
+<div>
+<h3 class="font-label-caps text-label-caps text-on-surface-variant mb-6">PRICE RANGE</h3>
+<input class="w-full h-1 bg-surface-container-high rounded-lg appearance-none cursor-pointer accent-primary" type="range"/>
+<div class="flex justify-between mt-2 text-body-sm font-body-sm text-on-surface-variant">
+<span>$50/hr</span>
+<span>$500/hr</span>
+</div>
+</div>
+<button class="w-full py-4 bg-tertiary text-on-tertiary rounded font-body-md font-semibold hover:opacity-90 transition-opacity">
+                    Reset All Filters
+                </button>
+</div>
+</aside>
+<!-- Main Catalog Grid -->
+<section class="flex-grow">
+<div class="flex justify-between items-end mb-10">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface mb-2">Available Workspaces</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Showing 24 premium spaces in San Francisco</p>
+</div>
+<div class="flex items-center gap-4 bg-surface-container-low p-2 rounded">
+<button class="p-2 bg-white shadow-sm rounded">
+<span class="material-symbols-outlined text-primary">grid_view</span>
+</button>
+<button class="p-2 hover:bg-white/50 rounded transition-all">
+<span class="material-symbols-outlined text-on-surface-variant">list</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-gutter">
+<!-- Card 1: Premium Office -->
+<div class="group bg-white border border-outline-variant rounded-xl overflow-hidden hover:shadow-xl transition-all duration-500 flex flex-col">
+<div class="relative h-72 overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="A sun-drenched premium office interior with floor-to-ceiling windows overlooking a city skyline. The room features a minimalist solid oak desk, an ergonomic leather chair, and a warm terracotta area rug. Soft ambient lighting and lush green plants create a calm, focused environment. The style is high-performance, organic modernism with a warm sand and wood palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDh9MN96q4ZUq-lMhY4HUIJGydR4sHUE31-Irne011QwK9FN_ZbmA_BW-Y2swMZrpydutR4kz40GCLMCzv7lC0olDrWfNbZTiBkvQCZNYroEQ6AzatFfQFj5RAX2T4fyCSSLBgXNkZFYfpQmZF1t2ZfPW2Vdm2vdsIYOZTOsVBU-wpudXQ5NZQG9-x8F6Ljqhr-8w376WlJ7vcHfHTVBmClL406HB24fgXbQXcLa1x1O1uqioyCzshTxFijnYLqwdPfZhQ8jLI5L5g"/>
+<div class="absolute top-4 left-4 bg-primary text-on-primary px-3 py-1 font-label-caps text-label-caps rounded-full">PREMIUM OFFICE</div>
+<button class="absolute top-4 right-4 w-10 h-10 bg-white/80 backdrop-blur rounded-full flex items-center justify-center hover:bg-white transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant">favorite</span>
+</button>
+</div>
+<div class="p-6 flex-grow flex flex-col">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface group-hover:text-primary transition-colors">The Obsidian Suite</h2>
+<p class="text-body-sm font-body-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">location_on</span> Financial District, SF
+                                </p>
+</div>
+<div class="text-right">
+<span class="font-headline-md text-headline-md text-primary">$120</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant">/hour</span>
+</div>
+</div>
+<div class="flex gap-4 mb-8">
+<div class="flex items-center gap-1 text-body-sm font-body-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">group</span> 8-10
+                            </div>
+<div class="flex items-center gap-1 text-body-sm font-body-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">wifi</span> Fiber
+                            </div>
+<div class="flex items-center gap-1 text-body-sm font-body-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">videocam</span> 4K Display
+                            </div>
+</div>
+<div class="mt-auto flex gap-3">
+<button class="flex-grow py-4 bg-primary text-on-primary rounded font-body-md font-bold hover:bg-primary-container transition-all">Book Now</button>
+<button class="px-4 py-4 border border-outline text-on-surface rounded font-body-md font-semibold hover:bg-surface-container transition-all">Details</button>
+</div>
+</div>
+</div>
+<!-- Card 2: Dedicated Desk -->
+<div class="group bg-white border border-outline-variant rounded-xl overflow-hidden hover:shadow-xl transition-all duration-500 flex flex-col">
+<div class="relative h-72 overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="A focused dedicated desk workspace in an upscale coworking area. The desk is made of light birch wood with an integrated charging station. The background is a soft-focus library-style wall with warm lighting. Aesthetic is tactile modernism with terracotta and amber accents. High-key lighting emphasizes a clean and serene atmosphere for deep work." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBxneNKRDhBOV8tlVszuN98lNMebMJjF_hEoWXS0sp2Coh2llEb0DfRyCNhtFa_FE8riRqk4Z-hvizIO5_t8JCbSt1os--W5T42IN3V800BslhIUjwqzn-EgkYIdYUTQXKksKG7uJcRR4QQip25UmBqMBq-AuKmw-aq7NX01L8vjNmmlhOOaGl--em8NcaA1nL1X8RRcY6h_jrlM0wvXWhswAiW0ASsXv4oHugHvk2dm9Kwys6XfiqAkWkKNK9vLYyEqaMNpKFD590"/>
+<div class="absolute top-4 left-4 bg-secondary-container text-on-secondary-container px-3 py-1 font-label-caps text-label-caps rounded-full">DEDICATED DESK</div>
+</div>
+<div class="p-6 flex-grow flex flex-col">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface group-hover:text-primary transition-colors">Oak Hollow Station</h2>
+<p class="text-body-sm font-body-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">location_on</span> SoMa District, SF
+                                </p>
+</div>
+<div class="text-right">
+<span class="font-headline-md text-headline-md text-primary">$45</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant">/day</span>
+</div>
+</div>
+<p class="text-body-md font-body-md text-on-surface-variant line-clamp-2 mb-6">A high-performance fixed desk in our quiet zone. Perfect for individual contributors and creative professionals.</p>
+<div class="mt-auto flex gap-3">
+<button class="flex-grow py-4 bg-primary text-on-primary rounded font-body-md font-bold hover:bg-primary-container transition-all">Reserve Desk</button>
+<button class="px-4 py-4 border border-outline text-on-surface rounded font-body-md font-semibold hover:bg-surface-container transition-all">Details</button>
+</div>
+</div>
+</div>
+<!-- Card 3: Meeting Room -->
+<div class="group bg-white border border-outline-variant rounded-xl overflow-hidden hover:shadow-xl transition-all duration-500 flex flex-col">
+<div class="relative h-72 overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="A sophisticated meeting room with a large dark wood conference table and velvet upholstered chairs in a deep earthy orange. A sleek glass wall provides a view into a minimalist hallway. Minimalist designer lighting hangs from the ceiling. The atmosphere is quiet, bespoke, and professional, using a rich wood and warm-grey color palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBqvIIHTR754o4R1uJxDNUSWxat8SVoH66xVcyqd2vs6j5CnZxgmof4rnh1AWzGaWibbXdt0KpGTcodriHrXZDbjwWXNsgrIWsHiH5FlcmZcV6KwPz0pQu28jNmz3kVJFf5TbTh9JNOWEOR1r6AmNisffENZxhVgi_uOtlt-bQf5H6C-Vc3JMRTDcR7uGMcjd_YFS2vdL2laxzrH2z3lV77Xc3xtUOrAk0TbaRVPgKc6JUlIaBhIBXlYMQOfb3fTlvewCqpJgu1g-c"/>
+<div class="absolute top-4 left-4 bg-tertiary-container text-on-tertiary-container px-3 py-1 font-label-caps text-label-caps rounded-full">MEETING ROOM</div>
+</div>
+<div class="p-6 flex-grow flex flex-col">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface group-hover:text-primary transition-colors">The Kinetic Boardroom</h2>
+<p class="text-body-sm font-body-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">location_on</span> Union Square, SF
+                                </p>
+</div>
+<div class="text-right">
+<span class="font-headline-md text-headline-md text-primary">$85</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant">/hour</span>
+</div>
+</div>
+<div class="flex gap-4 mb-8">
+<div class="flex items-center gap-1 text-body-sm font-body-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">group</span> 12+
+                            </div>
+<div class="flex items-center gap-1 text-body-sm font-body-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">coffee</span> Service
+                            </div>
+</div>
+<div class="mt-auto flex gap-3">
+<button class="flex-grow py-4 bg-primary text-on-primary rounded font-body-md font-bold hover:bg-primary-container transition-all">Schedule</button>
+<button class="px-4 py-4 border border-outline text-on-surface rounded font-body-md font-semibold hover:bg-surface-container transition-all">Details</button>
+</div>
+</div>
+</div>
+<!-- Card 4: Focus Pod -->
+<div class="group bg-white border border-outline-variant rounded-xl overflow-hidden hover:shadow-xl transition-all duration-500 flex flex-col">
+<div class="relative h-72 overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="A modern soundproof focus pod designed for deep concentration. The interior is lined with soft acoustic felt in a warm grey tone, featuring a minimal white work surface and an amber-toned desk lamp. The lighting is intimate and warm. The aesthetic is extremely minimalist and focused, set within a larger high-end workspace environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCorB2qwuzsjDVpNiYBOqmHMZzwhuNOAG8P03dZdGOc5xgG71Y5VoA8VArPiBwe2q-NIUNIaIIzM3gOmaYaX2RO6F-MgHVtLV9I0IiRVOCE8iokSLGCNxOLoUvXxuaGUwzIjV-WzcnJhJdxTFG_hvCVCuB7ZmELxF0kC9WB0nuL-m40stq96Yb4R_PW8_tijziHRklQSw558X4TF8V5aQI04IU5egiY_V9FFYTTAYfMDII_VePzTpzqhL7GZGo1KN44MFkUw1bld7U"/>
+<div class="absolute top-4 left-4 bg-outline text-white px-3 py-1 font-label-caps text-label-caps rounded-full">FOCUS POD</div>
+</div>
+<div class="p-6 flex-grow flex flex-col">
+<div class="flex justify-between items-start mb-4">
+<div>
+<h2 class="font-headline-md text-headline-md text-on-surface group-hover:text-primary transition-colors">Sanctuary Pod 04</h2>
+<p class="text-body-sm font-body-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">location_on</span> Mission District, SF
+                                </p>
+</div>
+<div class="text-right">
+<span class="font-headline-md text-headline-md text-primary">$15</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant">/hour</span>
+</div>
+</div>
+<p class="text-body-md font-body-md text-on-surface-variant line-clamp-2 mb-6">Sound-isolated acoustic pod for confidential calls or deep work sprints. High-speed connectivity and climate control.</p>
+<div class="mt-auto flex gap-3">
+<button class="flex-grow py-4 bg-primary text-on-primary rounded font-body-md font-bold hover:bg-primary-container transition-all">Instant Book</button>
+<button class="px-4 py-4 border border-outline text-on-surface rounded font-body-md font-semibold hover:bg-surface-container transition-all">Details</button>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-16 flex justify-center">
+<button class="px-12 py-4 border-2 border-primary text-primary rounded font-body-md font-bold hover:bg-primary hover:text-white transition-all duration-300">
+                    Load More Spaces
+                </button>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-low dark:bg-surface-dim w-full py-12 mt-20">
+<div class="flex flex-col md:flex-row justify-between items-center px-margin-desktop max-w-container-max mx-auto space-y-4 md:space-y-0">
+<div class="flex flex-col md:items-start items-center gap-2">
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest">Kinetic Workspace</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant opacity-70">© 2024 Kinetic Workspace. All rights reserved.</p>
+</div>
+<div class="flex gap-8">
+<a class="text-on-surface-variant font-body-sm text-body-sm hover:text-secondary hover:underline decoration-2 transition-all duration-300" href="#">About</a>
+<a class="text-on-surface-variant font-body-sm text-body-sm hover:text-secondary hover:underline decoration-2 transition-all duration-300" href="#">Privacy Policy</a>
+<a class="text-on-surface-variant font-body-sm text-body-sm hover:text-secondary hover:underline decoration-2 transition-all duration-300" href="#">Terms of Service</a>
+<a class="text-on-surface-variant font-body-sm text-body-sm hover:text-secondary hover:underline decoration-2 transition-all duration-300" href="#">Help Center</a>
+<a class="text-on-surface-variant font-body-sm text-body-sm hover:text-secondary hover:underline decoration-2 transition-all duration-300" href="#">Contact</a>
+</div>
+<div class="flex gap-4">
+<div class="w-10 h-10 rounded-full border border-outline-variant flex items-center justify-center text-on-surface-variant hover:bg-primary-container/10 hover:text-primary transition-all cursor-pointer">
+<span class="material-symbols-outlined text-[20px]">public</span>
+</div>
+<div class="w-10 h-10 rounded-full border border-outline-variant flex items-center justify-center text-on-surface-variant hover:bg-primary-container/10 hover:text-primary transition-all cursor-pointer">
+<span class="material-symbols-outlined text-[20px]">chat</span>
+</div>
+</div>
+</div>
+</footer>
+<script>
+        // Simple micro-interaction for active filtering
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', (e) => {
+                const label = e.target.closest('label');
+                if(e.target.checked) {
+                    label.querySelector('span').classList.add('text-primary', 'font-semibold');
+                } else {
+                    label.querySelector('span').classList.remove('text-primary', 'font-semibold');
+                }
+            });
+        });
+
+        // Sticky header transparency effect
+        window.addEventListener('scroll', () => {
+            const header = document.querySelector('header');
+            if (window.scrollY > 20) {
+                header.classList.add('shadow-md');
+                header.style.backgroundColor = 'rgba(251, 248, 252, 0.95)';
+                header.style.backdropFilter = 'blur(8px)';
+            } else {
+                header.classList.remove('shadow-md');
+                header.style.backgroundColor = '#fbf8fc';
+                header.style.backdropFilter = 'none';
+            }
+        });
+    </script>
+</body></html>
