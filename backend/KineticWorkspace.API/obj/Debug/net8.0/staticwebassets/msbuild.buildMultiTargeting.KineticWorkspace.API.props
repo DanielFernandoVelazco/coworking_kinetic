@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="../build/KineticWorkspace.API.props" />
+</Project>
