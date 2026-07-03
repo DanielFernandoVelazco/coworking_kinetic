@@ -1,0 +1,17 @@
+# En la raíz del proyecto backend
+echo "**/bin/
+**/obj/
+**/logs/
+**/*.user
+**/*.suo
+**/*.db
+**/*.db-shm
+**/*.db-wal
+**/appsettings.Production.json
+**/.env
+**/.idea/
+**/.vs/
+**/node_modules/
+**/wwwroot/
+**/publish/
+" > .gitignore
