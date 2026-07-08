@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="../buildMultiTargeting/KineticWorkspace.API.props" />
-</Project>

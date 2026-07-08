@@ -1,5 +1,4 @@
-# En la raíz del proyecto backend
-echo "**/bin/
+**/bin/
 **/obj/
 **/logs/
 **/*.user
@@ -14,4 +13,3 @@ echo "**/bin/
 **/node_modules/
 **/wwwroot/
 **/publish/
-" > .gitignore
