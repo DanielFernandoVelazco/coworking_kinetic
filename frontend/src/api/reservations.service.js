@@ -1,0 +1,69 @@
+import axiosInstance from './axios.config';
+
+const API_URL = '/reservations';
+
+export const reservationsService = {
+    // Obtener reservas del usuario
+    getUserReservations: async () => {
+        const response = await axiosInstance.get(`${API_URL}/user`);
+        return response.data;
+    },
+
+    // Obtener reservas próximas
+    getUpcoming: async (limit = 10) => {
+        const response = await axiosInstance.get(`${API_URL}/user/upcoming`, {
+            params: { limit }
+        });
+        return response.data;
+    },
+
+    // Obtener resumen de reservas
+    getSummary: async () => {
+        const response = await axiosInstance.get(`${API_URL}/user/summary`);
+        return response.data;
+    },
+
+    // Obtener reservas de un espacio
+    getBySpace: async (spaceId) => {
+        const response = await axiosInstance.get(`${API_URL}/space/${spaceId}`);
+        return response.data;
+    },
+
+    // Obtener reserva por ID
+    getById: async (id) => {
+        const response = await axiosInstance.get(`${API_URL}/${id}`);
+        return response.data;
+    },
+
+    // Crear reserva
+    create: async (reservationData) => {
+        const response = await axiosInstance.post(API_URL, reservationData);
+        return response.data;
+    },
+
+    // Actualizar reserva
+    update: async (id, reservationData) => {
+        const response = await axiosInstance.put(`${API_URL}/${id}`, reservationData);
+        return response.data;
+    },
+
+    // Cancelar reserva
+    cancel: async (id, reason) => {
+        const response = await axiosInstance.post(`${API_URL}/${id}/cancel`, { reason });
+        return response.data;
+    },
+
+    // Confirmar reserva (Admin)
+    confirm: async (id) => {
+        const response = await axiosInstance.post(`${API_URL}/${id}/confirm`);
+        return response.data;
+    },
+
+    // Obtener reservas activas (Admin)
+    getActive: async () => {
+        const response = await axiosInstance.get(`${API_URL}/active`);
+        return response.data;
+    },
+};
+
+export default reservationsService;
