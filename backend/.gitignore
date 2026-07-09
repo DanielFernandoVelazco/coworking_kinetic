@@ -1,15 +1,24 @@
-**/bin/
-**/obj/
-**/logs/
-**/*.user
-**/*.suo
-**/*.db
-**/*.db-shm
-**/*.db-wal
-**/appsettings.Production.json
-**/.env
-**/.idea/
-**/.vs/
-**/node_modules/
-**/wwwroot/
-**/publish/
+# Build
+bin/
+obj/
+publish/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+
+# Logs
+logs/
+*.log
+
+# SQLite
+*.db
+*.db-shm
+*.db-wal
+
+# Environment
+.env
+
+# Production config
+appsettings.Production.json
