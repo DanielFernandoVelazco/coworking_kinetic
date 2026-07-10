@@ -1,35 +1,16 @@
-import React from 'react';
-import { Toaster } from 'react-hot-toast';
-import { AuthProvider } from './context/AuthContext';
-import AppRoutes from './routes/AppRoutes';
+import React from 'react'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import Login from './pages/Login'
 
 function App() {
   return (
-    <AuthProvider>
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: '#1b1b1e',
-            color: '#fbf8fc',
-            borderRadius: '0.5rem',
-          },
-          success: {
-            style: {
-              background: '#a03f28',
-            },
-          },
-          error: {
-            style: {
-              background: '#ba1a1a',
-            },
-          },
-        }}
-      />
-      <AppRoutes />
-    </AuthProvider>
-  );
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/login" element={<Login />} />
+      </Routes>
+    </BrowserRouter>
+  )
 }
 
-export default App;
+export default App
