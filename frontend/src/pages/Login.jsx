@@ -1,122 +1,249 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import { useAuth } from '../context/AuthContext';
+import React, { useState } from 'react'
+import { Link } from 'react-router-dom'
 
 const Login = () => {
-    const { login } = useAuth();
-    const navigate = useNavigate();
-    const [loading, setLoading] = useState(false);
-    const { register, handleSubmit, formState: { errors } } = useForm();
+    const [email, setEmail] = useState('')
+    const [password, setPassword] = useState('')
 
-    const onSubmit = async (data) => {
-        setLoading(true);
-        const result = await login(data);
-        setLoading(false);
-
-        if (result.success) {
-            navigate('/');
-        }
-    };
+    const handleSubmit = (e) => {
+        e.preventDefault()
+        console.log('Login attempt:', { email, password })
+    }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-background px-4">
-            <div className="w-full max-w-[480px] bg-surface-container-lowest border border-outline-variant p-10 card-shadow relative z-10">
-                <div className="mb-10">
-                    <h1 className="font-headline-lg text-headline-lg text-on-surface mb-2">Welcome back</h1>
-                    <p className="font-body-md text-body-md text-on-surface-variant">
+        <div style={{
+            minHeight: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#fbf8fc',
+            padding: '0 16px'
+        }}>
+            <div style={{
+                width: '100%',
+                maxWidth: '480px',
+                backgroundColor: '#ffffff',
+                border: '1px solid #ddc0ba',
+                padding: '40px',
+                boxShadow: '0 4px 12px rgba(147, 74, 35, 0.05)',
+                borderRadius: '4px'
+            }}>
+                {/* Header */}
+                <div style={{ marginBottom: '40px' }}>
+                    <h1 style={{
+                        fontSize: '36px',
+                        fontWeight: '700',
+                        color: '#1b1b1e',
+                        marginBottom: '8px',
+                        fontFamily: 'Manrope, sans-serif',
+                        lineHeight: '44px',
+                        letterSpacing: '-0.01em'
+                    }}>
+                        Welcome back
+                    </h1>
+                    <p style={{
+                        fontSize: '16px',
+                        color: '#56423d',
+                        fontFamily: 'Work Sans, sans-serif',
+                        lineHeight: '24px'
+                    }}>
                         Access your high-performance workspace.
                     </p>
                 </div>
 
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                    <div className="space-y-1">
-                        <label className="font-label-caps text-label-caps text-on-surface-variant block" htmlFor="email">
+                {/* Form */}
+                <form onSubmit={handleSubmit}>
+                    {/* Email */}
+                    <div style={{ marginBottom: '24px' }}>
+                        <label style={{
+                            fontSize: '12px',
+                            fontFamily: 'JetBrains Mono, monospace',
+                            letterSpacing: '0.05em',
+                            color: '#56423d',
+                            display: 'block',
+                            marginBottom: '4px'
+                        }}>
                             EMAIL ADDRESS
                         </label>
                         <input
-                            className={`input-primary ${errors.email ? 'border-error' : ''}`}
-                            id="email"
                             type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
                             placeholder="executive@kinetic.com"
-                            {...register('email', {
-                                required: 'Email is required',
-                                pattern: {
-                                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                                    message: 'Invalid email address'
-                                }
-                            })}
+                            style={{
+                                width: '100%',
+                                backgroundColor: '#f5f3f6',
+                                border: 'none',
+                                borderBottom: '1px solid #ddc0ba',
+                                padding: '12px 0',
+                                color: '#1b1b1e',
+                                transition: 'all 0.3s',
+                                outline: 'none',
+                                fontFamily: 'Work Sans, sans-serif',
+                                fontSize: '16px'
+                            }}
+                            onFocus={(e) => {
+                                e.target.style.borderBottomColor = '#a03f28'
+                                e.target.style.backgroundColor = '#ffffff'
+                            }}
+                            onBlur={(e) => {
+                                e.target.style.borderBottomColor = '#ddc0ba'
+                                e.target.style.backgroundColor = '#f5f3f6'
+                            }}
                         />
-                        {errors.email && (
-                            <p className="text-error text-sm mt-1">{errors.email.message}</p>
-                        )}
                     </div>
 
-                    <div className="space-y-1">
-                        <div className="flex justify-between items-center">
-                            <label className="font-label-caps text-label-caps text-on-surface-variant block" htmlFor="password">
+                    {/* Password */}
+                    <div style={{ marginBottom: '24px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                            <label style={{
+                                fontSize: '12px',
+                                fontFamily: 'JetBrains Mono, monospace',
+                                letterSpacing: '0.05em',
+                                color: '#56423d',
+                                display: 'block'
+                            }}>
                                 PASSWORD
                             </label>
-                            <Link to="/forgot-password" className="font-body-sm text-body-sm text-primary hover:text-tertiary transition-colors">
+                            <Link to="/forgot-password" style={{
+                                fontSize: '14px',
+                                color: '#a03f28',
+                                fontFamily: 'Work Sans, sans-serif',
+                                textDecoration: 'none'
+                            }}>
                                 Forgot?
                             </Link>
                         </div>
                         <input
-                            className={`input-primary ${errors.password ? 'border-error' : ''}`}
-                            id="password"
                             type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
                             placeholder="••••••••"
-                            {...register('password', {
-                                required: 'Password is required',
-                                minLength: {
-                                    value: 6,
-                                    message: 'Password must be at least 6 characters'
-                                }
-                            })}
+                            style={{
+                                width: '100%',
+                                backgroundColor: '#f5f3f6',
+                                border: 'none',
+                                borderBottom: '1px solid #ddc0ba',
+                                padding: '12px 0',
+                                color: '#1b1b1e',
+                                transition: 'all 0.3s',
+                                outline: 'none',
+                                fontFamily: 'Work Sans, sans-serif',
+                                fontSize: '16px'
+                            }}
+                            onFocus={(e) => {
+                                e.target.style.borderBottomColor = '#a03f28'
+                                e.target.style.backgroundColor = '#ffffff'
+                            }}
+                            onBlur={(e) => {
+                                e.target.style.borderBottomColor = '#ddc0ba'
+                                e.target.style.backgroundColor = '#f5f3f6'
+                            }}
                         />
-                        {errors.password && (
-                            <p className="text-error text-sm mt-1">{errors.password.message}</p>
-                        )}
                     </div>
 
+                    {/* Submit Button */}
                     <button
                         type="submit"
-                        disabled={loading}
-                        className="w-full bg-primary text-on-primary py-4 font-headline-md text-headline-md rounded-sm hover:bg-primary-container transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        style={{
+                            width: '100%',
+                            backgroundColor: '#a03f28',
+                            color: '#ffffff',
+                            padding: '16px 0',
+                            fontSize: '24px',
+                            fontFamily: 'Manrope, sans-serif',
+                            fontWeight: '600',
+                            border: 'none',
+                            borderRadius: '2px',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s'
+                        }}
+                        onMouseEnter={(e) => e.target.style.backgroundColor = '#c0573e'}
+                        onMouseLeave={(e) => e.target.style.backgroundColor = '#a03f28'}
                     >
-                        {loading ? 'Signing in...' : 'Sign In'}
+                        Sign In
                     </button>
                 </form>
 
-                <div className="relative my-10">
-                    <div className="absolute inset-0 flex items-center">
-                        <div className="w-full border-t border-outline-variant"></div>
+                {/* Divider */}
+                <div style={{ position: 'relative', margin: '40px 0' }}>
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center' }}>
+                        <div style={{ width: '100%', borderTop: '1px solid #ddc0ba' }}></div>
                     </div>
-                    <div className="relative flex justify-center text-label-caps font-label-caps">
-                        <span className="bg-surface-container-lowest px-4 text-on-surface-variant">OR CONTINUE WITH</span>
+                    <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
+                        <span style={{
+                            backgroundColor: '#ffffff',
+                            padding: '0 16px',
+                            fontSize: '12px',
+                            fontFamily: 'JetBrains Mono, monospace',
+                            letterSpacing: '0.05em',
+                            color: '#56423d'
+                        }}>
+                            OR CONTINUE WITH
+                        </span>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                    <button className="flex items-center justify-center space-x-2 border border-outline-variant py-3 px-4 hover:bg-surface-container-low transition-colors">
-                        <span className="material-symbols-outlined text-primary">google</span>
-                        <span className="font-body-sm text-body-sm font-medium">Google</span>
+                {/* Social Buttons */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    <button style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        border: '1px solid #ddc0ba',
+                        padding: '12px 16px',
+                        backgroundColor: 'transparent',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontFamily: 'Work Sans, sans-serif',
+                        fontSize: '14px',
+                        transition: 'all 0.3s'
+                    }}
+                        onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f3f6'}
+                        onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                    >
+                        <span style={{ color: '#a03f28' }}>G</span>
+                        Google
                     </button>
-                    <button className="flex items-center justify-center space-x-2 border border-outline-variant py-3 px-4 hover:bg-surface-container-low transition-colors">
-                        <span className="material-symbols-outlined text-primary">work</span>
-                        <span className="font-body-sm text-body-sm font-medium">SSO</span>
+                    <button style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        border: '1px solid #ddc0ba',
+                        padding: '12px 16px',
+                        backgroundColor: 'transparent',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontFamily: 'Work Sans, sans-serif',
+                        fontSize: '14px',
+                        transition: 'all 0.3s'
+                    }}
+                        onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f3f6'}
+                        onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                    >
+                        <span style={{ color: '#a03f28' }}>W</span>
+                        SSO
                     </button>
                 </div>
 
-                <p className="mt-10 text-center font-body-sm text-body-sm text-on-surface-variant">
+                {/* Register Link */}
+                <p style={{
+                    marginTop: '40px',
+                    textAlign: 'center',
+                    fontSize: '14px',
+                    fontFamily: 'Work Sans, sans-serif',
+                    color: '#56423d'
+                }}>
                     New to Kinetic?{' '}
-                    <Link to="/register" className="text-primary font-bold hover:underline">
+                    <Link to="/register" style={{ color: '#a03f28', fontWeight: 'bold', textDecoration: 'none' }}>
                         Create an account
                     </Link>
                 </p>
             </div>
         </div>
-    );
-};
+    )
+}
 
-export default Login;
+export default Login
