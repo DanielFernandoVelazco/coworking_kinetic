@@ -1,34 +1,103 @@
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Work+Sans:wght@400;500&family=JetBrains+Mono:wght@500&display=swap');
+/* Las importaciones deben ir primero */
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Work+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
+/* Luego Tailwind */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  body {
-    @apply bg-background text-on-surface font-body-md antialiased;
-  }
+/* Después los estilos base */
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  font-family: 'Work Sans', sans-serif;
+  background-color: #fbf8fc;
+  color: #1b1b1e;
 }
 
-@layer components {
-  .btn-primary {
-    @apply bg-primary text-on-primary px-6 py-3 rounded-lg font-headline-md hover:bg-primary-container transition-all duration-300 active:scale-95;
-  }
-
-  .btn-secondary {
-    @apply border border-outline-variant text-on-surface px-6 py-3 rounded-lg font-body-md hover:bg-surface-container-low transition-all duration-300;
-  }
-
-  .input-primary {
-    @apply w-full bg-surface-container-low border-b border-outline-variant px-0 py-3 text-on-surface transition-all focus:border-primary focus:outline-none focus:bg-surface-container-lowest;
-  }
-
-  .card-shadow {
-    @apply shadow-[0_4px_12px_rgba(147, 74, 35, 0.05)];
-  }
+#root {
+  min-height: 100vh;
 }
 
+/* Componentes personalizados */
+.btn-primary {
+  background-color: #a03f28;
+  color: #ffffff;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  transition: all 0.3s;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background-color: #c0573e;
+}
+
+.btn-primary:active {
+  transform: scale(0.95);
+}
+
+.input-primary {
+  width: 100%;
+  background-color: #f5f3f6;
+  border: none;
+  border-bottom: 1px solid #ddc0ba;
+  padding: 0.75rem 0;
+  color: #1b1b1e;
+  transition: all 0.3s;
+  outline: none;
+  font-family: 'Work Sans', sans-serif;
+  font-size: 16px;
+}
+
+.input-primary:focus {
+  border-bottom-color: #a03f28;
+  background-color: #ffffff;
+}
+
+/* Material Icons */
 .material-symbols-outlined {
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
   vertical-align: middle;
+  line-height: 1;
+}
+
+/* Clases de utilidad */
+.text-primary {
+  color: #a03f28;
+}
+
+.bg-primary {
+  background-color: #a03f28;
+}
+
+.bg-primary:hover {
+  background-color: #c0573e;
+}
+
+.text-on-surface {
+  color: #1b1b1e;
+}
+
+.text-on-surface-variant {
+  color: #56423d;
+}
+
+.bg-surface {
+  background-color: #fbf8fc;
+}
+
+.bg-surface-container-lowest {
+  background-color: #ffffff;
+}
+
+.bg-surface-container-low {
+  background-color: #f5f3f6;
+}
+
+.border-outline-variant {
+  border-color: #ddc0ba;
 }
