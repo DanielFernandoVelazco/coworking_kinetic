@@ -1,3 +1,4 @@
+// backend/KineticWorkspace.API/Repositories/Implementations/GenericRepository.cs
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using KineticWorkspace.API.Data;
@@ -52,7 +53,16 @@ namespace KineticWorkspace.API.Repositories.Implementations
 
         public virtual async Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate)
         {
-            return await _dbSet.AnyAsync(predicate);
+            try
+            {
+                return await _dbSet.AnyAsync(predicate);
+            }
+            catch (Exception ex)
+            {
+                // Log error
+                Console.WriteLine($"Error en ExistsAsync: {ex.Message}");
+                throw;
+            }
         }
 
         public virtual async Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null)
