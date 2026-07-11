@@ -1,3 +1,4 @@
+// backend/KineticWorkspace.API/Models/Entities/User.cs
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -22,6 +23,7 @@ namespace KineticWorkspace.API.Models.Entities
         public string Email { get; set; } = string.Empty;
 
         [Required]
+        [Column("PasswordHash")]
         public string PasswordHash { get; set; } = string.Empty;
 
         [MaxLength(20)]
@@ -50,6 +52,7 @@ namespace KineticWorkspace.API.Models.Entities
         public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
         public virtual ICollection<AuditLog> AuditLogs { get; set; } = new List<AuditLog>();
 
+        [NotMapped]
         public string FullName => $"{FirstName} {LastName}";
     }
 }
