@@ -1,3 +1,4 @@
+// frontend/src/api/axios.config.js
 import axios from 'axios';
 
 // Usar la URL relativa para que el proxy de Vite funcione
@@ -8,10 +9,10 @@ const axiosInstance = axios.create({
     headers: {
         'Content-Type': 'application/json',
     },
-    timeout: 10000,
+    timeout: 30000,
 });
 
-// Interceptor para agregar el token (solo si existe)
+// Interceptor para agregar el token
 axiosInstance.interceptors.request.use(
     (config) => {
         // No agregar token para endpoints públicos
@@ -24,6 +25,8 @@ axiosInstance.interceptors.request.use(
                 config.headers.Authorization = `Bearer ${token}`;
             }
         }
+
+        console.log(`📤 ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
         return config;
     },
     (error) => {
@@ -31,17 +34,23 @@ axiosInstance.interceptors.request.use(
     }
 );
 
-// Interceptor para manejar errores de autenticación
+// Interceptor para manejar errores
 axiosInstance.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        console.log(`📥 ${response.config.method?.toUpperCase()} ${response.config.url} - ${response.status}`);
+        return response;
+    },
     async (error) => {
         const originalRequest = error.config;
 
-        // Solo intentar refresh si:
-        // 1. Es un error 401
-        // 2. No es un endpoint público
-        // 3. No se ha intentado ya
-        // 4. Hay refresh token disponible
+        // Si el error es de conexión (ECONNREFUSED)
+        if (error.code === 'ERR_NETWORK' || error.message?.includes('ECONNREFUSED')) {
+            console.error('❌ No se puede conectar con el servidor. ¿El backend está corriendo?');
+            // Mostrar mensaje amigable
+            return Promise.reject(new Error('No se pudo conectar con el servidor. Verifica que el backend esté ejecutándose.'));
+        }
+
+        // Solo intentar refresh si es 401 y no es público
         if (error.response?.status === 401 &&
             !originalRequest._retry &&
             !originalRequest._isPublic) {
@@ -51,7 +60,6 @@ axiosInstance.interceptors.response.use(
             try {
                 const refreshToken = localStorage.getItem('refreshToken');
                 if (!refreshToken) {
-                    // Si no hay refresh token, redirigir al login
                     localStorage.removeItem('accessToken');
                     localStorage.removeItem('refreshToken');
                     localStorage.removeItem('user');
@@ -70,7 +78,6 @@ axiosInstance.interceptors.response.use(
                 originalRequest.headers.Authorization = `Bearer ${accessToken}`;
                 return axiosInstance(originalRequest);
             } catch (refreshError) {
-                // Si falla el refresh, redirigir al login
                 localStorage.removeItem('accessToken');
                 localStorage.removeItem('refreshToken');
                 localStorage.removeItem('user');
@@ -79,6 +86,7 @@ axiosInstance.interceptors.response.use(
             }
         }
 
+        console.error(`❌ Error en ${error.config?.method?.toUpperCase()} ${error.config?.url}:`, error.response?.status, error.response?.data);
         return Promise.reject(error);
     }
 );
