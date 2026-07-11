@@ -1,3 +1,4 @@
+// backend/KineticWorkspace.API/Program.cs
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -62,13 +63,20 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Configurar Database Context
+// Configurar Database Context - MODO DESARROLLO
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
+{
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
     options.UseMySql(
-        builder.Configuration.GetConnectionString("DefaultConnection"),
+        connectionString,
         new MySqlServerVersion(new Version(10, 4, 32)),
         mysqlOptions => mysqlOptions.EnableRetryOnFailure()
-    ));
+    );
+
+    options.EnableSensitiveDataLogging(builder.Environment.IsDevelopment());
+    options.EnableDetailedErrors(builder.Environment.IsDevelopment());
+});
 
 // Configurar JWT
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
@@ -125,6 +133,61 @@ builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 var app = builder.Build();
 
+// 🔥 CREAR BASE DE DATOS AUTOMÁTICAMENTE EN DESARROLLO
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    try
+    {
+        logger.LogInformation("🔄 Iniciando creación/verificación de la base de datos...");
+
+        // 🔥 FUERZA la creación de la base de datos
+        var created = await dbContext.Database.EnsureCreatedAsync();
+
+        if (created)
+        {
+            logger.LogInformation("✅ Base de datos y tablas creadas exitosamente");
+        }
+        else
+        {
+            logger.LogInformation("✅ La base de datos ya existe, verificando tablas...");
+        }
+
+        // Verificar que la tabla Users existe
+        try
+        {
+            var usersCount = await dbContext.Users.CountAsync();
+            logger.LogInformation("✅ Tabla Users encontrada con {Count} registros", usersCount);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning("⚠️ Error al verificar tabla Users: {Message}", ex.Message);
+            logger.LogInformation("🔄 Recreando la base de datos...");
+
+            await dbContext.Database.EnsureDeletedAsync();
+            await dbContext.Database.EnsureCreatedAsync();
+
+            logger.LogInformation("✅ Base de datos recreada exitosamente");
+        }
+
+        logger.LogInformation("📊 Base de datos lista para usar");
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "❌ Error al inicializar la base de datos");
+        logger.LogError(ex, "Error detallado: {Message}", ex.Message);
+
+        if (ex.InnerException != null)
+        {
+            logger.LogError("Inner Exception: {Message}", ex.InnerException.Message);
+        }
+
+        logger.LogWarning("⚠️ La aplicación continuará, pero la base de datos puede no estar disponible");
+    }
+}
+
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
@@ -132,31 +195,21 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// Configurar CORS
 app.UseCors("AllowAll");
-
-// Configurar Serilog request logging
 app.UseSerilogRequestLogging();
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 
-// Crear base de datos si no existe
-using (var scope = app.Services.CreateScope())
-{
-    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    try
-    {
-        dbContext.Database.Migrate();
-        Console.WriteLine("✅ Base de datos migrada exitosamente");
-    }
-    catch (Exception ex)
-    {
-        Log.Error(ex, "Error al migrar la base de datos");
-        Console.WriteLine($"❌ Error al migrar: {ex.Message}");
-    }
-}
+// Mostrar información de inicio
+var appLogger = app.Services.GetRequiredService<ILogger<Program>>();
+appLogger.LogInformation("🚀 Kinetic Workspace API iniciada en http://localhost:5134");
+appLogger.LogInformation("📚 Swagger disponible en http://localhost:5134/swagger");
 
 app.Run();
