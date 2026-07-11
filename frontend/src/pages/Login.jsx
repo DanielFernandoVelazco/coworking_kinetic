@@ -1,14 +1,26 @@
-import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
+// src/pages/Login.jsx
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
-    const [email, setEmail] = useState('')
-    const [password, setPassword] = useState('')
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+    const { login } = useAuth();
+    const navigate = useNavigate();
 
-    const handleSubmit = (e) => {
-        e.preventDefault()
-        console.log('Login attempt:', { email, password })
-    }
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+
+        const result = await login({ email, password });
+        setLoading(false);
+
+        if (result.success) {
+            navigate('/');
+        }
+    };
 
     return (
         <div style={{
@@ -83,12 +95,12 @@ const Login = () => {
                                 fontSize: '16px'
                             }}
                             onFocus={(e) => {
-                                e.target.style.borderBottomColor = '#a03f28'
-                                e.target.style.backgroundColor = '#ffffff'
+                                e.target.style.borderBottomColor = '#a03f28';
+                                e.target.style.backgroundColor = '#ffffff';
                             }}
                             onBlur={(e) => {
-                                e.target.style.borderBottomColor = '#ddc0ba'
-                                e.target.style.backgroundColor = '#f5f3f6'
+                                e.target.style.borderBottomColor = '#ddc0ba';
+                                e.target.style.backgroundColor = '#f5f3f6';
                             }}
                         />
                     </div>
@@ -132,12 +144,12 @@ const Login = () => {
                                 fontSize: '16px'
                             }}
                             onFocus={(e) => {
-                                e.target.style.borderBottomColor = '#a03f28'
-                                e.target.style.backgroundColor = '#ffffff'
+                                e.target.style.borderBottomColor = '#a03f28';
+                                e.target.style.backgroundColor = '#ffffff';
                             }}
                             onBlur={(e) => {
-                                e.target.style.borderBottomColor = '#ddc0ba'
-                                e.target.style.backgroundColor = '#f5f3f6'
+                                e.target.style.borderBottomColor = '#ddc0ba';
+                                e.target.style.backgroundColor = '#f5f3f6';
                             }}
                         />
                     </div>
@@ -145,6 +157,7 @@ const Login = () => {
                     {/* Submit Button */}
                     <button
                         type="submit"
+                        disabled={loading}
                         style={{
                             width: '100%',
                             backgroundColor: '#a03f28',
@@ -155,13 +168,18 @@ const Login = () => {
                             fontWeight: '600',
                             border: 'none',
                             borderRadius: '2px',
-                            cursor: 'pointer',
-                            transition: 'all 0.3s'
+                            cursor: loading ? 'not-allowed' : 'pointer',
+                            transition: 'all 0.3s',
+                            opacity: loading ? 0.7 : 1
                         }}
-                        onMouseEnter={(e) => e.target.style.backgroundColor = '#c0573e'}
-                        onMouseLeave={(e) => e.target.style.backgroundColor = '#a03f28'}
+                        onMouseEnter={(e) => {
+                            if (!loading) e.target.style.backgroundColor = '#c0573e';
+                        }}
+                        onMouseLeave={(e) => {
+                            if (!loading) e.target.style.backgroundColor = '#a03f28';
+                        }}
                     >
-                        Sign In
+                        {loading ? 'Signing in...' : 'Sign In'}
                     </button>
                 </form>
 
@@ -243,7 +261,7 @@ const Login = () => {
                 </p>
             </div>
         </div>
-    )
-}
+    );
+};
 
-export default Login
+export default Login;
