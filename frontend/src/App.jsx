@@ -1,15 +1,24 @@
+// src/App.jsx
 import React from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import Login from './pages/Login'
+import { AuthProvider } from './context/AuthContext'
+import AppRoutes from './AppRoutes'
+import { Toaster } from 'react-hot-toast'
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/login" element={<Login />} />
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <AppRoutes />
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: '#363636',
+            color: '#fff',
+          },
+        }}
+      />
+    </AuthProvider>
   )
 }
 
