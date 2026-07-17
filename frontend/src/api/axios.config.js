@@ -1,8 +1,25 @@
 // frontend/src/api/axios.config.js
 import axios from 'axios';
 
-// Usar la URL relativa para que el proxy de Vite funcione
 const API_URL = '/api';
+
+// ✅ Definir endpoints públicos
+const PUBLIC_ENDPOINTS = [
+    '/auth/login',
+    '/auth/register',
+    '/auth/forgot-password',
+    '/auth/refresh-token',
+    '/spaces',
+    '/spaces/featured',
+    '/spaces/available',
+    '/spaces/search',
+    '/spaces/city',
+];
+
+const isPublicEndpoint = (url) => {
+    if (!url) return false;
+    return PUBLIC_ENDPOINTS.some(endpoint => url.includes(endpoint));
+};
 
 const axiosInstance = axios.create({
     baseURL: API_URL,
@@ -12,13 +29,12 @@ const axiosInstance = axios.create({
     timeout: 30000,
 });
 
-// Interceptor para agregar el token
+// Interceptor de Request
 axiosInstance.interceptors.request.use(
     (config) => {
-        // No agregar token para endpoints públicos
-        const publicEndpoints = ['/auth/login', '/auth/register', '/auth/forgot-password', '/spaces/featured', '/spaces/available'];
-        const isPublic = publicEndpoints.some(endpoint => config.url?.includes(endpoint));
+        const isPublic = isPublicEndpoint(config.url);
 
+        // ✅ Solo agregar token si NO es público
         if (!isPublic) {
             const token = localStorage.getItem('accessToken');
             if (token) {
@@ -26,15 +42,13 @@ axiosInstance.interceptors.request.use(
             }
         }
 
-        console.log(`📤 ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
+        console.log(`📤 ${config.method?.toUpperCase()} ${config.baseURL}${config.url} ${isPublic ? '(público)' : '(autenticado)'}`);
         return config;
     },
-    (error) => {
-        return Promise.reject(error);
-    }
+    (error) => Promise.reject(error)
 );
 
-// Interceptor para manejar errores
+// Interceptor de Response
 axiosInstance.interceptors.response.use(
     (response) => {
         console.log(`📥 ${response.config.method?.toUpperCase()} ${response.config.url} - ${response.status}`);
@@ -43,28 +57,23 @@ axiosInstance.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
 
-        // Si el error es de conexión (ECONNREFUSED)
+        // ❌ Error de conexión
         if (error.code === 'ERR_NETWORK' || error.message?.includes('ECONNREFUSED')) {
-            console.error('❌ No se puede conectar con el servidor. ¿El backend está corriendo?');
-            // Mostrar mensaje amigable
+            console.error('❌ No se puede conectar con el servidor');
             return Promise.reject(new Error('No se pudo conectar con el servidor. Verifica que el backend esté ejecutándose.'));
         }
 
-        // Solo intentar refresh si es 401 y no es público
+        // 🔄 Refresh token solo si es 401 y NO es público
         if (error.response?.status === 401 &&
             !originalRequest._retry &&
-            !originalRequest._isPublic) {
+            !isPublicEndpoint(originalRequest.url)) {
 
             originalRequest._retry = true;
 
             try {
                 const refreshToken = localStorage.getItem('refreshToken');
                 if (!refreshToken) {
-                    localStorage.removeItem('accessToken');
-                    localStorage.removeItem('refreshToken');
-                    localStorage.removeItem('user');
-                    window.location.href = '/login';
-                    return Promise.reject(new Error('No refresh token available'));
+                    throw new Error('No refresh token');
                 }
 
                 const response = await axios.post(`${API_URL}/auth/refresh-token`, {
@@ -78,6 +87,7 @@ axiosInstance.interceptors.response.use(
                 originalRequest.headers.Authorization = `Bearer ${accessToken}`;
                 return axiosInstance(originalRequest);
             } catch (refreshError) {
+                // ❌ Refresh falló - redirigir a login
                 localStorage.removeItem('accessToken');
                 localStorage.removeItem('refreshToken');
                 localStorage.removeItem('user');
@@ -86,7 +96,8 @@ axiosInstance.interceptors.response.use(
             }
         }
 
-        console.error(`❌ Error en ${error.config?.method?.toUpperCase()} ${error.config?.url}:`, error.response?.status, error.response?.data);
+        console.error(`❌ Error en ${error.config?.method?.toUpperCase()} ${error.config?.url}:`,
+            error.response?.status, error.response?.data);
         return Promise.reject(error);
     }
 );
