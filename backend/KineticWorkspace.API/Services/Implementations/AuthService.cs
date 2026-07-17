@@ -1,3 +1,4 @@
+// backend/KineticWorkspace.API/Services/Implementations/AuthService.cs
 using AutoMapper;
 using KineticWorkspace.API.Helpers;
 using KineticWorkspace.API.Models.DTOs.Auth;
@@ -153,38 +154,16 @@ namespace KineticWorkspace.API.Services.Implementations
             return true;
         }
 
+        // ✅ VERSIÓN CORRECTA - Solo UNA definición de cada método
         public async Task<bool> ForgotPasswordAsync(string email)
         {
             var user = await _userRepository.GetByEmailAsync(email);
             if (user == null) return true;
 
             // TODO: Implementar envío de email
-            // Por ahora solo retornamos true
-            await Task.CompletedTask; // Corregir warning CS1998
-            return true;
-        }
-
-        public async Task<bool> ResetPasswordAsync(string token, string newPassword)
-        {
-            // TODO: Implementar reset de password
-            await Task.CompletedTask; // Corregir warning CS1998
-            return true;
-        }
-
-        public async Task<bool> VerifyEmailAsync(string email, string token)
-        {
-            // TODO: Implementar verificación de email
-            await Task.CompletedTask; // Corregir warning CS1998
-            return true;
-        }
-
-        public async Task<bool> ForgotPasswordAsync(string email)
-        {
-            var user = await _userRepository.GetByEmailAsync(email);
-            if (user == null) return true;
-
-            // TODO: Implementar envío de email
-            // Enviar email con token de reset
+            // 1. Generar token de reset
+            // 2. Guardar token en base de datos
+            // 3. Enviar email con link de reset
             await Task.CompletedTask;
             return true;
         }
@@ -192,9 +171,11 @@ namespace KineticWorkspace.API.Services.Implementations
         public async Task<bool> ResetPasswordAsync(string token, string newPassword)
         {
             // TODO: Implementar reset de password
-            // 1. Validar token
-            // 2. Buscar usuario por token
+            // 1. Validar token en base de datos
+            // 2. Si es válido, buscar usuario
             // 3. Actualizar contraseña
+            // 4. Revocar todos los refresh tokens
+            // 5. Marcar token como usado
             await Task.CompletedTask;
             return true;
         }
@@ -202,7 +183,7 @@ namespace KineticWorkspace.API.Services.Implementations
         public async Task<bool> VerifyEmailAsync(string email, string token)
         {
             // TODO: Implementar verificación de email
-            // 1. Validar token
+            // 1. Validar token en base de datos
             // 2. Marcar email como verificado
             await Task.CompletedTask;
             return true;
