@@ -1,122 +1,497 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import spacesService from '../api/spaces.service';
-import toast from 'react-hot-toast';
+import React, { useState, useEffect } from 'react'
+import { useAuth } from '../context/AuthContext'
+import { Link, useNavigate } from 'react-router-dom'
+import axios from 'axios'
 
 const Home = () => {
-    const [featuredSpaces, setFeaturedSpaces] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const { user, logout } = useAuth()
+    const navigate = useNavigate()
+    const [spaces, setSpaces] = useState([])
+    const [loading, setLoading] = useState(true)
+    const [stats, setStats] = useState({
+        totalReservations: 0,
+        activeReservations: 0,
+        totalSpent: 0
+    })
 
     useEffect(() => {
-        const fetchFeaturedSpaces = async () => {
+        const fetchData = async () => {
             try {
-                const spaces = await spacesService.getFeatured(6);
-                setFeaturedSpaces(spaces);
-            } catch (error) {
-                console.error('Error fetching featured spaces:', error);
-                toast.error('Error al cargar los espacios destacados');
-            } finally {
-                setLoading(false);
-            }
-        };
+                // Obtener espacios destacados
+                const spacesResponse = await axios.get('/api/spaces/featured?limit=3')
+                setSpaces(spacesResponse.data || [])
 
-        fetchFeaturedSpaces();
-    }, []);
+                // Obtener resumen de reservaciones
+                try {
+                    const reservationsResponse = await axios.get('/api/reservations/user/summary')
+                    setStats({
+                        totalReservations: reservationsResponse.data?.totalReservations || 0,
+                        activeReservations: reservationsResponse.data?.activeReservations || 0,
+                        totalSpent: reservationsResponse.data?.totalSpent || 0
+                    })
+                } catch (err) {
+                    // Si no hay reservaciones, usar valores por defecto
+                    setStats({ totalReservations: 0, activeReservations: 0, totalSpent: 0 })
+                }
+            } catch (error) {
+                console.error('Error fetching data:', error)
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        fetchData()
+    }, [])
+
+    const handleLogout = () => {
+        logout()
+        navigate('/login')
+    }
 
     return (
-        <div className="max-w-container-max mx-auto px-margin-desktop">
-            {/* Hero Section */}
-            <section className="relative pt-20 pb-32">
-                <div className="grid grid-cols-12 gap-gutter items-center">
-                    <div className="col-span-7">
-                        <span className="font-label-caps text-label-caps text-tertiary mb-4 block">
-                            PREMIUM SHARED WORKSPACES
-                        </span>
-                        <h1 className="font-display-xl text-display-xl text-on-surface mb-6">
-                            Deep work, designed <br /> for <span className="text-primary italic">performance</span>.
-                        </h1>
-                        <p className="font-body-lg text-body-lg text-on-surface-variant max-w-xl mb-12">
-                            Bespoke environments for architects, creators, and executive teams.
-                            Experience the tactile warmth of a private study with the agility of a global network.
-                        </p>
-                        <Link to="/catalog" className="btn-primary inline-block">
-                            Explore Spaces
-                        </Link>
+        <div style={{
+            minHeight: '100vh',
+            backgroundColor: '#fbf8fc'
+        }}>
+            {/* Navbar */}
+            <nav style={{
+                backgroundColor: '#ffffff',
+                borderBottom: '1px solid #ddc0ba',
+                padding: '16px 40px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                position: 'sticky',
+                top: 0,
+                zIndex: 100
+            }}>
+                <div style={{
+                    fontSize: '24px',
+                    fontWeight: '700',
+                    color: '#a03f28',
+                    fontFamily: 'Manrope, sans-serif'
+                }}>
+                    Kinetic Workspace
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <span style={{ color: '#56423d', fontFamily: 'Work Sans, sans-serif' }}>
+                        {user?.firstName} {user?.lastName}
+                    </span>
+                    <button
+                        onClick={handleLogout}
+                        style={{
+                            backgroundColor: '#a03f28',
+                            color: '#ffffff',
+                            padding: '8px 20px',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontFamily: 'Work Sans, sans-serif',
+                            fontSize: '14px',
+                            transition: 'all 0.3s'
+                        }}
+                        onMouseEnter={(e) => e.target.style.backgroundColor = '#c0573e'}
+                        onMouseLeave={(e) => e.target.style.backgroundColor = '#a03f28'}
+                    >
+                        Logout
+                    </button>
+                </div>
+            </nav>
+
+            <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px' }}>
+                {/* Hero Section */}
+                <div style={{
+                    background: 'linear-gradient(135deg, #a03f28 0%, #c0573e 100%)',
+                    borderRadius: '12px',
+                    padding: '48px',
+                    marginBottom: '40px',
+                    color: '#ffffff'
+                }}>
+                    <h1 style={{
+                        fontSize: '48px',
+                        fontWeight: '700',
+                        fontFamily: 'Manrope, sans-serif',
+                        marginBottom: '8px'
+                    }}>
+                        Welcome back, {user?.firstName}! 👋
+                    </h1>
+                    <p style={{
+                        fontSize: '18px',
+                        fontFamily: 'Work Sans, sans-serif',
+                        opacity: 0.9
+                    }}>
+                        Your high-performance workspace awaits.
+                    </p>
+                </div>
+
+                {/* Stats Cards */}
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                    gap: '24px',
+                    marginBottom: '40px'
+                }}>
+                    <div style={{
+                        backgroundColor: '#ffffff',
+                        padding: '24px',
+                        borderRadius: '8px',
+                        border: '1px solid #ddc0ba',
+                        boxShadow: '0 4px 12px rgba(147, 74, 35, 0.05)',
+                        textAlign: 'center'
+                    }}>
+                        <div style={{
+                            fontSize: '32px',
+                            fontWeight: '700',
+                            color: '#a03f28',
+                            fontFamily: 'Manrope, sans-serif'
+                        }}>
+                            {stats.totalReservations}
+                        </div>
+                        <div style={{
+                            fontSize: '14px',
+                            color: '#56423d',
+                            fontFamily: 'Work Sans, sans-serif'
+                        }}>
+                            Total Bookings
+                        </div>
                     </div>
-                    <div className="col-span-5">
-                        <div className="relative h-[400px] rounded-xl overflow-hidden shadow-tactile border border-outline-variant bg-surface-container">
-                            <div className="absolute inset-0 bg-gradient-to-tr from-primary/20 to-transparent pointer-events-none"></div>
-                            <div className="absolute inset-0 flex items-center justify-center text-on-surface-variant font-headline-lg">
-                                Hero Image Placeholder
-                            </div>
+
+                    <div style={{
+                        backgroundColor: '#ffffff',
+                        padding: '24px',
+                        borderRadius: '8px',
+                        border: '1px solid #ddc0ba',
+                        boxShadow: '0 4px 12px rgba(147, 74, 35, 0.05)',
+                        textAlign: 'center'
+                    }}>
+                        <div style={{
+                            fontSize: '32px',
+                            fontWeight: '700',
+                            color: '#a03f28',
+                            fontFamily: 'Manrope, sans-serif'
+                        }}>
+                            {stats.activeReservations}
+                        </div>
+                        <div style={{
+                            fontSize: '14px',
+                            color: '#56423d',
+                            fontFamily: 'Work Sans, sans-serif'
+                        }}>
+                            Active Bookings
+                        </div>
+                    </div>
+
+                    <div style={{
+                        backgroundColor: '#ffffff',
+                        padding: '24px',
+                        borderRadius: '8px',
+                        border: '1px solid #ddc0ba',
+                        boxShadow: '0 4px 12px rgba(147, 74, 35, 0.05)',
+                        textAlign: 'center'
+                    }}>
+                        <div style={{
+                            fontSize: '32px',
+                            fontWeight: '700',
+                            color: '#a03f28',
+                            fontFamily: 'Manrope, sans-serif'
+                        }}>
+                            ${stats.totalSpent.toFixed(0)}
+                        </div>
+                        <div style={{
+                            fontSize: '14px',
+                            color: '#56423d',
+                            fontFamily: 'Work Sans, sans-serif'
+                        }}>
+                            Total Spent
                         </div>
                     </div>
                 </div>
-            </section>
 
-            {/* Featured Spaces */}
-            <section className="py-16">
-                <div className="flex justify-between items-end mb-12">
-                    <div>
-                        <h2 className="font-headline-lg text-headline-lg text-on-surface">Curated Collections</h2>
-                        <p className="font-body-md text-on-surface-variant mt-2">
-                            Spaces optimized for focus, collaboration, and high-impact meetings.
-                        </p>
+                {/* Featured Spaces */}
+                <div style={{ marginBottom: '40px' }}>
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '20px'
+                    }}>
+                        <h2 style={{
+                            fontSize: '28px',
+                            fontWeight: '700',
+                            color: '#1b1b1e',
+                            fontFamily: 'Manrope, sans-serif'
+                        }}>
+                            Featured Spaces
+                        </h2>
+                        <Link to="/catalog" style={{
+                            color: '#a03f28',
+                            textDecoration: 'none',
+                            fontFamily: 'Work Sans, sans-serif'
+                        }}>
+                            View All →
+                        </Link>
                     </div>
-                    <Link to="/catalog" className="text-primary font-body-md hover:underline">
-                        View All →
-                    </Link>
+
+                    {loading ? (
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                            gap: '24px'
+                        }}>
+                            {[1, 2, 3].map((i) => (
+                                <div key={i} style={{
+                                    backgroundColor: '#f5f3f6',
+                                    height: '250px',
+                                    borderRadius: '8px',
+                                    animation: 'pulse 1.5s ease-in-out infinite'
+                                }} />
+                            ))}
+                        </div>
+                    ) : spaces.length === 0 ? (
+                        <div style={{
+                            backgroundColor: '#ffffff',
+                            padding: '40px',
+                            borderRadius: '8px',
+                            border: '1px solid #ddc0ba',
+                            textAlign: 'center',
+                            color: '#56423d'
+                        }}>
+                            <p style={{ fontSize: '18px' }}>No featured spaces available yet.</p>
+                            <p style={{ fontSize: '14px' }}>Check back later!</p>
+                        </div>
+                    ) : (
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                            gap: '24px'
+                        }}>
+                            {spaces.map((space) => (
+                                <Link
+                                    key={space.id}
+                                    to={`/spaces/${space.id}`}
+                                    style={{
+                                        textDecoration: 'none',
+                                        backgroundColor: '#ffffff',
+                                        borderRadius: '8px',
+                                        border: '1px solid #ddc0ba',
+                                        overflow: 'hidden',
+                                        transition: 'all 0.3s',
+                                        boxShadow: '0 4px 12px rgba(147, 74, 35, 0.05)'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(-4px)'
+                                        e.currentTarget.style.boxShadow = '0 8px 24px rgba(147, 74, 35, 0.15)'
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.transform = 'translateY(0)'
+                                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(147, 74, 35, 0.05)'
+                                    }}
+                                >
+                                    <div style={{
+                                        height: '200px',
+                                        backgroundColor: '#f5f3f6',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        color: '#56423d',
+                                        fontSize: '14px'
+                                    }}>
+                                        {space.imageUrls?.[0] ? (
+                                            <img
+                                                src={space.imageUrls[0]}
+                                                alt={space.name}
+                                                style={{
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    objectFit: 'cover'
+                                                }}
+                                            />
+                                        ) : (
+                                            '📸 Space Image'
+                                        )}
+                                    </div>
+                                    <div style={{ padding: '20px' }}>
+                                        <h3 style={{
+                                            fontSize: '20px',
+                                            fontWeight: '600',
+                                            color: '#1b1b1e',
+                                            fontFamily: 'Manrope, sans-serif',
+                                            marginBottom: '4px'
+                                        }}>
+                                            {space.name}
+                                        </h3>
+                                        <p style={{
+                                            fontSize: '14px',
+                                            color: '#56423d',
+                                            fontFamily: 'Work Sans, sans-serif'
+                                        }}>
+                                            {space.city}, {space.country}
+                                        </p>
+                                        <div style={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            marginTop: '12px'
+                                        }}>
+                                            <span style={{
+                                                fontSize: '20px',
+                                                fontWeight: '700',
+                                                color: '#a03f28',
+                                                fontFamily: 'Manrope, sans-serif'
+                                            }}>
+                                                ${space.pricePerHour}
+                                                <span style={{
+                                                    fontSize: '14px',
+                                                    fontWeight: '400',
+                                                    color: '#56423d'
+                                                }}>
+                                                    /hr
+                                                </span>
+                                            </span>
+                                            <span style={{
+                                                fontSize: '14px',
+                                                color: '#56423d',
+                                                fontFamily: 'Work Sans, sans-serif'
+                                            }}>
+                                                ⭐ {space.averageRating?.toFixed(1) || 'New'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
-                {loading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
-                        {[1, 2, 3].map((i) => (
-                            <div key={i} className="bg-surface-container-low rounded-xl h-80 animate-pulse"></div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
-                        {featuredSpaces.map((space) => (
-                            <Link
-                                key={space.id}
-                                to={`/spaces/${space.id}`}
-                                className="group bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant hover:shadow-xl transition-all duration-300"
-                            >
-                                <div className="h-56 bg-surface-container relative overflow-hidden">
-                                    <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/20"></div>
-                                    <div className="absolute inset-0 flex items-center justify-center text-on-surface-variant">
-                                        Space Image
-                                    </div>
-                                    {space.isFeatured && (
-                                        <span className="absolute top-4 left-4 bg-primary text-on-primary px-3 py-1 font-label-caps text-label-caps rounded-full">
-                                            Featured
-                                        </span>
-                                    )}
-                                </div>
-                                <div className="p-6">
-                                    <h3 className="font-headline-md text-headline-md text-on-surface group-hover:text-primary transition-colors">
-                                        {space.name}
-                                    </h3>
-                                    <p className="text-body-sm text-on-surface-variant mt-1">
-                                        {space.city}, {space.country}
-                                    </p>
-                                    <div className="flex justify-between items-center mt-4">
-                                        <span className="font-headline-md text-primary">
-                                            ${space.pricePerHour}
-                                            <span className="text-body-sm text-on-surface-variant font-body-sm"> /hr</span>
-                                        </span>
-                                        <span className="text-body-sm text-on-surface-variant">
-                                            ⭐ {space.averageRating?.toFixed(1) || 'N/A'}
-                                        </span>
-                                    </div>
-                                </div>
-                            </Link>
-                        ))}
-                    </div>
-                )}
-            </section>
-        </div>
-    );
-};
+                {/* Quick Actions */}
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                    gap: '24px'
+                }}>
+                    <Link to="/catalog" style={{
+                        textDecoration: 'none',
+                        backgroundColor: '#ffffff',
+                        padding: '24px',
+                        borderRadius: '8px',
+                        border: '1px solid #ddc0ba',
+                        textAlign: 'center',
+                        transition: 'all 0.3s',
+                        boxShadow: '0 4px 12px rgba(147, 74, 35, 0.05)'
+                    }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-2px)'
+                            e.currentTarget.style.boxShadow = '0 8px 24px rgba(147, 74, 35, 0.12)'
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)'
+                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(147, 74, 35, 0.05)'
+                        }}
+                    >
+                        <div style={{ fontSize: '32px', marginBottom: '8px' }}>🏢</div>
+                        <div style={{
+                            fontSize: '16px',
+                            fontWeight: '600',
+                            color: '#1b1b1e',
+                            fontFamily: 'Manrope, sans-serif'
+                        }}>
+                            Browse Spaces
+                        </div>
+                        <div style={{
+                            fontSize: '14px',
+                            color: '#56423d',
+                            fontFamily: 'Work Sans, sans-serif'
+                        }}>
+                            Find your perfect workspace
+                        </div>
+                    </Link>
 
-export default Home;
+                    <Link to="/profile" style={{
+                        textDecoration: 'none',
+                        backgroundColor: '#ffffff',
+                        padding: '24px',
+                        borderRadius: '8px',
+                        border: '1px solid #ddc0ba',
+                        textAlign: 'center',
+                        transition: 'all 0.3s',
+                        boxShadow: '0 4px 12px rgba(147, 74, 35, 0.05)'
+                    }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-2px)'
+                            e.currentTarget.style.boxShadow = '0 8px 24px rgba(147, 74, 35, 0.12)'
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)'
+                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(147, 74, 35, 0.05)'
+                        }}
+                    >
+                        <div style={{ fontSize: '32px', marginBottom: '8px' }}>👤</div>
+                        <div style={{
+                            fontSize: '16px',
+                            fontWeight: '600',
+                            color: '#1b1b1e',
+                            fontFamily: 'Manrope, sans-serif'
+                        }}>
+                            My Profile
+                        </div>
+                        <div style={{
+                            fontSize: '14px',
+                            color: '#56423d',
+                            fontFamily: 'Work Sans, sans-serif'
+                        }}>
+                            View and edit your profile
+                        </div>
+                    </Link>
+
+                    <Link to="/reservations" style={{
+                        textDecoration: 'none',
+                        backgroundColor: '#ffffff',
+                        padding: '24px',
+                        borderRadius: '8px',
+                        border: '1px solid #ddc0ba',
+                        textAlign: 'center',
+                        transition: 'all 0.3s',
+                        boxShadow: '0 4px 12px rgba(147, 74, 35, 0.05)'
+                    }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-2px)'
+                            e.currentTarget.style.boxShadow = '0 8px 24px rgba(147, 74, 35, 0.12)'
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)'
+                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(147, 74, 35, 0.05)'
+                        }}
+                    >
+                        <div style={{ fontSize: '32px', marginBottom: '8px' }}>📅</div>
+                        <div style={{
+                            fontSize: '16px',
+                            fontWeight: '600',
+                            color: '#1b1b1e',
+                            fontFamily: 'Manrope, sans-serif'
+                        }}>
+                            My Reservations
+                        </div>
+                        <div style={{
+                            fontSize: '14px',
+                            color: '#56423d',
+                            fontFamily: 'Work Sans, sans-serif'
+                        }}>
+                            View your booking history
+                        </div>
+                    </Link>
+                </div>
+            </div>
+
+            {/* Animación de pulse para loading */}
+            <style>{`
+        @keyframes pulse {
+          0% { opacity: 1; }
+          50% { opacity: 0.5; }
+          100% { opacity: 1; }
+        }
+      `}</style>
+        </div>
+    )
+}
+
+export default Home
