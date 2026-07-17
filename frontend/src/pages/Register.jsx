@@ -1,255 +1,409 @@
-// frontend/src/pages/Register.jsx
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import toast from 'react-hot-toast';
+import React, { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import axios from 'axios'
 
 const Register = () => {
-    const { register: registerUser } = useAuth();
-    const navigate = useNavigate();
-    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate()
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState('')
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
         email: '',
         password: '',
         confirmPassword: '',
-        company: '',
-        phoneNumber: '',
-        jobTitle: ''
-    });
-    const [errors, setErrors] = useState({});
-
-    const validateForm = () => {
-        const newErrors = {};
-        if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
-        if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
-        if (!formData.email.trim()) newErrors.email = 'Email is required';
-        if (!formData.password) newErrors.password = 'Password is required';
-        if (formData.password.length < 6) newErrors.password = 'Password must be at least 6 characters';
-        if (formData.password !== formData.confirmPassword) {
-            newErrors.confirmPassword = 'Passwords do not match';
-        }
-        return newErrors;
-    };
+        company: ''
+    })
 
     const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-        // Limpiar error del campo
-        if (errors[name]) {
-            setErrors(prev => ({ ...prev, [name]: '' }));
-        }
-    };
+        setFormData({
+            ...formData,
+            [e.target.name]: e.target.value
+        })
+    }
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
+        e.preventDefault()
+        setError('')
+        setLoading(true)
 
-        const validationErrors = validateForm();
-        if (Object.keys(validationErrors).length > 0) {
-            setErrors(validationErrors);
-            toast.error('Please fix the form errors');
-            return;
+        // Validar que las contraseñas coincidan
+        if (formData.password !== formData.confirmPassword) {
+            setError('Las contraseñas no coinciden')
+            setLoading(false)
+            return
         }
 
-        setLoading(true);
+        // Validar longitud de contraseña
+        if (formData.password.length < 6) {
+            setError('La contraseña debe tener al menos 6 caracteres')
+            setLoading(false)
+            return
+        }
 
         try {
-            // Preparar datos para la API
-            const registerData = {
-                firstName: formData.firstName.trim(),
-                lastName: formData.lastName.trim(),
-                email: formData.email.trim(),
-                password: formData.password,
-                company: formData.company.trim() || undefined,
-                phoneNumber: formData.phoneNumber.trim() || undefined,
-                jobTitle: formData.jobTitle.trim() || undefined
-            };
+            const { confirmPassword, ...userData } = formData
+            const response = await axios.post('/api/auth/register', userData)
 
-            console.log('📝 Registrando usuario:', { email: registerData.email });
-
-            const result = await registerUser(registerData);
-
-            if (result.success) {
-                toast.success('¡Registro exitoso! Bienvenido a Kinetic Workspace');
-                navigate('/');
-            } else {
-                console.error('❌ Error en registro:', result.error);
+            if (response.data) {
+                // Si el registro es exitoso, redirigir al login
+                navigate('/login', { state: { message: 'Registro exitoso. Ahora puedes iniciar sesión.' } })
             }
         } catch (error) {
-            console.error('❌ Error inesperado:', error);
-            toast.error('Error al registrar usuario');
+            const message = error.response?.data?.message || 'Error al registrar usuario'
+            setError(message)
         } finally {
-            setLoading(false);
+            setLoading(false)
         }
-    };
+    }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-background px-4 py-8">
-            <div className="w-full max-w-[480px] bg-surface-container-lowest border border-outline-variant p-10 card-shadow">
-                <div className="mb-8">
-                    <h1 className="font-headline-lg text-headline-lg text-on-surface mb-2">Create Account</h1>
-                    <p className="font-body-md text-body-md text-on-surface-variant">
+        <div style={{
+            minHeight: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#fbf8fc',
+            padding: '20px 16px'
+        }}>
+            <div style={{
+                width: '100%',
+                maxWidth: '480px',
+                backgroundColor: '#ffffff',
+                border: '1px solid #ddc0ba',
+                padding: '40px',
+                boxShadow: '0 4px 12px rgba(147, 74, 35, 0.05)',
+                borderRadius: '4px',
+                maxHeight: '90vh',
+                overflowY: 'auto'
+            }}>
+                <div style={{ marginBottom: '32px' }}>
+                    <h1 style={{
+                        fontSize: '36px',
+                        fontWeight: '700',
+                        color: '#1b1b1e',
+                        marginBottom: '8px',
+                        fontFamily: 'Manrope, sans-serif',
+                        lineHeight: '44px',
+                        letterSpacing: '-0.01em'
+                    }}>
+                        Create Account
+                    </h1>
+                    <p style={{
+                        fontSize: '16px',
+                        color: '#56423d',
+                        fontFamily: 'Work Sans, sans-serif',
+                        lineHeight: '24px'
+                    }}>
                         Join the Kinetic Workspace community
                     </p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                            <label className="font-label-caps text-label-caps text-on-surface-variant block" htmlFor="firstName">
-                                FIRST NAME *
+                {error && (
+                    <div style={{
+                        backgroundColor: '#ffdad6',
+                        color: '#ba1a1a',
+                        padding: '12px',
+                        borderRadius: '4px',
+                        marginBottom: '16px',
+                        fontSize: '14px',
+                        fontFamily: 'Work Sans, sans-serif'
+                    }}>
+                        {error}
+                    </div>
+                )}
+
+                <form onSubmit={handleSubmit}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                        <div style={{ marginBottom: '16px' }}>
+                            <label style={{
+                                fontSize: '12px',
+                                fontFamily: 'JetBrains Mono, monospace',
+                                letterSpacing: '0.05em',
+                                color: '#56423d',
+                                display: 'block',
+                                marginBottom: '4px'
+                            }}>
+                                FIRST NAME
                             </label>
                             <input
-                                className={`w-full bg-surface-container-low border-b border-outline-variant px-0 py-3 text-on-surface transition-all focus:border-primary focus:outline-none ${errors.firstName ? 'border-error' : ''}`}
-                                id="firstName"
-                                name="firstName"
                                 type="text"
-                                placeholder="John"
+                                name="firstName"
                                 value={formData.firstName}
                                 onChange={handleChange}
+                                placeholder="John"
+                                required
+                                style={{
+                                    width: '100%',
+                                    backgroundColor: '#f5f3f6',
+                                    border: 'none',
+                                    borderBottom: '1px solid #ddc0ba',
+                                    padding: '12px 0',
+                                    color: '#1b1b1e',
+                                    transition: 'all 0.3s',
+                                    outline: 'none',
+                                    fontFamily: 'Work Sans, sans-serif',
+                                    fontSize: '16px'
+                                }}
+                                onFocus={(e) => {
+                                    e.target.style.borderBottomColor = '#a03f28'
+                                    e.target.style.backgroundColor = '#ffffff'
+                                }}
+                                onBlur={(e) => {
+                                    e.target.style.borderBottomColor = '#ddc0ba'
+                                    e.target.style.backgroundColor = '#f5f3f6'
+                                }}
                             />
-                            {errors.firstName && (
-                                <p className="text-error text-sm mt-1">{errors.firstName}</p>
-                            )}
                         </div>
 
-                        <div className="space-y-1">
-                            <label className="font-label-caps text-label-caps text-on-surface-variant block" htmlFor="lastName">
-                                LAST NAME *
+                        <div style={{ marginBottom: '16px' }}>
+                            <label style={{
+                                fontSize: '12px',
+                                fontFamily: 'JetBrains Mono, monospace',
+                                letterSpacing: '0.05em',
+                                color: '#56423d',
+                                display: 'block',
+                                marginBottom: '4px'
+                            }}>
+                                LAST NAME
                             </label>
                             <input
-                                className={`w-full bg-surface-container-low border-b border-outline-variant px-0 py-3 text-on-surface transition-all focus:border-primary focus:outline-none ${errors.lastName ? 'border-error' : ''}`}
-                                id="lastName"
-                                name="lastName"
                                 type="text"
-                                placeholder="Doe"
+                                name="lastName"
                                 value={formData.lastName}
                                 onChange={handleChange}
+                                placeholder="Doe"
+                                required
+                                style={{
+                                    width: '100%',
+                                    backgroundColor: '#f5f3f6',
+                                    border: 'none',
+                                    borderBottom: '1px solid #ddc0ba',
+                                    padding: '12px 0',
+                                    color: '#1b1b1e',
+                                    transition: 'all 0.3s',
+                                    outline: 'none',
+                                    fontFamily: 'Work Sans, sans-serif',
+                                    fontSize: '16px'
+                                }}
+                                onFocus={(e) => {
+                                    e.target.style.borderBottomColor = '#a03f28'
+                                    e.target.style.backgroundColor = '#ffffff'
+                                }}
+                                onBlur={(e) => {
+                                    e.target.style.borderBottomColor = '#ddc0ba'
+                                    e.target.style.backgroundColor = '#f5f3f6'
+                                }}
                             />
-                            {errors.lastName && (
-                                <p className="text-error text-sm mt-1">{errors.lastName}</p>
-                            )}
                         </div>
                     </div>
 
-                    <div className="space-y-1">
-                        <label className="font-label-caps text-label-caps text-on-surface-variant block" htmlFor="email">
-                            EMAIL ADDRESS *
+                    <div style={{ marginBottom: '16px' }}>
+                        <label style={{
+                            fontSize: '12px',
+                            fontFamily: 'JetBrains Mono, monospace',
+                            letterSpacing: '0.05em',
+                            color: '#56423d',
+                            display: 'block',
+                            marginBottom: '4px'
+                        }}>
+                            EMAIL ADDRESS
                         </label>
                         <input
-                            className={`w-full bg-surface-container-low border-b border-outline-variant px-0 py-3 text-on-surface transition-all focus:border-primary focus:outline-none ${errors.email ? 'border-error' : ''}`}
-                            id="email"
-                            name="email"
                             type="email"
-                            placeholder="john@kinetic.com"
+                            name="email"
                             value={formData.email}
                             onChange={handleChange}
+                            placeholder="john@kinetic.com"
+                            required
+                            style={{
+                                width: '100%',
+                                backgroundColor: '#f5f3f6',
+                                border: 'none',
+                                borderBottom: '1px solid #ddc0ba',
+                                padding: '12px 0',
+                                color: '#1b1b1e',
+                                transition: 'all 0.3s',
+                                outline: 'none',
+                                fontFamily: 'Work Sans, sans-serif',
+                                fontSize: '16px'
+                            }}
+                            onFocus={(e) => {
+                                e.target.style.borderBottomColor = '#a03f28'
+                                e.target.style.backgroundColor = '#ffffff'
+                            }}
+                            onBlur={(e) => {
+                                e.target.style.borderBottomColor = '#ddc0ba'
+                                e.target.style.backgroundColor = '#f5f3f6'
+                            }}
                         />
-                        {errors.email && (
-                            <p className="text-error text-sm mt-1">{errors.email}</p>
-                        )}
                     </div>
 
-                    <div className="space-y-1">
-                        <label className="font-label-caps text-label-caps text-on-surface-variant block" htmlFor="password">
-                            PASSWORD *
+                    <div style={{ marginBottom: '16px' }}>
+                        <label style={{
+                            fontSize: '12px',
+                            fontFamily: 'JetBrains Mono, monospace',
+                            letterSpacing: '0.05em',
+                            color: '#56423d',
+                            display: 'block',
+                            marginBottom: '4px'
+                        }}>
+                            PASSWORD
                         </label>
                         <input
-                            className={`w-full bg-surface-container-low border-b border-outline-variant px-0 py-3 text-on-surface transition-all focus:border-primary focus:outline-none ${errors.password ? 'border-error' : ''}`}
-                            id="password"
-                            name="password"
                             type="password"
-                            placeholder="••••••••"
+                            name="password"
                             value={formData.password}
                             onChange={handleChange}
+                            placeholder="••••••••"
+                            required
+                            style={{
+                                width: '100%',
+                                backgroundColor: '#f5f3f6',
+                                border: 'none',
+                                borderBottom: '1px solid #ddc0ba',
+                                padding: '12px 0',
+                                color: '#1b1b1e',
+                                transition: 'all 0.3s',
+                                outline: 'none',
+                                fontFamily: 'Work Sans, sans-serif',
+                                fontSize: '16px'
+                            }}
+                            onFocus={(e) => {
+                                e.target.style.borderBottomColor = '#a03f28'
+                                e.target.style.backgroundColor = '#ffffff'
+                            }}
+                            onBlur={(e) => {
+                                e.target.style.borderBottomColor = '#ddc0ba'
+                                e.target.style.backgroundColor = '#f5f3f6'
+                            }}
                         />
-                        {errors.password && (
-                            <p className="text-error text-sm mt-1">{errors.password}</p>
-                        )}
                     </div>
 
-                    <div className="space-y-1">
-                        <label className="font-label-caps text-label-caps text-on-surface-variant block" htmlFor="confirmPassword">
-                            CONFIRM PASSWORD *
+                    <div style={{ marginBottom: '16px' }}>
+                        <label style={{
+                            fontSize: '12px',
+                            fontFamily: 'JetBrains Mono, monospace',
+                            letterSpacing: '0.05em',
+                            color: '#56423d',
+                            display: 'block',
+                            marginBottom: '4px'
+                        }}>
+                            CONFIRM PASSWORD
                         </label>
                         <input
-                            className={`w-full bg-surface-container-low border-b border-outline-variant px-0 py-3 text-on-surface transition-all focus:border-primary focus:outline-none ${errors.confirmPassword ? 'border-error' : ''}`}
-                            id="confirmPassword"
-                            name="confirmPassword"
                             type="password"
-                            placeholder="••••••••"
+                            name="confirmPassword"
                             value={formData.confirmPassword}
                             onChange={handleChange}
+                            placeholder="••••••••"
+                            required
+                            style={{
+                                width: '100%',
+                                backgroundColor: '#f5f3f6',
+                                border: 'none',
+                                borderBottom: '1px solid #ddc0ba',
+                                padding: '12px 0',
+                                color: '#1b1b1e',
+                                transition: 'all 0.3s',
+                                outline: 'none',
+                                fontFamily: 'Work Sans, sans-serif',
+                                fontSize: '16px'
+                            }}
+                            onFocus={(e) => {
+                                e.target.style.borderBottomColor = '#a03f28'
+                                e.target.style.backgroundColor = '#ffffff'
+                            }}
+                            onBlur={(e) => {
+                                e.target.style.borderBottomColor = '#ddc0ba'
+                                e.target.style.backgroundColor = '#f5f3f6'
+                            }}
                         />
-                        {errors.confirmPassword && (
-                            <p className="text-error text-sm mt-1">{errors.confirmPassword}</p>
-                        )}
                     </div>
 
-                    <div className="space-y-1">
-                        <label className="font-label-caps text-label-caps text-on-surface-variant block" htmlFor="company">
+                    <div style={{ marginBottom: '24px' }}>
+                        <label style={{
+                            fontSize: '12px',
+                            fontFamily: 'JetBrains Mono, monospace',
+                            letterSpacing: '0.05em',
+                            color: '#56423d',
+                            display: 'block',
+                            marginBottom: '4px'
+                        }}>
                             COMPANY (Optional)
                         </label>
                         <input
-                            className="w-full bg-surface-container-low border-b border-outline-variant px-0 py-3 text-on-surface transition-all focus:border-primary focus:outline-none"
-                            id="company"
-                            name="company"
                             type="text"
-                            placeholder="Your Company"
+                            name="company"
                             value={formData.company}
                             onChange={handleChange}
-                        />
-                    </div>
-
-                    <div className="space-y-1">
-                        <label className="font-label-caps text-label-caps text-on-surface-variant block" htmlFor="phoneNumber">
-                            PHONE NUMBER (Optional)
-                        </label>
-                        <input
-                            className="w-full bg-surface-container-low border-b border-outline-variant px-0 py-3 text-on-surface transition-all focus:border-primary focus:outline-none"
-                            id="phoneNumber"
-                            name="phoneNumber"
-                            type="tel"
-                            placeholder="+1234567890"
-                            value={formData.phoneNumber}
-                            onChange={handleChange}
-                        />
-                    </div>
-
-                    <div className="space-y-1">
-                        <label className="font-label-caps text-label-caps text-on-surface-variant block" htmlFor="jobTitle">
-                            JOB TITLE (Optional)
-                        </label>
-                        <input
-                            className="w-full bg-surface-container-low border-b border-outline-variant px-0 py-3 text-on-surface transition-all focus:border-primary focus:outline-none"
-                            id="jobTitle"
-                            name="jobTitle"
-                            type="text"
-                            placeholder="Software Engineer"
-                            value={formData.jobTitle}
-                            onChange={handleChange}
+                            placeholder="Your Company"
+                            style={{
+                                width: '100%',
+                                backgroundColor: '#f5f3f6',
+                                border: 'none',
+                                borderBottom: '1px solid #ddc0ba',
+                                padding: '12px 0',
+                                color: '#1b1b1e',
+                                transition: 'all 0.3s',
+                                outline: 'none',
+                                fontFamily: 'Work Sans, sans-serif',
+                                fontSize: '16px'
+                            }}
+                            onFocus={(e) => {
+                                e.target.style.borderBottomColor = '#a03f28'
+                                e.target.style.backgroundColor = '#ffffff'
+                            }}
+                            onBlur={(e) => {
+                                e.target.style.borderBottomColor = '#ddc0ba'
+                                e.target.style.backgroundColor = '#f5f3f6'
+                            }}
                         />
                     </div>
 
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-primary text-on-primary py-4 font-headline-md text-headline-md rounded-sm hover:bg-primary-container transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        style={{
+                            width: '100%',
+                            backgroundColor: '#a03f28',
+                            color: '#ffffff',
+                            padding: '16px 0',
+                            fontSize: '24px',
+                            fontFamily: 'Manrope, sans-serif',
+                            fontWeight: '600',
+                            border: 'none',
+                            borderRadius: '2px',
+                            cursor: loading ? 'not-allowed' : 'pointer',
+                            transition: 'all 0.3s',
+                            opacity: loading ? 0.7 : 1
+                        }}
+                        onMouseEnter={(e) => {
+                            if (!loading) e.target.style.backgroundColor = '#c0573e'
+                        }}
+                        onMouseLeave={(e) => {
+                            if (!loading) e.target.style.backgroundColor = '#a03f28'
+                        }}
                     >
                         {loading ? 'Creating account...' : 'Create Account'}
                     </button>
                 </form>
 
-                <p className="mt-8 text-center font-body-sm text-body-sm text-on-surface-variant">
+                <p style={{
+                    marginTop: '24px',
+                    textAlign: 'center',
+                    fontSize: '14px',
+                    fontFamily: 'Work Sans, sans-serif',
+                    color: '#56423d'
+                }}>
                     Already have an account?{' '}
-                    <Link to="/login" className="text-primary font-bold hover:underline">
+                    <Link to="/login" style={{ color: '#a03f28', fontWeight: 'bold', textDecoration: 'none' }}>
                         Sign in
                     </Link>
                 </p>
             </div>
         </div>
-    );
-};
+    )
+}
 
-export default Register;
+export default Register
