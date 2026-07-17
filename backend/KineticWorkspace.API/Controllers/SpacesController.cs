@@ -1,3 +1,4 @@
+// backend/KineticWorkspace.API/Controllers/SpacesController.cs
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using KineticWorkspace.API.Models.DTOs.Spaces;
@@ -7,7 +8,7 @@ namespace KineticWorkspace.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
+    // [Authorize] // <-- QUITAR ESTO
     public class SpacesController : ControllerBase
     {
         private readonly ISpaceService _spaceService;
@@ -19,37 +20,9 @@ namespace KineticWorkspace.API.Controllers
             _logger = logger;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAllSpaces()
-        {
-            try
-            {
-                var spaces = await _spaceService.GetAllSpacesAsync();
-                return Ok(spaces);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al obtener todos los espacios");
-                return StatusCode(500, new { message = "Error interno del servidor" });
-            }
-        }
-
-        [HttpGet("available")]
-        public async Task<IActionResult> GetAvailableSpaces([FromQuery] DateTime startTime, [FromQuery] DateTime endTime)
-        {
-            try
-            {
-                var spaces = await _spaceService.GetAvailableSpacesAsync(startTime, endTime);
-                return Ok(spaces);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al obtener espacios disponibles");
-                return StatusCode(500, new { message = "Error interno del servidor" });
-            }
-        }
-
+        // ✅ Endpoint público - No requiere autenticación
         [HttpGet("featured")]
+        [AllowAnonymous] // <-- AGREGAR ESTO
         public async Task<IActionResult> GetFeaturedSpaces([FromQuery] int limit = 10)
         {
             try
@@ -64,37 +37,26 @@ namespace KineticWorkspace.API.Controllers
             }
         }
 
-        [HttpGet("city/{city}")]
-        public async Task<IActionResult> GetSpacesByCity(string city)
+        // ✅ Endpoint público - No requiere autenticación
+        [HttpGet]
+        [AllowAnonymous] // <-- AGREGAR ESTO
+        public async Task<IActionResult> GetAllSpaces()
         {
             try
             {
-                var spaces = await _spaceService.GetSpacesByCityAsync(city);
+                var spaces = await _spaceService.GetAllSpacesAsync();
                 return Ok(spaces);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener espacios por ciudad: {City}", city);
+                _logger.LogError(ex, "Error al obtener todos los espacios");
                 return StatusCode(500, new { message = "Error interno del servidor" });
             }
         }
 
-        [HttpGet("search")]
-        public async Task<IActionResult> SearchSpaces([FromQuery] string term, [FromQuery] string? city = null, [FromQuery] string? type = null)
-        {
-            try
-            {
-                var spaces = await _spaceService.SearchSpacesAsync(term, city, type);
-                return Ok(spaces);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al buscar espacios: {Term}", term);
-                return StatusCode(500, new { message = "Error interno del servidor" });
-            }
-        }
-
+        // ✅ Endpoint público - No requiere autenticación
         [HttpGet("{id}")]
+        [AllowAnonymous] // <-- AGREGAR ESTO
         public async Task<IActionResult> GetSpaceById(int id)
         {
             try
@@ -112,6 +74,75 @@ namespace KineticWorkspace.API.Controllers
             }
         }
 
+        // ✅ Endpoint público - No requiere autenticación
+        [HttpGet("available")]
+        [AllowAnonymous] // <-- AGREGAR ESTO
+        public async Task<IActionResult> GetAvailableSpaces([FromQuery] DateTime startTime, [FromQuery] DateTime endTime)
+        {
+            try
+            {
+                var spaces = await _spaceService.GetAvailableSpacesAsync(startTime, endTime);
+                return Ok(spaces);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener espacios disponibles");
+                return StatusCode(500, new { message = "Error interno del servidor" });
+            }
+        }
+
+        // ✅ Endpoint público - No requiere autenticación
+        [HttpGet("city/{city}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetSpacesByCity(string city)
+        {
+            try
+            {
+                var spaces = await _spaceService.GetSpacesByCityAsync(city);
+                return Ok(spaces);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener espacios por ciudad: {City}", city);
+                return StatusCode(500, new { message = "Error interno del servidor" });
+            }
+        }
+
+        // ✅ Endpoint público - No requiere autenticación
+        [HttpGet("search")]
+        [AllowAnonymous]
+        public async Task<IActionResult> SearchSpaces([FromQuery] string term, [FromQuery] string? city = null, [FromQuery] string? type = null)
+        {
+            try
+            {
+                var spaces = await _spaceService.SearchSpacesAsync(term, city, type);
+                return Ok(spaces);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al buscar espacios: {Term}", term);
+                return StatusCode(500, new { message = "Error interno del servidor" });
+            }
+        }
+
+        // ✅ Endpoint público - No requiere autenticación
+        [HttpGet("{id}/availability")]
+        [AllowAnonymous]
+        public async Task<IActionResult> CheckAvailability(int id, [FromQuery] DateTime startTime, [FromQuery] DateTime endTime)
+        {
+            try
+            {
+                var isAvailable = await _spaceService.CheckAvailabilityAsync(id, startTime, endTime);
+                return Ok(new { spaceId = id, isAvailable });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al verificar disponibilidad: {Id}", id);
+                return StatusCode(500, new { message = "Error interno del servidor" });
+            }
+        }
+
+        // ⚠️ Solo Admin - Requiere autenticación
         [HttpPost]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateSpace([FromBody] SpaceRequestDto request)
@@ -128,6 +159,7 @@ namespace KineticWorkspace.API.Controllers
             }
         }
 
+        // ⚠️ Solo Admin - Requiere autenticación
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateSpace(int id, [FromBody] SpaceRequestDto request)
@@ -147,6 +179,7 @@ namespace KineticWorkspace.API.Controllers
             }
         }
 
+        // ⚠️ Solo Admin - Requiere autenticación
         [HttpDelete("{id}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteSpace(int id)
@@ -162,21 +195,6 @@ namespace KineticWorkspace.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al eliminar espacio: {Id}", id);
-                return StatusCode(500, new { message = "Error interno del servidor" });
-            }
-        }
-
-        [HttpGet("{id}/availability")]
-        public async Task<IActionResult> CheckAvailability(int id, [FromQuery] DateTime startTime, [FromQuery] DateTime endTime)
-        {
-            try
-            {
-                var isAvailable = await _spaceService.CheckAvailabilityAsync(id, startTime, endTime);
-                return Ok(new { spaceId = id, isAvailable });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al verificar disponibilidad: {Id}", id);
                 return StatusCode(500, new { message = "Error interno del servidor" });
             }
         }
