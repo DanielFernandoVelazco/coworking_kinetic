@@ -17,31 +17,30 @@ const Home = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Obtener espacios destacados
-                const spacesResponse = await axios.get('/api/spaces/featured?limit=3')
-                setSpaces(spacesResponse.data || [])
-
-                // Obtener resumen de reservaciones
-                try {
-                    const reservationsResponse = await axios.get('/api/reservations/user/summary')
-                    setStats({
-                        totalReservations: reservationsResponse.data?.totalReservations || 0,
-                        activeReservations: reservationsResponse.data?.activeReservations || 0,
-                        totalSpent: reservationsResponse.data?.totalSpent || 0
-                    })
-                } catch (err) {
-                    // Si no hay reservaciones, usar valores por defecto
-                    setStats({ totalReservations: 0, activeReservations: 0, totalSpent: 0 })
-                }
+                // ✅ Obtener espacios destacados - No requiere autenticación
+                const spacesResponse = await axios.get('/api/spaces/featured?limit=3');
+                setSpaces(spacesResponse.data || []);
             } catch (error) {
-                console.error('Error fetching data:', error)
+                console.error('Error fetching spaces:', error);
+                if (error.message?.includes('conectar con el servidor')) {
+                    toast.error('No se pudo conectar con el servidor. ¿El backend está corriendo?');
+                } else if (error.response?.status === 401) {
+                    // Si el backend todavía devuelve 401, mostrar mensaje amigable
+                    toast.error('Los espacios destacados no están disponibles. Por favor, inicia sesión.');
+                    // Usar datos de ejemplo para desarrollo
+                    setSpaces([
+                        { id: 1, name: 'Premium Office', city: 'Stockholm', country: 'Sweden', pricePerHour: 45, averageRating: 4.8 },
+                        { id: 2, name: 'Creative Space', city: 'Gothenburg', country: 'Sweden', pricePerHour: 35, averageRating: 4.5 },
+                        { id: 3, name: 'Meeting Room', city: 'Malmö', country: 'Sweden', pricePerHour: 25, averageRating: 4.2 },
+                    ]);
+                }
             } finally {
-                setLoading(false)
+                setLoading(false);
             }
-        }
+        };
 
-        fetchData()
-    }, [])
+        fetchData();
+    }, []);
 
     const handleLogout = () => {
         logout()
