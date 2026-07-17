@@ -25,19 +25,22 @@ namespace KineticWorkspace.API.Mappings
             CreateMap<Space, SpaceResponseDto>()
                 .ForMember(dest => dest.Amenities,
                     opt => opt.MapFrom(src => src.Amenities.Select(a => a.Name).ToList()))
-                .ForMember(dest => dest.ImageUrls,
-                    opt => opt.MapFrom(src =>
-                        string.IsNullOrEmpty(src.ImageUrls)
-                            ? new List<string>()
-                            : src.ImageUrls.Split(',').ToList()));
+                .ForMember(dest => dest.ImageUrls, opt => opt.Ignore())
+                .AfterMap((src, dest) =>
+                {
+                    dest.ImageUrls = string.IsNullOrEmpty(src.ImageUrls)
+                        ? new List<string>()
+                        : src.ImageUrls.Split(',').ToList();
+                });
 
             CreateMap<SpaceRequestDto, Space>()
-                .ForMember(dest => dest.ImageUrls,
-                    opt => opt.MapFrom(src =>
-                        src.ImageUrls != null && src.ImageUrls.Any()
-                            ? string.Join(",", src.ImageUrls)
-                            : null))
-                .ForMember(dest => dest.Amenities, opt => opt.Ignore());
+                .ForMember(dest => dest.Amenities, opt => opt.Ignore())
+                .AfterMap((src, dest) =>
+                {
+                    dest.ImageUrls = src.ImageUrls != null && src.ImageUrls.Any()
+                        ? string.Join(",", src.ImageUrls)
+                        : null;
+                });
 
             // ==================== RESERVATION MAPPINGS ====================
             CreateMap<Reservation, ReservationResponseDto>()
@@ -47,11 +50,7 @@ namespace KineticWorkspace.API.Mappings
                     opt => opt.MapFrom(src => src.Space.Name))
                 .ForMember(dest => dest.SpaceType,
                     opt => opt.MapFrom(src => src.Space.Type))
-                .ForMember(dest => dest.SpaceImageUrl,
-                    opt => opt.MapFrom(src =>
-                        string.IsNullOrEmpty(src.Space.ImageUrls)
-                            ? null
-                            : src.Space.ImageUrls.Split(',').FirstOrDefault()))
+                .ForMember(dest => dest.SpaceImageUrl, opt => opt.Ignore())
                 .ForMember(dest => dest.PaidAmount,
                     opt => opt.MapFrom(src => src.Payments.Any()
                         ? src.Payments.Sum(p => p.Amount)
@@ -59,7 +58,13 @@ namespace KineticWorkspace.API.Mappings
                 .ForMember(dest => dest.PaymentStatus,
                     opt => opt.MapFrom(src => src.Payments.Any()
                         ? src.Payments.First().Status
-                        : null));
+                        : null))
+                .AfterMap((src, dest) =>
+                {
+                    dest.SpaceImageUrl = string.IsNullOrEmpty(src.Space.ImageUrls)
+                        ? null
+                        : src.Space.ImageUrls.Split(',').FirstOrDefault();
+                });
 
             CreateMap<ReservationRequestDto, Reservation>();
 
