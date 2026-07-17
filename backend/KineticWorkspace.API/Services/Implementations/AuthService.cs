@@ -177,5 +177,35 @@ namespace KineticWorkspace.API.Services.Implementations
             await Task.CompletedTask; // Corregir warning CS1998
             return true;
         }
+
+        public async Task<bool> ForgotPasswordAsync(string email)
+        {
+            var user = await _userRepository.GetByEmailAsync(email);
+            if (user == null) return true;
+
+            // TODO: Implementar envío de email
+            // Enviar email con token de reset
+            await Task.CompletedTask;
+            return true;
+        }
+
+        public async Task<bool> ResetPasswordAsync(string token, string newPassword)
+        {
+            // TODO: Implementar reset de password
+            // 1. Validar token
+            // 2. Buscar usuario por token
+            // 3. Actualizar contraseña
+            await Task.CompletedTask;
+            return true;
+        }
+
+        public async Task<bool> VerifyEmailAsync(string email, string token)
+        {
+            // TODO: Implementar verificación de email
+            // 1. Validar token
+            // 2. Marcar email como verificado
+            await Task.CompletedTask;
+            return true;
+        }
     }
 }
