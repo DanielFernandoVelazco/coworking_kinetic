@@ -13,18 +13,20 @@ namespace KineticWorkspace.API.Repositories.Implementations
 
         public async Task<IEnumerable<Space>> GetAvailableSpacesAsync(DateTime startTime, DateTime endTime)
         {
+            // ✅ OPTIMIZADO: Usar NOT EXISTS en SQL en lugar de traer todos los espacios
             var spaces = await _dbSet
-                .Include(s => s.Reservations)
                 .Include(s => s.Reviews)
                 .Where(s => s.IsActive && s.IsAvailable && s.DeletedAt == null)
+                .Where(s => !s.Reservations.Any(r =>
+                    r.Status != "Cancelled" &&
+                    r.Status != "Completed" &&
+                    ((startTime >= r.StartTime && startTime < r.EndTime) ||
+                     (endTime > r.StartTime && endTime <= r.EndTime) ||
+                     (startTime <= r.StartTime && endTime >= r.EndTime))))
+                .OrderByDescending(s => s.Reviews.Average(r => r.Rating)) // ✅ FIX: Calcular en SQL
                 .ToListAsync();
 
-            return spaces.Where(s => !s.Reservations.Any(r =>
-                r.Status != "Cancelled" &&
-                r.Status != "Completed" &&
-                ((startTime >= r.StartTime && startTime < r.EndTime) ||
-                 (endTime > r.StartTime && endTime <= r.EndTime) ||
-                 (startTime <= r.StartTime && endTime >= r.EndTime))));
+            return spaces;
         }
 
         public async Task<IEnumerable<Space>> GetSpacesByTypeAsync(string type)
@@ -32,7 +34,7 @@ namespace KineticWorkspace.API.Repositories.Implementations
             return await _dbSet
                 .Include(s => s.Reviews)
                 .Where(s => s.Type == type && s.IsActive && s.DeletedAt == null)
-                .OrderByDescending(s => s.AverageRating)
+                .OrderByDescending(s => s.Reviews.Average(r => r.Rating)) // ✅ FIX
                 .ToListAsync();
         }
 
@@ -41,7 +43,7 @@ namespace KineticWorkspace.API.Repositories.Implementations
             return await _dbSet
                 .Include(s => s.Reviews)
                 .Where(s => s.IsFeatured && s.IsActive && s.IsAvailable && s.DeletedAt == null)
-                .OrderByDescending(s => s.AverageRating)
+                .OrderByDescending(s => s.Reviews.Average(r => r.Rating)) // ✅ FIX
                 .Take(limit)
                 .ToListAsync();
         }
@@ -51,7 +53,7 @@ namespace KineticWorkspace.API.Repositories.Implementations
             return await _dbSet
                 .Include(s => s.Reviews)
                 .Where(s => s.City == city && s.IsActive && s.DeletedAt == null)
-                .OrderByDescending(s => s.AverageRating)
+                .OrderByDescending(s => s.Reviews.Average(r => r.Rating)) // ✅ FIX
                 .ToListAsync();
         }
 
@@ -114,7 +116,7 @@ namespace KineticWorkspace.API.Repositories.Implementations
             }
 
             return await query
-                .OrderByDescending(s => s.AverageRating)
+                .OrderByDescending(s => s.Reviews.Average(r => r.Rating)) // ✅ FIX
                 .ToListAsync();
         }
 
@@ -130,15 +132,13 @@ namespace KineticWorkspace.API.Repositories.Implementations
 
         public async Task<IEnumerable<Space>> GetSpacesWithHighRatingAsync(int minRating = 4, int limit = 10)
         {
-            var spaces = await _dbSet
+            return await _dbSet
                 .Include(s => s.Reviews)
-                .Where(s => s.IsActive && s.DeletedAt == null && s.Reviews.Any())
+                .Where(s => s.IsActive && s.DeletedAt == null)
+                .Where(s => s.Reviews.Any())
+                .OrderByDescending(s => s.Reviews.Average(r => r.Rating)) // ✅ FIX
+                .Take(limit)
                 .ToListAsync();
-
-            return spaces
-                .Where(s => s.AverageRating >= minRating)
-                .OrderByDescending(s => s.AverageRating)
-                .Take(limit);
         }
     }
 }
