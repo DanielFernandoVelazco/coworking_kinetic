@@ -10,12 +10,18 @@ namespace KineticWorkspace.API.Services.Implementations
     public class UserService : IUserService
     {
         private readonly IUserRepository _userRepository;
+        private readonly IRefreshTokenRepository _refreshTokenRepository; // ✅ AGREGADO
         private readonly IMapper _mapper;
         private readonly ILogger<UserService> _logger;
 
-        public UserService(IUserRepository userRepository, IMapper mapper, ILogger<UserService> logger)
+        public UserService(
+            IUserRepository userRepository,
+            IRefreshTokenRepository refreshTokenRepository, // ✅ AGREGADO
+            IMapper mapper,
+            ILogger<UserService> logger)
         {
             _userRepository = userRepository;
+            _refreshTokenRepository = refreshTokenRepository; // ✅ AGREGADO
             _mapper = mapper;
             _logger = logger;
         }
@@ -60,7 +66,12 @@ namespace KineticWorkspace.API.Services.Implementations
             user.UpdatedAt = DateTime.UtcNow;
 
             await _userRepository.UpdateAsync(user);
-            _logger.LogInformation("Contraseña cambiada para usuario: {Email}", user.Email);
+
+            // ✅ REVOCAR TODOS LOS REFRESH TOKENS DEL USUARIO
+            // Esto invalida cualquier sesión activa, forzando un nuevo login
+            await _refreshTokenRepository.RevokeAllByUserIdAsync(userId);
+
+            _logger.LogInformation("Contraseña cambiada para usuario: {Email}. Todos los refresh tokens fueron revocados.", user.Email);
 
             return true;
         }
@@ -85,6 +96,9 @@ namespace KineticWorkspace.API.Services.Implementations
             user.DeletedAt = DateTime.UtcNow;
             user.IsActive = false;
             await _userRepository.UpdateAsync(user);
+
+            // ✅ REVOCAR TODOS LOS REFRESH TOKENS AL ELIMINAR USUARIO
+            await _refreshTokenRepository.RevokeAllByUserIdAsync(id);
 
             _logger.LogInformation("Usuario eliminado: {Email}", user.Email);
             return true;
