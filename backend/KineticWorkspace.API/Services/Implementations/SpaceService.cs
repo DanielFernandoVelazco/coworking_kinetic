@@ -19,16 +19,33 @@ namespace KineticWorkspace.API.Services.Implementations
             _logger = logger;
         }
 
-        public async Task<IEnumerable<SpaceResponseDto>> GetAllSpacesAsync()
+        /// <summary>
+        /// Obtiene todos los espacios con paginación
+        /// </summary>
+        public async Task<IEnumerable<SpaceResponseDto>> GetAllSpacesAsync(int page = 1, int pageSize = 20)
         {
-            var spaces = await _spaceRepository.GetAllAsync();
+            // Validar parámetros
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 20;
+            if (pageSize > 100) pageSize = 100;
+
+            var spaces = await _spaceRepository.GetPagedAsync(page, pageSize);
             return _mapper.Map<IEnumerable<SpaceResponseDto>>(spaces);
         }
 
-        public async Task<IEnumerable<SpaceResponseDto>> GetAvailableSpacesAsync(DateTime startTime, DateTime endTime)
+        /// <summary>
+        /// Obtiene espacios disponibles con paginación
+        /// </summary>
+        public async Task<IEnumerable<SpaceResponseDto>> GetAvailableSpacesAsync(DateTime startTime, DateTime endTime, int page = 1, int pageSize = 20)
         {
+            // Validar parámetros
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 20;
+            if (pageSize > 100) pageSize = 100;
+
             var spaces = await _spaceRepository.GetAvailableSpacesAsync(startTime, endTime);
-            return _mapper.Map<IEnumerable<SpaceResponseDto>>(spaces);
+            var pagedSpaces = spaces.Skip((page - 1) * pageSize).Take(pageSize);
+            return _mapper.Map<IEnumerable<SpaceResponseDto>>(pagedSpaces);
         }
 
         public async Task<SpaceResponseDto?> GetSpaceByIdAsync(int id)
