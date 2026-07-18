@@ -6,6 +6,7 @@ using Microsoft.OpenApi.Models;
 using System.Text;
 using KineticWorkspace.API.Data;
 using KineticWorkspace.API.Helpers;
+using KineticWorkspace.API.Mappings; // ← AGREGAR ESTE USING
 using KineticWorkspace.API.Repositories.Implementations;
 using KineticWorkspace.API.Repositories.Interfaces;
 using KineticWorkspace.API.Services.Implementations;
@@ -128,8 +129,9 @@ builder.Services.AddScoped<IUserService, UserService>();
 // Registrar Helpers
 builder.Services.AddScoped<JwtHelper>();
 
-// Registrar AutoMapper
-builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+// ✅ REGISTRAR AUTOMAPPER - Solución al problema #1
+// En lugar de escanear todos los ensamblados, apuntamos directamente al ensamblado donde está MappingProfile
+builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly);
 
 var app = builder.Build();
 
