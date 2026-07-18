@@ -43,8 +43,44 @@ namespace KineticWorkspace.API.Services.Implementations
             return reservation != null ? _mapper.Map<ReservationResponseDto>(reservation) : null;
         }
 
+        /// <summary>
+        /// Valida que las fechas de una reserva sean correctas
+        /// </summary>
+        private void ValidateReservationDates(DateTime startTime, DateTime endTime)
+        {
+            // ✅ Validar que StartTime sea anterior a EndTime
+            if (startTime >= endTime)
+            {
+                throw new InvalidOperationException("La fecha de inicio debe ser anterior a la fecha de fin");
+            }
+
+            // ✅ Validar que StartTime no sea en el pasado (con margen de 1 minuto para evitar problemas de redondeo)
+            var minStartTime = DateTime.UtcNow.AddMinutes(-1);
+            if (startTime < minStartTime)
+            {
+                throw new InvalidOperationException("No se pueden hacer reservas en el pasado");
+            }
+
+            // ✅ Validar duración máxima (opcional - 30 días máximo)
+            var maxDuration = TimeSpan.FromDays(30);
+            if (endTime - startTime > maxDuration)
+            {
+                throw new InvalidOperationException($"La duración máxima de una reserva es de {maxDuration.Days} días");
+            }
+
+            // ✅ Validar duración mínima (opcional - 30 minutos mínimo)
+            var minDuration = TimeSpan.FromMinutes(30);
+            if (endTime - startTime < minDuration)
+            {
+                throw new InvalidOperationException($"La duración mínima de una reserva es de {minDuration.Minutes} minutos");
+            }
+        }
+
         public async Task<ReservationResponseDto> CreateReservationAsync(ReservationRequestDto request, int userId)
         {
+            // ✅ Validar fechas
+            ValidateReservationDates(request.StartTime, request.EndTime);
+
             // Verificar disponibilidad
             var isAvailable = await _spaceRepository.IsSpaceAvailableAsync(request.SpaceId, request.StartTime, request.EndTime);
             if (!isAvailable)
@@ -58,9 +94,15 @@ namespace KineticWorkspace.API.Services.Implementations
                 throw new InvalidOperationException("Espacio no encontrado");
             }
 
-            // Calcular precio total
-            var hours = (request.EndTime - request.StartTime).TotalHours;
-            var totalPrice = space.PricePerHour * (decimal)hours;
+            // ✅ Validar que el número de invitados no exceda la capacidad
+            var numberOfGuests = request.NumberOfGuests ?? space.Capacity;
+            if (numberOfGuests > space.Capacity)
+            {
+                throw new InvalidOperationException($"La capacidad máxima del espacio es de {space.Capacity} personas. Has seleccionado {numberOfGuests}.");
+            }
+
+            // Calcular precio total (considerando precio por día si está disponible)
+            var totalPrice = CalculateTotalPrice(space, request.StartTime, request.EndTime);
 
             var reservation = new Reservation
             {
@@ -70,7 +112,7 @@ namespace KineticWorkspace.API.Services.Implementations
                 EndTime = request.EndTime,
                 Status = "Pending",
                 Notes = request.Notes,
-                NumberOfGuests = request.NumberOfGuests ?? space.Capacity,
+                NumberOfGuests = numberOfGuests,
                 TotalPrice = totalPrice,
                 CreatedAt = DateTime.UtcNow
             };
@@ -83,6 +125,9 @@ namespace KineticWorkspace.API.Services.Implementations
 
         public async Task<ReservationResponseDto?> UpdateReservationAsync(int id, ReservationRequestDto request, int userId)
         {
+            // ✅ Validar fechas
+            ValidateReservationDates(request.StartTime, request.EndTime);
+
             var reservation = await _reservationRepository.GetReservationWithDetailsAsync(id);
             if (reservation == null) return null;
 
@@ -109,14 +154,20 @@ namespace KineticWorkspace.API.Services.Implementations
                 throw new InvalidOperationException("Espacio no encontrado");
             }
 
-            var hours = (request.EndTime - request.StartTime).TotalHours;
-            var totalPrice = space.PricePerHour * (decimal)hours;
+            // ✅ Validar que el número de invitados no exceda la capacidad
+            var numberOfGuests = request.NumberOfGuests ?? space.Capacity;
+            if (numberOfGuests > space.Capacity)
+            {
+                throw new InvalidOperationException($"La capacidad máxima del espacio es de {space.Capacity} personas. Has seleccionado {numberOfGuests}.");
+            }
+
+            var totalPrice = CalculateTotalPrice(space, request.StartTime, request.EndTime);
 
             reservation.SpaceId = request.SpaceId;
             reservation.StartTime = request.StartTime;
             reservation.EndTime = request.EndTime;
             reservation.Notes = request.Notes;
-            reservation.NumberOfGuests = request.NumberOfGuests;
+            reservation.NumberOfGuests = numberOfGuests;
             reservation.TotalPrice = totalPrice;
             reservation.UpdatedAt = DateTime.UtcNow;
 
@@ -124,6 +175,28 @@ namespace KineticWorkspace.API.Services.Implementations
             _logger.LogInformation("Reservación actualizada: {ReservationId}", id);
 
             return _mapper.Map<ReservationResponseDto>(reservation);
+        }
+
+        /// <summary>
+        /// Calcula el precio total considerando precio por día si está disponible
+        /// </summary>
+        private decimal CalculateTotalPrice(Space space, DateTime startTime, DateTime endTime)
+        {
+            var totalHours = (endTime - startTime).TotalHours;
+            var totalDays = (endTime.Date - startTime.Date).Days;
+
+            // Si la reserva es de 1 día o más y el espacio tiene precio por día
+            if (totalDays >= 1 && space.PricePerDay.HasValue && space.PricePerDay.Value > 0)
+            {
+                // Calcular: días completos * precio por día + horas restantes * precio por hora
+                var days = totalDays;
+                var remainingHours = totalHours % 24;
+
+                return (decimal)days * space.PricePerDay.Value + (decimal)remainingHours * space.PricePerHour;
+            }
+
+            // Si es menos de un día, usar precio por hora
+            return space.PricePerHour * (decimal)totalHours;
         }
 
         public async Task<bool> CancelReservationAsync(int id, int userId, string reason)
