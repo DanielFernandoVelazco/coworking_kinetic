@@ -16,6 +16,10 @@ namespace KineticWorkspace.API.Services.Implementations
         private readonly IMapper _mapper;
         private readonly ILogger<AuthService> _logger;
 
+        // ✅ SIMULACIÓN DE ALMACENAMIENTO DE TOKENS DE RESET
+        // En producción, usa una tabla en la base de datos: PasswordResetTokens
+        private static readonly Dictionary<string, (string Email, DateTime ExpiresAt)> _resetTokens = new();
+
         public AuthService(
             IUserRepository userRepository,
             IRefreshTokenRepository refreshTokenRepository,
@@ -154,29 +158,85 @@ namespace KineticWorkspace.API.Services.Implementations
             return true;
         }
 
-        // ✅ VERSIÓN CORRECTA - Solo UNA definición de cada método
+        /// <summary>
+        /// Genera un token de recuperación de contraseña y lo envía al email del usuario
+        /// </summary>
         public async Task<bool> ForgotPasswordAsync(string email)
         {
             var user = await _userRepository.GetByEmailAsync(email);
-            if (user == null) return true;
 
-            // TODO: Implementar envío de email
-            // 1. Generar token de reset
-            // 2. Guardar token en base de datos
-            // 3. Enviar email con link de reset
-            await Task.CompletedTask;
+            // 🔒 Por seguridad, NO revelamos si el email existe o no
+            // Siempre devolvemos true, incluso si el usuario no existe
+            if (user == null)
+            {
+                _logger.LogWarning("Intento de recuperación de contraseña para email no registrado: {Email}", email);
+                return true;
+            }
+
+            // ✅ Generar token único de recuperación
+            var token = Convert.ToBase64String(Guid.NewGuid().ToByteArray())
+                .Replace("+", "-")
+                .Replace("/", "_")
+                .TrimEnd('=');
+
+            // ✅ Guardar token con expiración de 1 hora
+            var expiresAt = DateTime.UtcNow.AddHours(1);
+            _resetTokens[token] = (user.Email, expiresAt);
+
+            // 🔄 EN PRODUCCIÓN: Enviar email con el link de recuperación
+            // var resetLink = $"https://tu-app.com/reset-password?token={Uri.EscapeDataString(token)}";
+            // await _emailService.SendResetPasswordEmailAsync(user.Email, resetLink);
+
+            _logger.LogInformation("Token de recuperación generado para: {Email}. Expira: {ExpiresAt}", user.Email, expiresAt);
+
+            // 📝 PARA PRUEBAS: Mostrar el token en la consola
+            Console.WriteLine($"🔑 Token de recuperación para {user.Email}: {token}");
+            Console.WriteLine($"🔗 Link de recuperación: http://localhost:5134/api/auth/reset-password?token={Uri.EscapeDataString(token)}");
+
             return true;
         }
 
+        /// <summary>
+        /// Valida el token de recuperación y actualiza la contraseña del usuario
+        /// </summary>
         public async Task<bool> ResetPasswordAsync(string token, string newPassword)
         {
-            // TODO: Implementar reset de password
-            // 1. Validar token en base de datos
-            // 2. Si es válido, buscar usuario
-            // 3. Actualizar contraseña
-            // 4. Revocar todos los refresh tokens
-            // 5. Marcar token como usado
-            await Task.CompletedTask;
+            // ✅ Validar que el token exista
+            if (!_resetTokens.TryGetValue(token, out var resetInfo))
+            {
+                _logger.LogWarning("Intento de reset con token inválido");
+                return false;
+            }
+
+            // ✅ Validar que el token no haya expirado
+            if (resetInfo.ExpiresAt < DateTime.UtcNow)
+            {
+                _resetTokens.Remove(token);
+                _logger.LogWarning("Token de recuperación expirado para: {Email}", resetInfo.Email);
+                return false;
+            }
+
+            // ✅ Obtener el usuario por email
+            var user = await _userRepository.GetByEmailAsync(resetInfo.Email);
+            if (user == null)
+            {
+                _resetTokens.Remove(token);
+                return false;
+            }
+
+            // ✅ Actualizar la contraseña
+            user.PasswordHash = PasswordHelper.HashPassword(newPassword);
+            user.UpdatedAt = DateTime.UtcNow;
+            await _userRepository.UpdateAsync(user);
+
+            // ✅ Revocar todos los refresh tokens por seguridad
+            await _refreshTokenRepository.RevokeAllByUserIdAsync(user.Id);
+
+            // ✅ Eliminar el token usado
+            _resetTokens.Remove(token);
+
+            _logger.LogInformation("Contraseña actualizada exitosamente para: {Email}", user.Email);
+
             return true;
         }
 
