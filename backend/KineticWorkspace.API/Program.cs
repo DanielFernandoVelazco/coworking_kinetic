@@ -6,12 +6,13 @@ using Microsoft.OpenApi.Models;
 using System.Text;
 using KineticWorkspace.API.Data;
 using KineticWorkspace.API.Helpers;
-using KineticWorkspace.API.Mappings; // ← AGREGAR ESTE USING
+using KineticWorkspace.API.Mappings;
 using KineticWorkspace.API.Repositories.Implementations;
 using KineticWorkspace.API.Repositories.Interfaces;
 using KineticWorkspace.API.Services.Implementations;
 using KineticWorkspace.API.Services.Interfaces;
 using Serilog;
+using AspNetCoreRateLimit; // ✅ AGREGADO
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -24,6 +25,15 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 
 builder.Host.UseSerilog();
+
+// ✅ NUEVO: Configurar Rate Limiting
+builder.Services.AddMemoryCache();
+builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
+builder.Services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
+builder.Services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
+builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
+builder.Services.AddInMemoryRateLimiting();
 
 // Agregar servicios al contenedor
 builder.Services.AddControllers();
@@ -129,11 +139,16 @@ builder.Services.AddScoped<IUserService, UserService>();
 // Registrar Helpers
 builder.Services.AddScoped<JwtHelper>();
 
-// ✅ REGISTRAR AUTOMAPPER - Solución al problema #1
-// En lugar de escanear todos los ensamblados, apuntamos directamente al ensamblado donde está MappingProfile
+// Registrar AutoMapper
 builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly);
 
+// Health Checks
+builder.Services.AddHealthChecks().AddDbContextCheck<ApplicationDbContext>("Database");
+
 var app = builder.Build();
+
+// ✅ NUEVO: Usar Rate Limiting
+app.UseIpRateLimiting();
 
 // 🔥 CREAR BASE DE DATOS AUTOMÁTICAMENTE EN DESARROLLO
 using (var scope = app.Services.CreateScope())
@@ -145,7 +160,6 @@ using (var scope = app.Services.CreateScope())
     {
         logger.LogInformation("🔄 Iniciando creación/verificación de la base de datos...");
 
-        // 🔥 FUERZA la creación de la base de datos
         var created = await dbContext.Database.EnsureCreatedAsync();
 
         if (created)
@@ -157,7 +171,6 @@ using (var scope = app.Services.CreateScope())
             logger.LogInformation("✅ La base de datos ya existe, verificando tablas...");
         }
 
-        // Verificar que la tabla Users existe
         try
         {
             var usersCount = await dbContext.Users.CountAsync();
@@ -208,6 +221,26 @@ if (!app.Environment.IsDevelopment())
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+// Health Check endpoint
+app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        var response = new
+        {
+            status = report.Status.ToString(),
+            checks = report.Entries.Select(e => new
+            {
+                name = e.Key,
+                status = e.Value.Status.ToString(),
+                description = e.Value.Description
+            })
+        };
+        await context.Response.WriteAsJsonAsync(response);
+    }
+});
 
 // Mostrar información de inicio
 var appLogger = app.Services.GetRequiredService<ILogger<Program>>();
