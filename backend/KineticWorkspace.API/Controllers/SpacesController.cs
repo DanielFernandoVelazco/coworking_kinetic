@@ -8,7 +8,6 @@ namespace KineticWorkspace.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    // [Authorize] // <-- QUITAR ESTO
     public class SpacesController : ControllerBase
     {
         private readonly ISpaceService _spaceService;
@@ -22,7 +21,7 @@ namespace KineticWorkspace.API.Controllers
 
         // ✅ Endpoint público - No requiere autenticación
         [HttpGet("featured")]
-        [AllowAnonymous] // <-- AGREGAR ESTO
+        [AllowAnonymous]
         public async Task<IActionResult> GetFeaturedSpaces([FromQuery] int limit = 10)
         {
             try
@@ -39,12 +38,16 @@ namespace KineticWorkspace.API.Controllers
 
         // ✅ Endpoint público - No requiere autenticación
         [HttpGet]
-        [AllowAnonymous] // <-- AGREGAR ESTO
-        public async Task<IActionResult> GetAllSpaces()
+        [AllowAnonymous]
+        public async Task<IActionResult> GetAllSpaces([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
         {
             try
             {
-                var spaces = await _spaceService.GetAllSpacesAsync();
+                // Validar parámetros
+                if (page < 1) page = 1;
+                if (pageSize < 1 || pageSize > 100) pageSize = 20;
+
+                var spaces = await _spaceService.GetAllSpacesAsync(page, pageSize);
                 return Ok(spaces);
             }
             catch (Exception ex)
@@ -56,7 +59,7 @@ namespace KineticWorkspace.API.Controllers
 
         // ✅ Endpoint público - No requiere autenticación
         [HttpGet("{id}")]
-        [AllowAnonymous] // <-- AGREGAR ESTO
+        [AllowAnonymous]
         public async Task<IActionResult> GetSpaceById(int id)
         {
             try
@@ -76,12 +79,20 @@ namespace KineticWorkspace.API.Controllers
 
         // ✅ Endpoint público - No requiere autenticación
         [HttpGet("available")]
-        [AllowAnonymous] // <-- AGREGAR ESTO
-        public async Task<IActionResult> GetAvailableSpaces([FromQuery] DateTime startTime, [FromQuery] DateTime endTime)
+        [AllowAnonymous]
+        public async Task<IActionResult> GetAvailableSpaces(
+            [FromQuery] DateTime startTime,
+            [FromQuery] DateTime endTime,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20)
         {
             try
             {
-                var spaces = await _spaceService.GetAvailableSpacesAsync(startTime, endTime);
+                // Validar parámetros
+                if (page < 1) page = 1;
+                if (pageSize < 1 || pageSize > 100) pageSize = 20;
+
+                var spaces = await _spaceService.GetAvailableSpacesAsync(startTime, endTime, page, pageSize);
                 return Ok(spaces);
             }
             catch (Exception ex)
