@@ -19,6 +19,7 @@ namespace KineticWorkspace.API.Data
         public DbSet<Review> Reviews { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
+        public DbSet<PasswordResetToken> PasswordResetTokens { get; set; } // ✅ NUEVO
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -33,6 +34,7 @@ namespace KineticWorkspace.API.Data
             modelBuilder.Entity<Review>().ToTable("Reviews");
             modelBuilder.Entity<RefreshToken>().ToTable("RefreshTokens");
             modelBuilder.Entity<AuditLog>().ToTable("AuditLogs");
+            modelBuilder.Entity<PasswordResetToken>().ToTable("PasswordResetTokens"); // ✅ NUEVO
 
             // Configurar relaciones
             modelBuilder.Entity<Reservation>()
@@ -83,6 +85,13 @@ namespace KineticWorkspace.API.Data
                 .HasForeignKey(al => al.UserId)
                 .OnDelete(DeleteBehavior.SetNull);
 
+            // ✅ NUEVA RELACIÓN: PasswordResetToken -> User
+            modelBuilder.Entity<PasswordResetToken>()
+                .HasOne(prt => prt.User)
+                .WithMany() // No necesitamos navegación inversa en User por ahora
+                .HasForeignKey(prt => prt.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             // Índices para mejorar rendimiento
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.Email)
@@ -131,6 +140,14 @@ namespace KineticWorkspace.API.Data
             modelBuilder.Entity<RefreshToken>()
                 .HasIndex(rt => rt.UserId);
 
+            // ✅ NUEVO ÍNDICE: PasswordResetToken
+            modelBuilder.Entity<PasswordResetToken>()
+                .HasIndex(prt => prt.Token)
+                .IsUnique();
+
+            modelBuilder.Entity<PasswordResetToken>()
+                .HasIndex(prt => new { prt.UserId, prt.UsedAt });
+
             // Configurar valores por defecto
             modelBuilder.Entity<User>()
                 .Property(u => u.CreatedAt)
@@ -154,6 +171,10 @@ namespace KineticWorkspace.API.Data
 
             modelBuilder.Entity<AuditLog>()
                 .Property(a => a.CreatedAt)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            modelBuilder.Entity<PasswordResetToken>()
+                .Property(prt => prt.CreatedAt)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
             // Relación Many-to-Many: Space <-> Amenity
@@ -182,7 +203,7 @@ namespace KineticWorkspace.API.Data
             // Configurar propiedad ImageUrls como string largo
             modelBuilder.Entity<Space>()
                 .Property(s => s.ImageUrls)
-                .HasMaxLength(2000); // Aumentar longitud para múltiples URLs
+                .HasMaxLength(2000);
         }
     }
 }
