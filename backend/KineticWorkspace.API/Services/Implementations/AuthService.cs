@@ -1,10 +1,12 @@
 // backend/KineticWorkspace.API/Services/Implementations/AuthService.cs
 using AutoMapper;
+using KineticWorkspace.API.Data; // ✅ AGREGADO para ApplicationDbContext
 using KineticWorkspace.API.Helpers;
 using KineticWorkspace.API.Models.DTOs.Auth;
 using KineticWorkspace.API.Models.Entities;
 using KineticWorkspace.API.Repositories.Interfaces;
 using KineticWorkspace.API.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace KineticWorkspace.API.Services.Implementations
 {
@@ -15,23 +17,22 @@ namespace KineticWorkspace.API.Services.Implementations
         private readonly JwtHelper _jwtHelper;
         private readonly IMapper _mapper;
         private readonly ILogger<AuthService> _logger;
-
-        // ✅ SIMULACIÓN DE ALMACENAMIENTO DE TOKENS DE RESET
-        // En producción, usa una tabla en la base de datos: PasswordResetTokens
-        private static readonly Dictionary<string, (string Email, DateTime ExpiresAt)> _resetTokens = new();
+        private readonly ApplicationDbContext _context;
 
         public AuthService(
             IUserRepository userRepository,
             IRefreshTokenRepository refreshTokenRepository,
             JwtHelper jwtHelper,
             IMapper mapper,
-            ILogger<AuthService> logger)
+            ILogger<AuthService> logger,
+            ApplicationDbContext context)
         {
             _userRepository = userRepository;
             _refreshTokenRepository = refreshTokenRepository;
             _jwtHelper = jwtHelper;
             _mapper = mapper;
             _logger = logger;
+            _context = context;
         }
 
         public async Task<LoginResponseDto> LoginAsync(LoginRequestDto request)
@@ -159,14 +160,13 @@ namespace KineticWorkspace.API.Services.Implementations
         }
 
         /// <summary>
-        /// Genera un token de recuperación de contraseña y lo envía al email del usuario
+        /// Genera un token de recuperación de contraseña y lo guarda en la base de datos
         /// </summary>
         public async Task<bool> ForgotPasswordAsync(string email)
         {
             var user = await _userRepository.GetByEmailAsync(email);
 
             // 🔒 Por seguridad, NO revelamos si el email existe o no
-            // Siempre devolvemos true, incluso si el usuario no existe
             if (user == null)
             {
                 _logger.LogWarning("Intento de recuperación de contraseña para email no registrado: {Email}", email);
@@ -179,15 +179,19 @@ namespace KineticWorkspace.API.Services.Implementations
                 .Replace("/", "_")
                 .TrimEnd('=');
 
-            // ✅ Guardar token con expiración de 1 hora
-            var expiresAt = DateTime.UtcNow.AddHours(1);
-            _resetTokens[token] = (user.Email, expiresAt);
+            // ✅ Guardar en base de datos con expiración de 1 hora
+            var resetToken = new PasswordResetToken
+            {
+                UserId = user.Id,
+                Token = token,
+                ExpiresAt = DateTime.UtcNow.AddHours(1),
+                CreatedAt = DateTime.UtcNow
+            };
 
-            // 🔄 EN PRODUCCIÓN: Enviar email con el link de recuperación
-            // var resetLink = $"https://tu-app.com/reset-password?token={Uri.EscapeDataString(token)}";
-            // await _emailService.SendResetPasswordEmailAsync(user.Email, resetLink);
+            await _context.PasswordResetTokens.AddAsync(resetToken);
+            await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Token de recuperación generado para: {Email}. Expira: {ExpiresAt}", user.Email, expiresAt);
+            _logger.LogInformation("Token de recuperación generado para: {Email}. Expira: {ExpiresAt}", user.Email, resetToken.ExpiresAt);
 
             // 📝 PARA PRUEBAS: Mostrar el token en la consola
             Console.WriteLine($"🔑 Token de recuperación para {user.Email}: {token}");
@@ -201,26 +205,34 @@ namespace KineticWorkspace.API.Services.Implementations
         /// </summary>
         public async Task<bool> ResetPasswordAsync(string token, string newPassword)
         {
-            // ✅ Validar que el token exista
-            if (!_resetTokens.TryGetValue(token, out var resetInfo))
+            // ✅ Buscar token en la base de datos
+            var resetToken = await _context.PasswordResetTokens
+                .FirstOrDefaultAsync(t => t.Token == token);
+
+            if (resetToken == null)
             {
                 _logger.LogWarning("Intento de reset con token inválido");
                 return false;
             }
 
             // ✅ Validar que el token no haya expirado
-            if (resetInfo.ExpiresAt < DateTime.UtcNow)
+            if (resetToken.ExpiresAt < DateTime.UtcNow)
             {
-                _resetTokens.Remove(token);
-                _logger.LogWarning("Token de recuperación expirado para: {Email}", resetInfo.Email);
+                _logger.LogWarning("Token de recuperación expirado para UserId: {UserId}", resetToken.UserId);
                 return false;
             }
 
-            // ✅ Obtener el usuario por email
-            var user = await _userRepository.GetByEmailAsync(resetInfo.Email);
+            // ✅ Validar que el token no haya sido usado
+            if (resetToken.UsedAt.HasValue)
+            {
+                _logger.LogWarning("Token de recuperación ya usado para UserId: {UserId}", resetToken.UserId);
+                return false;
+            }
+
+            // ✅ Obtener el usuario
+            var user = await _userRepository.GetByIdAsync(resetToken.UserId);
             if (user == null)
             {
-                _resetTokens.Remove(token);
                 return false;
             }
 
@@ -229,11 +241,12 @@ namespace KineticWorkspace.API.Services.Implementations
             user.UpdatedAt = DateTime.UtcNow;
             await _userRepository.UpdateAsync(user);
 
+            // ✅ Marcar token como usado
+            resetToken.UsedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
             // ✅ Revocar todos los refresh tokens por seguridad
             await _refreshTokenRepository.RevokeAllByUserIdAsync(user.Id);
-
-            // ✅ Eliminar el token usado
-            _resetTokens.Remove(token);
 
             _logger.LogInformation("Contraseña actualizada exitosamente para: {Email}", user.Email);
 
@@ -243,8 +256,6 @@ namespace KineticWorkspace.API.Services.Implementations
         public async Task<bool> VerifyEmailAsync(string email, string token)
         {
             // TODO: Implementar verificación de email
-            // 1. Validar token en base de datos
-            // 2. Marcar email como verificado
             await Task.CompletedTask;
             return true;
         }
