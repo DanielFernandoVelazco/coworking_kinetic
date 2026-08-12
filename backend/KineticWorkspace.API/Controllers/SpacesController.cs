@@ -19,6 +19,23 @@ namespace KineticWorkspace.API.Controllers
             _logger = logger;
         }
 
+        // ✅ Endpoint público - Sin paginación (para el frontend)
+        [HttpGet("all")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetAllSpacesUnpaginated()
+        {
+            try
+            {
+                var spaces = await _spaceService.GetAllSpacesUnpaginatedAsync();
+                return Ok(spaces);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener todos los espacios sin paginación");
+                return StatusCode(500, new { message = "Error interno del servidor" });
+            }
+        }
+
         // ✅ Endpoint público - No requiere autenticación
         [HttpGet("featured")]
         [AllowAnonymous]
@@ -39,13 +56,15 @@ namespace KineticWorkspace.API.Controllers
         // ✅ Endpoint público - No requiere autenticación
         [HttpGet]
         [AllowAnonymous]
-        public async Task<IActionResult> GetAllSpaces([FromQuery] int page = 1, [FromQuery] int pageSize = 20)
+        public async Task<IActionResult> GetAllSpaces(
+    [FromQuery] int page = 1,
+    [FromQuery] int pageSize = 100) // ✅ Cambiar a 100 por defecto
         {
             try
             {
                 // Validar parámetros
                 if (page < 1) page = 1;
-                if (pageSize < 1 || pageSize > 100) pageSize = 20;
+                if (pageSize < 1 || pageSize > 200) pageSize = 100; // ✅ Máximo 200
 
                 var spaces = await _spaceService.GetAllSpacesAsync(page, pageSize);
                 return Ok(spaces);
