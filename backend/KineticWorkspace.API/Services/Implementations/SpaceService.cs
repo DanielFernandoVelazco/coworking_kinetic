@@ -139,5 +139,11 @@ namespace KineticWorkspace.API.Services.Implementations
                 AvailableSlots = new List<TimeSlotDto>()
             };
         }
+
+        public async Task<IEnumerable<SpaceResponseDto>> GetAllSpacesUnpaginatedAsync()
+        {
+            var spaces = await _spaceRepository.GetAllAsync();
+            return _mapper.Map<IEnumerable<SpaceResponseDto>>(spaces);
+        }
     }
 }
