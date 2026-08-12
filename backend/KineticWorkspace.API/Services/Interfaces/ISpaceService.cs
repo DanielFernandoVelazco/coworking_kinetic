@@ -8,6 +8,9 @@ namespace KineticWorkspace.API.Services.Interfaces
         Task<IEnumerable<SpaceResponseDto>> GetAllSpacesAsync(int page = 1, int pageSize = 20);
         Task<IEnumerable<SpaceResponseDto>> GetAvailableSpacesAsync(DateTime startTime, DateTime endTime, int page = 1, int pageSize = 20);
 
+        // ✅ NUEVO: Método sin paginación
+        Task<IEnumerable<SpaceResponseDto>> GetAllSpacesUnpaginatedAsync();
+
         // ✅ Métodos sin paginación (para casos específicos)
         Task<SpaceResponseDto?> GetSpaceByIdAsync(int id);
         Task<SpaceResponseDto> CreateSpaceAsync(SpaceRequestDto request);
