@@ -1,18 +1,27 @@
+// frontend/src/api/spaces.service.js
 import axiosInstance from './axios.config';
 
 const API_URL = '/spaces';
 
 export const spacesService = {
-    // Obtener todos los espacios
-    getAll: async () => {
-        const response = await axiosInstance.get(API_URL);
+    // Obtener todos los espacios (con paginación)
+    getAll: async (page = 1, pageSize = 100) => {
+        const response = await axiosInstance.get(API_URL, {
+            params: { page, pageSize }
+        });
         return response.data;
     },
 
-    // Obtener espacios disponibles
-    getAvailable: async (startTime, endTime) => {
+    // ✅ NUEVO: Obtener TODOS los espacios sin paginación
+    getAllUnpaginated: async () => {
+        const response = await axiosInstance.get(`${API_URL}/all`);
+        return response.data;
+    },
+
+    // Obtener espacios disponibles (con paginación)
+    getAvailable: async (startTime, endTime, page = 1, pageSize = 10) => {
         const response = await axiosInstance.get(`${API_URL}/available`, {
-            params: { startTime, endTime }
+            params: { startTime, endTime, page, pageSize }
         });
         return response.data;
     },
