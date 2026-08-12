@@ -124,6 +124,9 @@ builder.Services.AddCors(options =>
         });
 });
 
+// Registrar DataSeeder
+builder.Services.AddScoped<DataSeeder>();
+
 // Registrar Repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ISpaceRepository, SpaceRepository>();
@@ -188,6 +191,10 @@ using (var scope = app.Services.CreateScope())
         }
 
         logger.LogInformation("📊 Base de datos lista para usar");
+
+        // ✅ AGREGAR: Ejecutar DataSeeder
+        var seeder = scope.ServiceProvider.GetRequiredService<DataSeeder>();
+        await seeder.SeedAllAsync();
     }
     catch (Exception ex)
     {
