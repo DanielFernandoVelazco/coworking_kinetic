@@ -13,6 +13,7 @@ import Register from './pages/Register';
 import Catalog from './pages/Catalog';
 import SpaceDetails from './pages/SpaceDetails';
 import Profile from './pages/Profile';
+import Reservations from './pages/Reservations'; // ✅ NUEVO
 import AdminDashboard from './pages/AdminDashboard';
 import NotFound from './pages/NotFound';
 
@@ -79,14 +80,7 @@ const AppRoutes = () => {
 
                 <Route path="reservations" element={
                     <ProtectedRoute>
-                        <div className="max-w-container-max mx-auto px-margin-desktop py-12">
-                            <h1 className="font-headline-lg text-headline-lg text-on-surface mb-8">
-                                My Reservations
-                            </h1>
-                            <div className="text-center py-20 text-on-surface-variant">
-                                Reservations page coming soon...
-                            </div>
-                        </div>
+                        <Reservations /> {/* ✅ NUEVO */}
                     </ProtectedRoute>
                 } />
 
