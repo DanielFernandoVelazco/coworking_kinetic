@@ -12,7 +12,8 @@ using KineticWorkspace.API.Repositories.Interfaces;
 using KineticWorkspace.API.Services.Implementations;
 using KineticWorkspace.API.Services.Interfaces;
 using Serilog;
-using AspNetCoreRateLimit; // ✅ AGREGADO
+using AspNetCoreRateLimit;
+using KineticWorkspace.API.Data.SeedData; // ✅ AGREGADO
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -126,6 +127,7 @@ builder.Services.AddCors(options =>
 
 // Registrar DataSeeder
 builder.Services.AddScoped<DataSeeder>();
+builder.Services.AddScoped<SeederDataUser>(); // ✅ NUEVO
 
 // Registrar Repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
