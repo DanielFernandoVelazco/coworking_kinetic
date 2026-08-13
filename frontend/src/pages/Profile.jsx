@@ -13,6 +13,15 @@ const Profile = () => {
     const [summary, setSummary] = useState(null);
     const [reservations, setReservations] = useState([]);
     const [filter, setFilter] = useState('all'); // all, upcoming, past, cancelled
+    const [isEditing, setIsEditing] = useState(false);
+    const [editForm, setEditForm] = useState({
+        firstName: '',
+        lastName: '',
+        phoneNumber: '',
+        company: '',
+        jobTitle: ''
+    });
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         const fetchProfileData = async () => {
@@ -26,6 +35,17 @@ const Profile = () => {
                 setProfile(profileData);
                 setSummary(summaryData);
                 setReservations(Array.isArray(reservationsData) ? reservationsData : []);
+
+                // Inicializar formulario de edición
+                if (profileData) {
+                    setEditForm({
+                        firstName: profileData.firstName || '',
+                        lastName: profileData.lastName || '',
+                        phoneNumber: profileData.phoneNumber || '',
+                        company: profileData.company || '',
+                        jobTitle: profileData.jobTitle || ''
+                    });
+                }
             } catch (error) {
                 console.error('Error fetching profile data:', error);
                 toast.error('Error al cargar el perfil');
@@ -76,11 +96,48 @@ const Profile = () => {
         });
     };
 
+    const handleEditToggle = () => {
+        if (isEditing) {
+            // Reset form to current profile data
+            setEditForm({
+                firstName: profile?.firstName || '',
+                lastName: profile?.lastName || '',
+                phoneNumber: profile?.phoneNumber || '',
+                company: profile?.company || '',
+                jobTitle: profile?.jobTitle || ''
+            });
+        }
+        setIsEditing(!isEditing);
+    };
+
+    const handleEditChange = (e) => {
+        setEditForm({
+            ...editForm,
+            [e.target.name]: e.target.value
+        });
+    };
+
+    const handleSaveProfile = async () => {
+        setSaving(true);
+        try {
+            const updatedProfile = await usersService.updateProfile(editForm);
+            setProfile(updatedProfile);
+            setIsEditing(false);
+            toast.success('Perfil actualizado exitosamente');
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            toast.error(error.response?.data?.message || 'Error al actualizar el perfil');
+        } finally {
+            setSaving(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="max-w-container-max mx-auto px-margin-desktop py-12">
                 <div className="text-center py-20">
-                    <div className="animate-pulse">Loading profile...</div>
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+                    <p className="text-on-surface-variant mt-4">Cargando perfil...</p>
                 </div>
             </div>
         );
@@ -99,7 +156,7 @@ const Profile = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Perfil - Columna izquierda */}
                 <div className="lg:col-span-1">
-                    <div className="bg-surface-container-lowest p-8 rounded-xl border border-outline-variant text-center sticky top-24">
+                    <div className="bg-surface-container-lowest p-8 rounded-xl border border-outline-variant sticky top-24">
                         <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-primary mx-auto mb-4">
                             {profile?.profileImageUrl ? (
                                 <img src={profile.profileImageUrl} alt={profile.fullName} className="w-full h-full object-cover" />
@@ -109,78 +166,179 @@ const Profile = () => {
                                 </div>
                             )}
                         </div>
-                        <h2 className="font-headline-md text-headline-md text-on-surface">{profile?.fullName}</h2>
-                        <p className="text-body-sm text-on-surface-variant">{profile?.email}</p>
-                        {profile?.company && (
-                            <p className="text-body-sm text-on-surface-variant mt-1">{profile.company}</p>
-                        )}
-                        {profile?.jobTitle && (
-                            <p className="text-body-sm text-on-surface-variant">{profile.jobTitle}</p>
-                        )}
 
-                        <div className="mt-6 pt-6 border-t border-outline-variant">
-                            <div className="grid grid-cols-3 gap-2">
-                                <div className="text-center">
-                                    <div className="font-headline-md text-primary">{summary?.totalReservations || 0}</div>
-                                    <div className="font-label-caps text-label-caps text-on-surface-variant">Bookings</div>
+                        {!isEditing ? (
+                            <>
+                                <h2 className="font-headline-md text-headline-md text-on-surface text-center">{profile?.fullName}</h2>
+                                <p className="text-body-sm text-on-surface-variant text-center">{profile?.email}</p>
+                                {profile?.company && (
+                                    <p className="text-body-sm text-on-surface-variant text-center mt-1">{profile.company}</p>
+                                )}
+                                {profile?.jobTitle && (
+                                    <p className="text-body-sm text-on-surface-variant text-center">{profile.jobTitle}</p>
+                                )}
+                                {profile?.phoneNumber && (
+                                    <p className="text-body-sm text-on-surface-variant text-center mt-1">{profile.phoneNumber}</p>
+                                )}
+
+                                <div className="mt-6 pt-6 border-t border-outline-variant">
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <div className="text-center">
+                                            <div className="font-headline-md text-primary">{summary?.totalReservations || 0}</div>
+                                            <div className="font-label-caps text-label-caps text-on-surface-variant">Bookings</div>
+                                        </div>
+                                        <div className="text-center">
+                                            <div className="font-headline-md text-primary">{summary?.totalHoursBooked || 0}h</div>
+                                            <div className="font-label-caps text-label-caps text-on-surface-variant">Hours</div>
+                                        </div>
+                                        <div className="text-center">
+                                            <div className="font-headline-md text-primary">${summary?.totalSpent?.toFixed(0) || 0}</div>
+                                            <div className="font-label-caps text-label-caps text-on-surface-variant">Spent</div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="text-center">
-                                    <div className="font-headline-md text-primary">{summary?.totalHoursBooked || 0}h</div>
-                                    <div className="font-label-caps text-label-caps text-on-surface-variant">Hours</div>
+
+                                <div className="mt-4 space-y-2">
+                                    <button
+                                        onClick={handleEditToggle}
+                                        className="w-full bg-surface-container-low text-on-surface py-2 rounded-lg hover:bg-surface-container transition-colors"
+                                    >
+                                        Edit Profile
+                                    </button>
+                                    <Link
+                                        to="/reservations"
+                                        className="w-full bg-primary text-on-primary py-2 rounded-lg hover:bg-secondary transition-colors text-center block"
+                                    >
+                                        View My Reservations
+                                    </Link>
                                 </div>
-                                <div className="text-center">
-                                    <div className="font-headline-md text-primary">${summary?.totalSpent?.toFixed(0) || 0}</div>
-                                    <div className="font-label-caps text-label-caps text-on-surface-variant">Spent</div>
+                            </>
+                        ) : (
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="font-label-caps text-label-caps text-on-surface-variant block mb-1">
+                                        First Name
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="firstName"
+                                        value={editForm.firstName}
+                                        onChange={handleEditChange}
+                                        className="w-full bg-surface-container-low border-b border-outline-variant px-0 py-2 text-on-surface transition-all focus:border-primary focus:outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="font-label-caps text-label-caps text-on-surface-variant block mb-1">
+                                        Last Name
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="lastName"
+                                        value={editForm.lastName}
+                                        onChange={handleEditChange}
+                                        className="w-full bg-surface-container-low border-b border-outline-variant px-0 py-2 text-on-surface transition-all focus:border-primary focus:outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="font-label-caps text-label-caps text-on-surface-variant block mb-1">
+                                        Phone Number
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="phoneNumber"
+                                        value={editForm.phoneNumber}
+                                        onChange={handleEditChange}
+                                        className="w-full bg-surface-container-low border-b border-outline-variant px-0 py-2 text-on-surface transition-all focus:border-primary focus:outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="font-label-caps text-label-caps text-on-surface-variant block mb-1">
+                                        Company
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="company"
+                                        value={editForm.company}
+                                        onChange={handleEditChange}
+                                        className="w-full bg-surface-container-low border-b border-outline-variant px-0 py-2 text-on-surface transition-all focus:border-primary focus:outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="font-label-caps text-label-caps text-on-surface-variant block mb-1">
+                                        Job Title
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="jobTitle"
+                                        value={editForm.jobTitle}
+                                        onChange={handleEditChange}
+                                        className="w-full bg-surface-container-low border-b border-outline-variant px-0 py-2 text-on-surface transition-all focus:border-primary focus:outline-none"
+                                    />
+                                </div>
+                                <div className="flex gap-2 pt-2">
+                                    <button
+                                        onClick={handleSaveProfile}
+                                        disabled={saving}
+                                        className="flex-1 bg-primary text-on-primary py-2 rounded-lg hover:bg-secondary transition-colors disabled:opacity-50"
+                                    >
+                                        {saving ? 'Saving...' : 'Save Changes'}
+                                    </button>
+                                    <button
+                                        onClick={handleEditToggle}
+                                        className="flex-1 border border-outline-variant py-2 rounded-lg hover:bg-surface-container-low transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
                                 </div>
                             </div>
-                        </div>
-
-                        <Link
-                            to="/profile/edit"
-                            className="mt-6 inline-block w-full bg-surface-container-low text-on-surface py-2 rounded-lg hover:bg-surface-container transition-colors"
-                        >
-                            Edit Profile
-                        </Link>
+                        )}
                     </div>
                 </div>
 
                 {/* Reservaciones - Columna derecha */}
                 <div className="lg:col-span-2">
                     <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="font-headline-md text-headline-md">Recent Reservations</h3>
+                            <Link to="/reservations" className="text-primary hover:underline text-sm">
+                                View All →
+                            </Link>
+                        </div>
+
                         {/* Filtros */}
-                        <div className="flex flex-wrap gap-2 mb-6 border-b border-outline-variant pb-4">
+                        <div className="flex flex-wrap gap-2 mb-4 border-b border-outline-variant pb-4">
                             <button
                                 onClick={() => setFilter('all')}
-                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === 'all'
+                                className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${filter === 'all'
                                         ? 'bg-primary text-on-primary'
-                                        : 'hover:bg-surface-container-low'
+                                        : 'hover:bg-surface-container-low text-on-surface-variant'
                                     }`}
                             >
                                 All ({reservations.length})
                             </button>
                             <button
                                 onClick={() => setFilter('upcoming')}
-                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === 'upcoming'
+                                className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${filter === 'upcoming'
                                         ? 'bg-primary text-on-primary'
-                                        : 'hover:bg-surface-container-low'
+                                        : 'hover:bg-surface-container-low text-on-surface-variant'
                                     }`}
                             >
                                 Upcoming
                             </button>
                             <button
                                 onClick={() => setFilter('past')}
-                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === 'past'
+                                className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${filter === 'past'
                                         ? 'bg-primary text-on-primary'
-                                        : 'hover:bg-surface-container-low'
+                                        : 'hover:bg-surface-container-low text-on-surface-variant'
                                     }`}
                             >
                                 Past
                             </button>
                             <button
                                 onClick={() => setFilter('cancelled')}
-                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === 'cancelled'
+                                className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${filter === 'cancelled'
                                         ? 'bg-primary text-on-primary'
-                                        : 'hover:bg-surface-container-low'
+                                        : 'hover:bg-surface-container-low text-on-surface-variant'
                                     }`}
                             >
                                 Cancelled
@@ -199,84 +357,59 @@ const Profile = () => {
                                 )}
                             </div>
                         ) : (
-                            <div className="space-y-4">
-                                {filteredReservations.map((reservation) => (
+                            <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
+                                {filteredReservations.slice(0, 5).map((reservation) => (
                                     <div
                                         key={reservation.id}
-                                        className="flex flex-col md:flex-row md:items-center justify-between p-4 bg-surface-container-low rounded-lg border border-outline-variant hover:shadow-md transition-shadow"
+                                        className="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-surface-container-low rounded-lg border border-outline-variant hover:shadow-md transition-shadow"
                                     >
                                         <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <h4 className="font-body-md font-semibold text-on-surface">
+                                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                                <h4 className="font-body-sm font-semibold text-on-surface">
                                                     {reservation.spaceName}
                                                 </h4>
                                                 <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(reservation.status)}`}>
                                                     {reservation.status}
                                                 </span>
                                             </div>
-                                            <p className="text-body-sm text-on-surface-variant flex items-center gap-1">
-                                                <span className="material-symbols-outlined text-sm">event</span>
-                                                {formatDate(reservation.startTime)} - {formatDate(reservation.endTime)}
+                                            <p className="text-body-xs text-on-surface-variant">
+                                                {formatDate(reservation.startTime)}
                                             </p>
-                                            <div className="flex flex-wrap gap-3 mt-1 text-body-sm text-on-surface-variant">
-                                                <span className="flex items-center gap-1">
-                                                    <span className="material-symbols-outlined text-sm">location_on</span>
-                                                    {reservation.spaceType}
-                                                </span>
-                                                {reservation.numberOfGuests && (
-                                                    <span className="flex items-center gap-1">
-                                                        <span className="material-symbols-outlined text-sm">group</span>
-                                                        {reservation.numberOfGuests} guests
-                                                    </span>
-                                                )}
-                                                {reservation.paymentStatus && (
-                                                    <span className={`flex items-center gap-1 ${reservation.paymentStatus === 'Completed'
-                                                            ? 'text-emerald-600'
-                                                            : 'text-amber-600'
-                                                        }`}>
-                                                        <span className="material-symbols-outlined text-sm">payments</span>
-                                                        {reservation.paymentStatus}
-                                                    </span>
-                                                )}
-                                            </div>
-                                            {reservation.notes && (
-                                                <p className="text-body-sm text-on-surface-variant mt-1 italic">
-                                                    "{reservation.notes}"
+                                            {reservation.numberOfGuests && (
+                                                <p className="text-body-xs text-on-surface-variant">
+                                                    👥 {reservation.numberOfGuests} guests
                                                 </p>
                                             )}
                                         </div>
-                                        <div className="flex flex-col items-end mt-3 md:mt-0">
-                                            <span className="font-headline-md text-primary">
+                                        <div className="flex items-center gap-3 mt-2 sm:mt-0">
+                                            <span className="font-headline-sm text-primary whitespace-nowrap">
                                                 ${reservation.totalPrice?.toFixed(2) || '0.00'}
                                             </span>
-                                            {reservation.status === 'Confirmed' && new Date(reservation.startTime) > new Date() && (
-                                                <button
-                                                    className="text-sm text-red-600 hover:text-red-800 transition-colors mt-1"
-                                                    onClick={() => {
-                                                        // Cancel reservation logic
-                                                        toast.success('Reservation cancelled successfully!');
-                                                    }}
-                                                >
-                                                    Cancel
-                                                </button>
-                                            )}
-                                            {reservation.status === 'Pending' && (
-                                                <span className="text-xs text-amber-600 mt-1">
-                                                    Awaiting confirmation
-                                                </span>
-                                            )}
+                                            <Link
+                                                to={`/spaces/${reservation.spaceId}`}
+                                                className="text-primary hover:text-secondary transition-colors"
+                                            >
+                                                <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                                            </Link>
                                         </div>
                                     </div>
                                 ))}
+                                {filteredReservations.length > 5 && (
+                                    <div className="text-center pt-2">
+                                        <Link to="/reservations" className="text-primary hover:underline text-sm">
+                                            Show {filteredReservations.length - 5} more...
+                                        </Link>
+                                    </div>
+                                )}
                             </div>
                         )}
 
                         {/* Resumen */}
                         {reservations.length > 0 && (
-                            <div className="mt-6 pt-4 border-t border-outline-variant">
-                                <div className="flex justify-between items-center text-body-sm text-on-surface-variant">
+                            <div className="mt-4 pt-4 border-t border-outline-variant">
+                                <div className="flex justify-between items-center text-body-xs text-on-surface-variant">
                                     <span>
-                                        Showing {filteredReservations.length} of {reservations.length} reservations
+                                        Showing {Math.min(filteredReservations.length, 5)} of {filteredReservations.length} reservations
                                     </span>
                                     <span>
                                         Total spent: <strong className="text-primary">${summary?.totalSpent?.toFixed(2) || '0.00'}</strong>
