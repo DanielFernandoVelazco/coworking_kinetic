@@ -1,6 +1,7 @@
 // backend/KineticWorkspace.API/Data/DataSeeder.cs
-using KineticWorkspace.API.Models.Entities;
+using KineticWorkspace.API.Data.SeedData;
 using KineticWorkspace.API.Helpers;
+using KineticWorkspace.API.Models.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace KineticWorkspace.API.Data
@@ -9,6 +10,7 @@ namespace KineticWorkspace.API.Data
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<DataSeeder> _logger;
+        private readonly SeederDataUser _seederDataUser;
 
         // Espacios de ejemplo para cada tipo
         private readonly List<string> _spaceNames = new()
@@ -97,42 +99,50 @@ namespace KineticWorkspace.API.Data
             }
         };
 
-        public DataSeeder(ApplicationDbContext context, ILogger<DataSeeder> logger)
+        public DataSeeder(
+           ApplicationDbContext context,
+           ILogger<DataSeeder> logger,
+           SeederDataUser seederDataUser)
         {
             _context = context;
             _logger = logger;
+            _seederDataUser = seederDataUser;
         }
 
         public async Task SeedAllAsync()
         {
             try
             {
-                _logger.LogInformation("🔄 Iniciando verificación de datos iniciales...");
+                _logger.LogInformation("Iniciando verificación de datos iniciales...");
 
-                // Verificar si ya hay datos
+                // Verificar si ya hay espacios
                 var existingSpaces = await _context.Spaces.CountAsync();
-                if (existingSpaces > 0)
+                if (existingSpaces == 0)
                 {
-                    _logger.LogInformation($"✅ Ya existen {existingSpaces} espacios en la base de datos. Saltando seed.");
-                    return;
+                    _logger.LogInformation("No se encontraron datos. Iniciando precarga de 75 espacios...");
+
+                    // 1. Crear Amenities
+                    await SeedAmenitiesAsync();
+
+                    // 2. Crear espacios
+                    await SeedSpacesAsync();
+
+                    // 3. Crear usuario admin
+                    await SeedAdminUserAsync();
+                }
+                else
+                {
+                    _logger.LogInformation($"Ya existen {existingSpaces} espacios en la base de datos.");
                 }
 
-                _logger.LogInformation("📦 No se encontraron datos. Iniciando precarga de 75 espacios...");
+                // 4. Siempre verificar y crear datos de usuario de prueba y reservas
+                await _seederDataUser.SeedUserReservationsAsync();
 
-                // 1. Crear Amenities si no existen
-                await SeedAmenitiesAsync();
-
-                // 2. Crear 15 espacios por cada tipo
-                await SeedSpacesAsync();
-
-                // 3. Crear un usuario admin por defecto
-                await SeedAdminUserAsync();
-
-                _logger.LogInformation("✅ Precarga de datos completada exitosamente!");
+                _logger.LogInformation("Verificación de datos completada exitosamente!");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ Error durante la precarga de datos");
+                _logger.LogError(ex, "Error durante la verificación de datos");
                 throw;
             }
         }
