@@ -1,3 +1,4 @@
+// frontend/src/api/reservations.service.js
 import axiosInstance from './axios.config';
 
 const API_URL = '/reservations';
