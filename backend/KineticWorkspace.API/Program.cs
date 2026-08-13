@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using KineticWorkspace.API.Data;
+using KineticWorkspace.API.Data.SeedData;
 using KineticWorkspace.API.Helpers;
 using KineticWorkspace.API.Mappings;
 using KineticWorkspace.API.Repositories.Implementations;
@@ -13,7 +14,6 @@ using KineticWorkspace.API.Services.Implementations;
 using KineticWorkspace.API.Services.Interfaces;
 using Serilog;
 using AspNetCoreRateLimit;
-using KineticWorkspace.API.Data.SeedData; // ✅ AGREGADO
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,7 +27,7 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
-// ✅ NUEVO: Configurar Rate Limiting
+// Configurar Rate Limiting
 builder.Services.AddMemoryCache();
 builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
 builder.Services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
@@ -75,7 +75,7 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Configurar Database Context - MODO DESARROLLO
+// Configurar Database Context
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -125,10 +125,6 @@ builder.Services.AddCors(options =>
         });
 });
 
-// Registrar DataSeeder
-builder.Services.AddScoped<DataSeeder>();
-builder.Services.AddScoped<SeederDataUser>(); // ✅ NUEVO
-
 // Registrar Repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ISpaceRepository, SpaceRepository>();
@@ -144,6 +140,10 @@ builder.Services.AddScoped<IUserService, UserService>();
 // Registrar Helpers
 builder.Services.AddScoped<JwtHelper>();
 
+// Registrar Seeders
+builder.Services.AddScoped<DataSeeder>();
+builder.Services.AddScoped<SeederDataUser>();
+
 // Registrar AutoMapper
 builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly);
 
@@ -152,10 +152,10 @@ builder.Services.AddHealthChecks().AddDbContextCheck<ApplicationDbContext>("Data
 
 var app = builder.Build();
 
-// ✅ NUEVO: Usar Rate Limiting
+// Usar Rate Limiting
 app.UseIpRateLimiting();
 
-// 🔥 CREAR BASE DE DATOS AUTOMÁTICAMENTE EN DESARROLLO
+// Inicializar base de datos y ejecutar seeders
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -163,44 +163,44 @@ using (var scope = app.Services.CreateScope())
 
     try
     {
-        logger.LogInformation("🔄 Iniciando creación/verificación de la base de datos...");
+        logger.LogInformation("Iniciando creacion/verificacion de la base de datos...");
 
+        // PRIMERO: Asegurar que la base de datos existe
         var created = await dbContext.Database.EnsureCreatedAsync();
 
         if (created)
         {
-            logger.LogInformation("✅ Base de datos y tablas creadas exitosamente");
+            logger.LogInformation("Base de datos y tablas creadas exitosamente");
         }
         else
         {
-            logger.LogInformation("✅ La base de datos ya existe, verificando tablas...");
+            logger.LogInformation("La base de datos ya existe, verificando tablas...");
         }
 
+        // SEGUNDO: Verificar que las tablas existen
         try
         {
             var usersCount = await dbContext.Users.CountAsync();
-            logger.LogInformation("✅ Tabla Users encontrada con {Count} registros", usersCount);
+            logger.LogInformation("Tabla Users encontrada con {Count} registros", usersCount);
         }
         catch (Exception ex)
         {
-            logger.LogWarning("⚠️ Error al verificar tabla Users: {Message}", ex.Message);
-            logger.LogInformation("🔄 Recreando la base de datos...");
-
+            logger.LogWarning("Error al verificar tabla Users: {Message}", ex.Message);
+            logger.LogInformation("Recreando la base de datos...");
             await dbContext.Database.EnsureDeletedAsync();
             await dbContext.Database.EnsureCreatedAsync();
-
-            logger.LogInformation("✅ Base de datos recreada exitosamente");
+            logger.LogInformation("Base de datos recreada exitosamente");
         }
 
-        logger.LogInformation("📊 Base de datos lista para usar");
+        logger.LogInformation("Base de datos lista para usar");
 
-        // ✅ AGREGAR: Ejecutar DataSeeder
+        // TERCERO: Ejecutar los seeders
         var seeder = scope.ServiceProvider.GetRequiredService<DataSeeder>();
         await seeder.SeedAllAsync();
     }
     catch (Exception ex)
     {
-        Log.Error(ex, "❌ Error al inicializar la base de datos");
+        Log.Error(ex, "Error al inicializar la base de datos");
         logger.LogError(ex, "Error detallado: {Message}", ex.Message);
 
         if (ex.InnerException != null)
@@ -208,7 +208,7 @@ using (var scope = app.Services.CreateScope())
             logger.LogError("Inner Exception: {Message}", ex.InnerException.Message);
         }
 
-        logger.LogWarning("⚠️ La aplicación continuará, pero la base de datos puede no estar disponible");
+        logger.LogWarning("La aplicacion continuara, pero la base de datos puede no estar disponible");
     }
 }
 
@@ -251,9 +251,9 @@ app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks
     }
 });
 
-// Mostrar información de inicio
+// Mostrar informacion de inicio
 var appLogger = app.Services.GetRequiredService<ILogger<Program>>();
-appLogger.LogInformation("🚀 Kinetic Workspace API iniciada en http://localhost:5134");
-appLogger.LogInformation("📚 Swagger disponible en http://localhost:5134/swagger");
+appLogger.LogInformation("Kinetic Workspace API iniciada en http://localhost:5134");
+appLogger.LogInformation("Swagger disponible en http://localhost:5134/swagger");
 
 app.Run();
