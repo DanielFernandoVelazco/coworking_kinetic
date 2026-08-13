@@ -22,40 +22,70 @@ namespace KineticWorkspace.API.Data.SeedData
             {
                 _logger.LogInformation("Verificando datos de usuarios y reservas...");
 
-                // Verificar si ya hay usuarios de prueba
-                var testUser = await _context.Users
-                    .FirstOrDefaultAsync(u => u.Email == "test@kineticworkspace.com");
-
-                if (testUser != null)
+                // Verificar que la tabla Reservations existe
+                try
                 {
-                    _logger.LogInformation("Usuario de prueba ya existe. Verificando reservas...");
-
-                    // Verificar si ya tiene reservas
-                    var existingReservations = await _context.Reservations
-                        .Where(r => r.UserId == testUser.Id)
-                        .CountAsync();
-
-                    if (existingReservations > 0)
-                    {
-                        _logger.LogInformation($"Usuario de prueba ya tiene {existingReservations} reservas. Saltando seed.");
-                        return;
-                    }
+                    await _context.Reservations.AnyAsync();
+                }
+                catch
+                {
+                    _logger.LogWarning("Tabla Reservations no existe. Creando...");
+                    await _context.Database.EnsureCreatedAsync();
+                    await Task.Delay(100);
                 }
 
-                _logger.LogInformation("Creando usuario de prueba y reservas historicas...");
-
-                // 1. Obtener o crear usuario de prueba
+                // Obtener o crear usuario de prueba
                 var user = await GetOrCreateTestUserAsync();
+                if (user == null)
+                {
+                    _logger.LogWarning("No se pudo crear/obtener el usuario de prueba");
+                    return;
+                }
 
-                // 2. Obtener espacios existentes
-                var spaces = await _context.Spaces.Take(10).ToListAsync();
+                // Verificar reservas existentes
+                var existingReservations = await _context.Reservations
+                    .Where(r => r.UserId == user.Id)
+                    .CountAsync();
+
+                if (existingReservations >= 15)
+                {
+                    _logger.LogInformation($"Usuario de prueba ya tiene {existingReservations} reservas. Saltando seed.");
+                    return;
+                }
+
+                // Eliminar reservas existentes si las hay pero son menos de 15
+                if (existingReservations > 0)
+                {
+                    _logger.LogInformation($"Eliminando {existingReservations} reservas existentes para recrearlas...");
+
+                    var reservationsToDelete = await _context.Reservations
+                        .Where(r => r.UserId == user.Id)
+                        .ToListAsync();
+
+                    foreach (var reservation in reservationsToDelete)
+                    {
+                        var payments = await _context.Payments
+                            .Where(p => p.ReservationId == reservation.Id)
+                            .ToListAsync();
+                        if (payments.Any())
+                        {
+                            _context.Payments.RemoveRange(payments);
+                        }
+                    }
+
+                    _context.Reservations.RemoveRange(reservationsToDelete);
+                    await _context.SaveChangesAsync();
+                }
+
+                // Obtener espacios
+                var spaces = await _context.Spaces.Take(15).ToListAsync();
                 if (spaces.Count == 0)
                 {
                     _logger.LogWarning("No hay espacios disponibles para crear reservas de prueba");
                     return;
                 }
 
-                // 3. Crear reservas historicas
+                // Crear reservas
                 await CreateTestReservationsAsync(user, spaces);
 
                 _logger.LogInformation("Datos de prueba creados exitosamente!");
@@ -67,7 +97,7 @@ namespace KineticWorkspace.API.Data.SeedData
             }
         }
 
-        private async Task<User> GetOrCreateTestUserAsync()
+        private async Task<User?> GetOrCreateTestUserAsync()
         {
             var email = "test@kineticworkspace.com";
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
@@ -104,21 +134,22 @@ namespace KineticWorkspace.API.Data.SeedData
         private async Task CreateTestReservationsAsync(User user, List<Space> spaces)
         {
             var random = new Random();
-            var statuses = new[] { "Completed", "Confirmed", "Pending", "Cancelled" };
             var now = DateTime.UtcNow;
 
-            // Crear 15 reservas historicas
+            var reservationsToAdd = new List<Reservation>();
+            var paymentsToAdd = new List<Payment>();
+
+            _logger.LogInformation($"Creando 15 reservas de prueba para el usuario {user.Email}...");
+
             for (int i = 0; i < 15; i++)
             {
                 var space = spaces[random.Next(spaces.Count)];
 
-                // Fechas: algunas pasadas, algunas futuras
                 var daysOffset = random.Next(-60, 30);
                 var startTime = now.AddDays(daysOffset).AddHours(random.Next(8, 18));
                 var durationHours = random.Next(1, 6);
                 var endTime = startTime.AddHours(durationHours);
 
-                // Status basado en fechas
                 string status;
                 if (startTime < now && endTime < now)
                 {
@@ -151,14 +182,12 @@ namespace KineticWorkspace.API.Data.SeedData
                     CompletedAt = status == "Completed" ? endTime : null
                 };
 
-                await _context.Reservations.AddAsync(reservation);
+                reservationsToAdd.Add(reservation);
 
-                // Crear pago para reservas completadas o confirmadas
                 if (status == "Completed" || (status == "Confirmed" && random.Next(0, 10) < 5))
                 {
                     var payment = new Payment
                     {
-                        ReservationId = reservation.Id,
                         UserId = user.Id,
                         Amount = totalPrice,
                         Status = status == "Completed" ? "Completed" : "Pending",
@@ -167,20 +196,51 @@ namespace KineticWorkspace.API.Data.SeedData
                         CreatedAt = startTime.AddDays(-random.Next(1, 5)),
                         CompletedAt = status == "Completed" ? endTime.AddDays(random.Next(1, 3)) : null
                     };
-
-                    await _context.Payments.AddAsync(payment);
+                    paymentsToAdd.Add(payment);
                 }
 
-                // Guardar cada reserva
-                if (i % 3 == 0)
+                if (i % 3 == 0 && i > 0)
                 {
-                    await _context.SaveChangesAsync();
-                    _logger.LogInformation($"Creadas {i + 1} reservas de prueba...");
+                    _logger.LogInformation($"Preparadas {i} reservas de prueba...");
                 }
             }
 
-            await _context.SaveChangesAsync();
-            _logger.LogInformation("15 reservas de prueba creadas exitosamente!");
+            _logger.LogInformation($"Preparadas {reservationsToAdd.Count} reservas y {paymentsToAdd.Count} pagos.");
+
+            try
+            {
+                // Guardar reservas
+                await _context.Reservations.AddRangeAsync(reservationsToAdd);
+                await _context.SaveChangesAsync();
+
+                // Obtener las reservas recién creadas para asociar los pagos
+                var createdReservations = await _context.Reservations
+                    .Where(r => r.UserId == user.Id)
+                    .OrderByDescending(r => r.Id)
+                    .Take(reservationsToAdd.Count)
+                    .ToListAsync();
+
+                // Asignar ReservationId a los pagos
+                for (int i = 0; i < paymentsToAdd.Count && i < createdReservations.Count; i++)
+                {
+                    paymentsToAdd[i].ReservationId = createdReservations[i].Id;
+                }
+
+                // Guardar pagos
+                if (paymentsToAdd.Any())
+                {
+                    await _context.Payments.AddRangeAsync(paymentsToAdd);
+                    await _context.SaveChangesAsync();
+                }
+
+                _logger.LogInformation($"Creadas exitosamente {reservationsToAdd.Count} reservas de prueba");
+                _logger.LogInformation($"Creados exitosamente {paymentsToAdd.Count} pagos de prueba");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al guardar las reservas de prueba");
+                throw;
+            }
         }
     }
 }
