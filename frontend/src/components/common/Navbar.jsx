@@ -1,3 +1,4 @@
+// frontend/src/components/common/Navbar.jsx
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -21,11 +22,14 @@ const Navbar = () => {
                     </Link>
                     {isAuthenticated && (
                         <div className="hidden md:flex gap-6 items-center">
-                            <Link to="/" className="font-body-md text-body-md text-primary border-b-2 border-primary pb-1 font-semibold">
+                            <Link to="/" className="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors">
+                                Home
+                            </Link>
+                            <Link to="/catalog" className="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors">
                                 Workspaces
                             </Link>
-                            <Link to="/reservations" className="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors">
-                                Reservations
+                            <Link to="/reservations" className="font-body-md text-body-md text-primary border-b-2 border-primary pb-1 font-semibold">
+                                My Reservations
                             </Link>
                             {user?.isAdmin && (
                                 <Link to="/admin" className="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors">
