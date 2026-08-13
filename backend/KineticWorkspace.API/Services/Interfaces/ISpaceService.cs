@@ -1,17 +1,18 @@
+// backend/KineticWorkspace.API/Services/Interfaces/ISpaceService.cs
 using KineticWorkspace.API.Models.DTOs.Spaces;
 
 namespace KineticWorkspace.API.Services.Interfaces
 {
     public interface ISpaceService
     {
-        // ✅ Métodos con paginación
+        // Metodos con paginacion
         Task<IEnumerable<SpaceResponseDto>> GetAllSpacesAsync(int page = 1, int pageSize = 20);
         Task<IEnumerable<SpaceResponseDto>> GetAvailableSpacesAsync(DateTime startTime, DateTime endTime, int page = 1, int pageSize = 20);
 
-        // ✅ NUEVO: Método sin paginación
+        // Metodo sin paginacion (para el frontend)
         Task<IEnumerable<SpaceResponseDto>> GetAllSpacesUnpaginatedAsync();
 
-        // ✅ Métodos sin paginación (para casos específicos)
+        // Metodos sin paginacion
         Task<SpaceResponseDto?> GetSpaceByIdAsync(int id);
         Task<SpaceResponseDto> CreateSpaceAsync(SpaceRequestDto request);
         Task<SpaceResponseDto?> UpdateSpaceAsync(int id, SpaceRequestDto request);
@@ -22,4 +23,6 @@ namespace KineticWorkspace.API.Services.Interfaces
         Task<bool> CheckAvailabilityAsync(int spaceId, DateTime startTime, DateTime endTime);
         Task<SpaceAvailabilityDto?> GetSpaceAvailabilityAsync(int spaceId, DateTime startDate, DateTime endDate);
     }
+
+
 }
