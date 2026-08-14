@@ -4,7 +4,15 @@ import axiosInstance from './axios.config';
 const API_URL = '/reservations';
 
 export const reservationsService = {
-    // Obtener reservas del usuario (con paginación)
+    // Obtener reservas con filtros y ordenamiento
+    getUserReservationsFiltered: async (page = 1, pageSize = 10, sortBy = 'date_desc', status = 'all') => {
+        const response = await axiosInstance.get(`${API_URL}/user/filtered`, {
+            params: { page, pageSize, sortBy, status }
+        });
+        return response.data;
+    },
+
+    // Obtener reservas del usuario (método original - se mantiene por compatibilidad)
     getUserReservations: async (page = 1, pageSize = 10) => {
         const response = await axiosInstance.get(`${API_URL}/user`, {
             params: { page, pageSize }
