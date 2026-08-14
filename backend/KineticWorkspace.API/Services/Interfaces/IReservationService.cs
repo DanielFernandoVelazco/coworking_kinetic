@@ -14,5 +14,13 @@ namespace KineticWorkspace.API.Services.Interfaces
         Task<IEnumerable<ReservationResponseDto>> GetUpcomingReservationsAsync(int userId, int limit = 10);
         Task<IEnumerable<ReservationResponseDto>> GetActiveReservationsAsync();
         Task<ReservationSummaryDto> GetReservationSummaryAsync(int userId);
+
+        // Método con filtros y ordenamiento
+        Task<PaginatedReservationResponseDto> GetUserReservationsFilteredAsync(
+            int userId,
+            int page,
+            int pageSize,
+            string? sortBy,
+            string? status);
     }
 }
