@@ -136,6 +136,8 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ISpaceService, SpaceService>();
 builder.Services.AddScoped<IReservationService, ReservationService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IPreReservationService, PreReservationService>();
+builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 
 // Registrar Helpers
 builder.Services.AddScoped<JwtHelper>();
