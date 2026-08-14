@@ -114,7 +114,8 @@ namespace KineticWorkspace.API.Services.Implementations
                 Notes = request.Notes,
                 NumberOfGuests = numberOfGuests,
                 TotalPrice = totalPrice,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow  // ✅ AGREGADO: Se establece al crear
             };
 
             var createdReservation = await _reservationRepository.AddAsync(reservation);
@@ -169,7 +170,7 @@ namespace KineticWorkspace.API.Services.Implementations
             reservation.Notes = request.Notes;
             reservation.NumberOfGuests = numberOfGuests;
             reservation.TotalPrice = totalPrice;
-            reservation.UpdatedAt = DateTime.UtcNow;
+            reservation.UpdatedAt = DateTime.UtcNow;  // ✅ Actualiza la fecha de modificación
 
             await _reservationRepository.UpdateAsync(reservation);
             _logger.LogInformation("Reservación actualizada: {ReservationId}", id);
@@ -214,6 +215,9 @@ namespace KineticWorkspace.API.Services.Implementations
                 throw new InvalidOperationException("No se puede cancelar una reservación completada");
             }
 
+            // ✅ Actualizar UpdatedAt al cancelar
+            reservation.UpdatedAt = DateTime.UtcNow;
+
             return await _reservationRepository.CancelReservationAsync(id, reason);
         }
 
@@ -228,6 +232,7 @@ namespace KineticWorkspace.API.Services.Implementations
             }
 
             reservation.Status = "Confirmed";
+            reservation.UpdatedAt = DateTime.UtcNow;  // ✅ Actualiza la fecha de modificación al confirmar
             await _reservationRepository.UpdateAsync(reservation);
 
             _logger.LogInformation("Reservación confirmada: {ReservationId} por Admin: {AdminId}", id, adminUserId);
