@@ -1,5 +1,5 @@
 // frontend/src/pages/Reservations.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import reservationsService from '../api/reservations.service';
@@ -9,21 +9,21 @@ import toast from 'react-hot-toast';
 const PAGE_SIZE = 10;
 
 // Opciones de ordenamiento
-const SORT_OPTIONS = {
-    DATE_DESC: { label: 'Date (Newest first)', value: 'date_desc', sortFn: (a, b) => new Date(b.createdAt) - new Date(a.createdAt) },
-    DATE_ASC: { label: 'Date (Oldest first)', value: 'date_asc', sortFn: (a, b) => new Date(a.createdAt) - new Date(b.createdAt) },
-    PRICE_DESC: { label: 'Price (Highest first)', value: 'price_desc', sortFn: (a, b) => (b.totalPrice || 0) - (a.totalPrice || 0) },
-    PRICE_ASC: { label: 'Price (Lowest first)', value: 'price_asc', sortFn: (a, b) => (a.totalPrice || 0) - (b.totalPrice || 0) },
-    GUESTS_DESC: { label: 'Guests (Most first)', value: 'guests_desc', sortFn: (a, b) => (b.numberOfGuests || 0) - (a.numberOfGuests || 0) },
-    GUESTS_ASC: { label: 'Guests (Least first)', value: 'guests_asc', sortFn: (a, b) => (a.numberOfGuests || 0) - (b.numberOfGuests || 0) },
-};
+const SORT_OPTIONS = [
+    { value: 'date_desc', label: '📅 Date (Newest first)' },
+    { value: 'date_asc', label: '📅 Date (Oldest first)' },
+    { value: 'price_desc', label: '💰 Price (Highest first)' },
+    { value: 'price_asc', label: '💰 Price (Lowest first)' },
+    { value: 'guests_desc', label: '👥 Guests (Most first)' },
+    { value: 'guests_asc', label: '👥 Guests (Least first)' },
+];
 
 const Reservations = () => {
     const { user } = useAuth();
     const [reservations, setReservations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
-    const [sortBy, setSortBy] = useState('date_desc'); // ✅ Nuevo estado para ordenamiento
+    const [sortBy, setSortBy] = useState('date_desc');
     const [showCancelModal, setShowCancelModal] = useState(null);
     const [cancelReason, setCancelReason] = useState('');
     const [cancelling, setCancelling] = useState(false);
@@ -37,26 +37,29 @@ const Reservations = () => {
     // Modal de detalles
     const [selectedReservation, setSelectedReservation] = useState(null);
 
-    useEffect(() => {
-        fetchReservations(currentPage);
-    }, [currentPage]);
-
-    const fetchReservations = async (page) => {
+    // Función para obtener reservas con filtros
+    const fetchReservations = useCallback(async (page, sort, status) => {
         setLoading(true);
         try {
-            const response = await reservationsService.getUserReservations(page, PAGE_SIZE);
+            // Usar el nuevo endpoint con filtros
+            const response = await reservationsService.getUserReservationsFiltered(
+                page,
+                PAGE_SIZE,
+                sort,
+                status
+            );
 
-            if (response && typeof response === 'object' && 'items' in response) {
+            if (response) {
                 setReservations(response.items || []);
                 setTotalPages(response.totalPages || 1);
                 setTotalItems(response.totalCount || 0);
             } else {
-                const data = Array.isArray(response) ? response : [];
-                setReservations(data);
-                setTotalPages(Math.ceil(data.length / PAGE_SIZE));
-                setTotalItems(data.length);
+                setReservations([]);
+                setTotalPages(1);
+                setTotalItems(0);
             }
 
+            // Obtener resumen (solo si cambia el filtro de estado)
             try {
                 const summaryData = await reservationsService.getSummary();
                 setSummary(summaryData);
@@ -70,48 +73,30 @@ const Reservations = () => {
         } finally {
             setLoading(false);
         }
+    }, []);
+
+    // Efecto para cargar datos cuando cambian los parámetros
+    useEffect(() => {
+        fetchReservations(currentPage, sortBy, filter);
+    }, [currentPage, sortBy, filter, fetchReservations]);
+
+    // Cambiar página
+    const handlePageChange = (page) => {
+        setCurrentPage(page);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    const getFilteredReservations = () => {
-        const now = new Date();
-        let filtered = [...reservations];
+    // Cambiar ordenamiento
+    const handleSortChange = (e) => {
+        const newSort = e.target.value;
+        setSortBy(newSort);
+        setCurrentPage(1); // Resetear a primera página
+    };
 
-        // ✅ Aplicar filtro por estado
-        switch (filter) {
-            case 'upcoming':
-                filtered = filtered.filter(r =>
-                    r.status === 'Confirmed' && new Date(r.startTime) > now
-                );
-                break;
-            case 'active':
-                filtered = filtered.filter(r =>
-                    r.status === 'Confirmed' &&
-                    new Date(r.startTime) <= now &&
-                    new Date(r.endTime) >= now
-                );
-                break;
-            case 'past':
-                filtered = filtered.filter(r =>
-                    r.status === 'Completed' || new Date(r.endTime) < now
-                );
-                break;
-            case 'pending':
-                filtered = filtered.filter(r => r.status === 'Pending');
-                break;
-            case 'cancelled':
-                filtered = filtered.filter(r => r.status === 'Cancelled');
-                break;
-            default:
-                break;
-        }
-
-        // ✅ Aplicar ordenamiento según sortBy
-        const sortOption = SORT_OPTIONS[sortBy];
-        if (sortOption) {
-            filtered.sort(sortOption.sortFn);
-        }
-
-        return filtered;
+    // Cambiar filtro de estado
+    const handleFilterChange = (newFilter) => {
+        setFilter(newFilter);
+        setCurrentPage(1); // Resetear a primera página
     };
 
     const getStatusBadge = (status) => {
@@ -134,17 +119,6 @@ const Reservations = () => {
         return icons[status] || 'circle';
     };
 
-    const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    };
-
     const formatDateShort = (dateString) => {
         const date = new Date(dateString);
         return date.toLocaleDateString('en-US', {
@@ -163,7 +137,7 @@ const Reservations = () => {
             toast.success('Reservación cancelada exitosamente');
             setShowCancelModal(null);
             setCancelReason('');
-            await fetchReservations(currentPage);
+            await fetchReservations(currentPage, sortBy, filter);
         } catch (error) {
             console.error('Error cancelling reservation:', error);
             toast.error(error.response?.data?.message || 'Error al cancelar la reservación');
@@ -173,6 +147,9 @@ const Reservations = () => {
     };
 
     const getFilterCount = (filterType) => {
+        // Si no hay reservas, retornar 0
+        if (!reservations || reservations.length === 0) return 0;
+
         const now = new Date();
         switch (filterType) {
             case 'upcoming':
@@ -198,20 +175,13 @@ const Reservations = () => {
         }
     };
 
-    const handlePageChange = (page) => {
-        setCurrentPage(page);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    };
-
     const handleReservationClick = (reservation) => {
         setSelectedReservation(reservation);
     };
 
-    const filteredReservations = getFilteredReservations();
-
-    // Obtener el label del sort actual
     const getCurrentSortLabel = () => {
-        return SORT_OPTIONS[sortBy]?.label || 'Sort by';
+        const option = SORT_OPTIONS.find(opt => opt.value === sortBy);
+        return option?.label || 'Sort by';
     };
 
     if (loading) {
@@ -262,62 +232,62 @@ const Reservations = () => {
                 {/* Filtros por estado */}
                 <div className="flex flex-wrap gap-2">
                     <button
-                        onClick={() => setFilter('all')}
+                        onClick={() => handleFilterChange('all')}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${filter === 'all'
-                                ? 'bg-primary text-on-primary shadow-md'
-                                : 'hover:bg-surface-container-low text-on-surface-variant'
+                            ? 'bg-primary text-on-primary shadow-md'
+                            : 'hover:bg-surface-container-low text-on-surface-variant'
                             }`}
                     >
                         All ({getFilterCount('all')})
                     </button>
                     <button
-                        onClick={() => setFilter('upcoming')}
+                        onClick={() => handleFilterChange('upcoming')}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${filter === 'upcoming'
-                                ? 'bg-primary text-on-primary shadow-md'
-                                : 'hover:bg-surface-container-low text-on-surface-variant'
+                            ? 'bg-primary text-on-primary shadow-md'
+                            : 'hover:bg-surface-container-low text-on-surface-variant'
                             }`}
                     >
                         Upcoming ({getFilterCount('upcoming')})
                     </button>
                     <button
-                        onClick={() => setFilter('active')}
+                        onClick={() => handleFilterChange('active')}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${filter === 'active'
-                                ? 'bg-primary text-on-primary shadow-md'
-                                : 'hover:bg-surface-container-low text-on-surface-variant'
+                            ? 'bg-primary text-on-primary shadow-md'
+                            : 'hover:bg-surface-container-low text-on-surface-variant'
                             }`}
                     >
                         Active ({getFilterCount('active')})
                     </button>
                     <button
-                        onClick={() => setFilter('pending')}
+                        onClick={() => handleFilterChange('pending')}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${filter === 'pending'
-                                ? 'bg-primary text-on-primary shadow-md'
-                                : 'hover:bg-surface-container-low text-on-surface-variant'
+                            ? 'bg-primary text-on-primary shadow-md'
+                            : 'hover:bg-surface-container-low text-on-surface-variant'
                             }`}
                     >
                         Pending ({getFilterCount('pending')})
                     </button>
                     <button
-                        onClick={() => setFilter('past')}
+                        onClick={() => handleFilterChange('past')}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${filter === 'past'
-                                ? 'bg-primary text-on-primary shadow-md'
-                                : 'hover:bg-surface-container-low text-on-surface-variant'
+                            ? 'bg-primary text-on-primary shadow-md'
+                            : 'hover:bg-surface-container-low text-on-surface-variant'
                             }`}
                     >
                         Past ({getFilterCount('past')})
                     </button>
                     <button
-                        onClick={() => setFilter('cancelled')}
+                        onClick={() => handleFilterChange('cancelled')}
                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${filter === 'cancelled'
-                                ? 'bg-primary text-on-primary shadow-md'
-                                : 'hover:bg-surface-container-low text-on-surface-variant'
+                            ? 'bg-primary text-on-primary shadow-md'
+                            : 'hover:bg-surface-container-low text-on-surface-variant'
                             }`}
                     >
                         Cancelled ({getFilterCount('cancelled')})
                     </button>
                 </div>
 
-                {/* ✅ Selector de ordenamiento */}
+                {/* Selector de ordenamiento */}
                 <div className="flex items-center gap-2">
                     <span className="text-body-sm text-on-surface-variant flex items-center gap-1">
                         <span className="material-symbols-outlined text-sm">sort</span>
@@ -325,15 +295,14 @@ const Reservations = () => {
                     </span>
                     <select
                         value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value)}
+                        onChange={handleSortChange}
                         className="bg-surface-container-low border border-outline-variant rounded-lg px-3 py-1.5 text-sm text-on-surface focus:border-primary focus:outline-none transition-all"
                     >
-                        <option value="date_desc">📅 Date (Newest first)</option>
-                        <option value="date_asc">📅 Date (Oldest first)</option>
-                        <option value="price_desc">💰 Price (Highest first)</option>
-                        <option value="price_asc">💰 Price (Lowest first)</option>
-                        <option value="guests_desc">👥 Guests (Most first)</option>
-                        <option value="guests_asc">👥 Guests (Least first)</option>
+                        {SORT_OPTIONS.map((option) => (
+                            <option key={option.value} value={option.value}>
+                                {option.label}
+                            </option>
+                        ))}
                     </select>
                 </div>
             </div>
@@ -342,12 +311,12 @@ const Reservations = () => {
             <div className="flex items-center gap-2 mb-4 text-body-xs text-on-surface-variant">
                 <span className="material-symbols-outlined text-sm">info</span>
                 <span>
-                    Showing {filteredReservations.length} reservations sorted by: <strong>{getCurrentSortLabel()}</strong>
+                    Showing {reservations.length} reservations sorted by: <strong>{getCurrentSortLabel()}</strong>
                 </span>
             </div>
 
             {/* Lista de reservaciones */}
-            {filteredReservations.length === 0 ? (
+            {reservations.length === 0 ? (
                 <div className="text-center py-20 bg-surface-container-lowest rounded-xl border border-outline-variant">
                     <span className="material-symbols-outlined text-6xl text-on-surface-variant mb-4 block">event_busy</span>
                     <h3 className="font-headline-md text-headline-md text-on-surface mb-2">No reservations found</h3>
@@ -363,7 +332,7 @@ const Reservations = () => {
             ) : (
                 <>
                     <div className="space-y-4">
-                        {filteredReservations.map((reservation) => {
+                        {reservations.map((reservation) => {
                             const isUpcoming = new Date(reservation.startTime) > new Date();
                             const isActive = new Date(reservation.startTime) <= new Date() &&
                                 new Date(reservation.endTime) >= new Date();
@@ -414,8 +383,8 @@ const Reservations = () => {
                                             )}
                                             {reservation.paymentStatus && (
                                                 <p className={`flex items-center gap-1 ${reservation.paymentStatus === 'Completed'
-                                                        ? 'text-emerald-600'
-                                                        : 'text-amber-600'
+                                                    ? 'text-emerald-600'
+                                                    : 'text-amber-600'
                                                     }`}>
                                                     <span className="material-symbols-outlined text-sm">payments</span>
                                                     Payment: {reservation.paymentStatus}
@@ -492,8 +461,8 @@ const Reservations = () => {
                                                 key={pageNum}
                                                 onClick={() => handlePageChange(pageNum)}
                                                 className={`w-10 h-10 rounded-lg transition-colors ${currentPage === pageNum
-                                                        ? 'bg-primary text-on-primary'
-                                                        : 'hover:bg-surface-container-low'
+                                                    ? 'bg-primary text-on-primary'
+                                                    : 'hover:bg-surface-container-low'
                                                     }`}
                                             >
                                                 {pageNum}
