@@ -16,5 +16,13 @@ namespace KineticWorkspace.API.Repositories.Interfaces
         Task<decimal> GetTotalRevenueByDateRangeAsync(DateTime startDate, DateTime endDate);
         Task<Dictionary<string, int>> GetReservationStatsByTypeAsync(DateTime startDate, DateTime endDate);
         Task<bool> IsSpaceReservedAsync(int spaceId, DateTime startTime, DateTime endTime, int? excludeReservationId = null);
+
+        // Método con filtros y ordenamiento
+        Task<(IEnumerable<Reservation> Items, int TotalCount)> GetUserReservationsFilteredAsync(
+            int userId,
+            int page,
+            int pageSize,
+            string? sortBy,
+            string? status);
     }
 }
