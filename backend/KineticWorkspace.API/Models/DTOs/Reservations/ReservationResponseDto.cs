@@ -22,4 +22,16 @@ namespace KineticWorkspace.API.Models.DTOs.Reservations
         public decimal? PaidAmount { get; set; }
         public string? PaymentStatus { get; set; }
     }
+
+    // respuesta paginada
+    public class PaginatedReservationResponseDto
+    {
+        public List<ReservationResponseDto> Items { get; set; } = new();
+        public int CurrentPage { get; set; }
+        public int PageSize { get; set; }
+        public int TotalPages { get; set; }
+        public int TotalCount { get; set; }
+        public string? SortBy { get; set; }
+        public string? Status { get; set; }
+    }
 }
