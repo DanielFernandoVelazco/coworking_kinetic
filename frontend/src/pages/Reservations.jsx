@@ -8,11 +8,22 @@ import toast from 'react-hot-toast';
 
 const PAGE_SIZE = 10;
 
+// Opciones de ordenamiento
+const SORT_OPTIONS = {
+    DATE_DESC: { label: 'Date (Newest first)', value: 'date_desc', sortFn: (a, b) => new Date(b.createdAt) - new Date(a.createdAt) },
+    DATE_ASC: { label: 'Date (Oldest first)', value: 'date_asc', sortFn: (a, b) => new Date(a.createdAt) - new Date(b.createdAt) },
+    PRICE_DESC: { label: 'Price (Highest first)', value: 'price_desc', sortFn: (a, b) => (b.totalPrice || 0) - (a.totalPrice || 0) },
+    PRICE_ASC: { label: 'Price (Lowest first)', value: 'price_asc', sortFn: (a, b) => (a.totalPrice || 0) - (b.totalPrice || 0) },
+    GUESTS_DESC: { label: 'Guests (Most first)', value: 'guests_desc', sortFn: (a, b) => (b.numberOfGuests || 0) - (a.numberOfGuests || 0) },
+    GUESTS_ASC: { label: 'Guests (Least first)', value: 'guests_asc', sortFn: (a, b) => (a.numberOfGuests || 0) - (b.numberOfGuests || 0) },
+};
+
 const Reservations = () => {
     const { user } = useAuth();
     const [reservations, setReservations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState('all');
+    const [sortBy, setSortBy] = useState('date_desc'); // ✅ Nuevo estado para ordenamiento
     const [showCancelModal, setShowCancelModal] = useState(null);
     const [cancelReason, setCancelReason] = useState('');
     const [cancelling, setCancelling] = useState(false);
@@ -33,23 +44,19 @@ const Reservations = () => {
     const fetchReservations = async (page) => {
         setLoading(true);
         try {
-            // Obtener reservas con paginación
             const response = await reservationsService.getUserReservations(page, PAGE_SIZE);
 
-            // Si el backend devuelve un objeto paginado
             if (response && typeof response === 'object' && 'items' in response) {
                 setReservations(response.items || []);
                 setTotalPages(response.totalPages || 1);
                 setTotalItems(response.totalCount || 0);
             } else {
-                // Fallback: si devuelve un array directamente
                 const data = Array.isArray(response) ? response : [];
                 setReservations(data);
                 setTotalPages(Math.ceil(data.length / PAGE_SIZE));
                 setTotalItems(data.length);
             }
 
-            // Obtener resumen
             try {
                 const summaryData = await reservationsService.getSummary();
                 setSummary(summaryData);
@@ -69,36 +76,42 @@ const Reservations = () => {
         const now = new Date();
         let filtered = [...reservations];
 
-        // ✅ ORDENAR POR UpdatedAt (más reciente primero) con fallback a CreatedAt
-        filtered.sort((a, b) => {
-            const dateA = a.updatedAt ? new Date(a.updatedAt) : new Date(a.createdAt);
-            const dateB = b.updatedAt ? new Date(b.updatedAt) : new Date(b.createdAt);
-            return dateB - dateA;  // Descendente
-        });
-
-        // Aplicar filtros
+        // ✅ Aplicar filtro por estado
         switch (filter) {
             case 'upcoming':
-                return filtered.filter(r =>
+                filtered = filtered.filter(r =>
                     r.status === 'Confirmed' && new Date(r.startTime) > now
                 );
+                break;
             case 'active':
-                return filtered.filter(r =>
+                filtered = filtered.filter(r =>
                     r.status === 'Confirmed' &&
                     new Date(r.startTime) <= now &&
                     new Date(r.endTime) >= now
                 );
+                break;
             case 'past':
-                return filtered.filter(r =>
+                filtered = filtered.filter(r =>
                     r.status === 'Completed' || new Date(r.endTime) < now
                 );
+                break;
             case 'pending':
-                return filtered.filter(r => r.status === 'Pending');
+                filtered = filtered.filter(r => r.status === 'Pending');
+                break;
             case 'cancelled':
-                return filtered.filter(r => r.status === 'Cancelled');
+                filtered = filtered.filter(r => r.status === 'Cancelled');
+                break;
             default:
-                return filtered;
+                break;
         }
+
+        // ✅ Aplicar ordenamiento según sortBy
+        const sortOption = SORT_OPTIONS[sortBy];
+        if (sortOption) {
+            filtered.sort(sortOption.sortFn);
+        }
+
+        return filtered;
     };
 
     const getStatusBadge = (status) => {
@@ -196,6 +209,11 @@ const Reservations = () => {
 
     const filteredReservations = getFilteredReservations();
 
+    // Obtener el label del sort actual
+    const getCurrentSortLabel = () => {
+        return SORT_OPTIONS[sortBy]?.label || 'Sort by';
+    };
+
     if (loading) {
         return (
             <div className="max-w-container-max mx-auto px-margin-desktop py-12">
@@ -206,14 +224,6 @@ const Reservations = () => {
             </div>
         );
     }
-
-    // Mostrar la fecha de última modificación en la UI
-    const getLastModified = (reservation) => {
-        if (reservation.updatedAt) {
-            return `Updated: ${formatDateShort(reservation.updatedAt)}`;
-        }
-        return `Created: ${formatDateShort(reservation.createdAt)}`;
-    };
 
     return (
         <div className="max-w-container-max mx-auto px-margin-desktop py-12">
@@ -247,62 +257,93 @@ const Reservations = () => {
                 </div>
             )}
 
-            {/* Filters */}
-            <div className="flex flex-wrap gap-2 mb-6 border-b border-outline-variant pb-4">
-                <button
-                    onClick={() => setFilter('all')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${filter === 'all'
-                            ? 'bg-primary text-on-primary shadow-md'
-                            : 'hover:bg-surface-container-low text-on-surface-variant'
-                        }`}
-                >
-                    All ({getFilterCount('all')})
-                </button>
-                <button
-                    onClick={() => setFilter('upcoming')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${filter === 'upcoming'
-                            ? 'bg-primary text-on-primary shadow-md'
-                            : 'hover:bg-surface-container-low text-on-surface-variant'
-                        }`}
-                >
-                    Upcoming ({getFilterCount('upcoming')})
-                </button>
-                <button
-                    onClick={() => setFilter('active')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${filter === 'active'
-                            ? 'bg-primary text-on-primary shadow-md'
-                            : 'hover:bg-surface-container-low text-on-surface-variant'
-                        }`}
-                >
-                    Active ({getFilterCount('active')})
-                </button>
-                <button
-                    onClick={() => setFilter('pending')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${filter === 'pending'
-                            ? 'bg-primary text-on-primary shadow-md'
-                            : 'hover:bg-surface-container-low text-on-surface-variant'
-                        }`}
-                >
-                    Pending ({getFilterCount('pending')})
-                </button>
-                <button
-                    onClick={() => setFilter('past')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${filter === 'past'
-                            ? 'bg-primary text-on-primary shadow-md'
-                            : 'hover:bg-surface-container-low text-on-surface-variant'
-                        }`}
-                >
-                    Past ({getFilterCount('past')})
-                </button>
-                <button
-                    onClick={() => setFilter('cancelled')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${filter === 'cancelled'
-                            ? 'bg-primary text-on-primary shadow-md'
-                            : 'hover:bg-surface-container-low text-on-surface-variant'
-                        }`}
-                >
-                    Cancelled ({getFilterCount('cancelled')})
-                </button>
+            {/* Filters & Sort - Barra combinada */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-outline-variant pb-4">
+                {/* Filtros por estado */}
+                <div className="flex flex-wrap gap-2">
+                    <button
+                        onClick={() => setFilter('all')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${filter === 'all'
+                                ? 'bg-primary text-on-primary shadow-md'
+                                : 'hover:bg-surface-container-low text-on-surface-variant'
+                            }`}
+                    >
+                        All ({getFilterCount('all')})
+                    </button>
+                    <button
+                        onClick={() => setFilter('upcoming')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${filter === 'upcoming'
+                                ? 'bg-primary text-on-primary shadow-md'
+                                : 'hover:bg-surface-container-low text-on-surface-variant'
+                            }`}
+                    >
+                        Upcoming ({getFilterCount('upcoming')})
+                    </button>
+                    <button
+                        onClick={() => setFilter('active')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${filter === 'active'
+                                ? 'bg-primary text-on-primary shadow-md'
+                                : 'hover:bg-surface-container-low text-on-surface-variant'
+                            }`}
+                    >
+                        Active ({getFilterCount('active')})
+                    </button>
+                    <button
+                        onClick={() => setFilter('pending')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${filter === 'pending'
+                                ? 'bg-primary text-on-primary shadow-md'
+                                : 'hover:bg-surface-container-low text-on-surface-variant'
+                            }`}
+                    >
+                        Pending ({getFilterCount('pending')})
+                    </button>
+                    <button
+                        onClick={() => setFilter('past')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${filter === 'past'
+                                ? 'bg-primary text-on-primary shadow-md'
+                                : 'hover:bg-surface-container-low text-on-surface-variant'
+                            }`}
+                    >
+                        Past ({getFilterCount('past')})
+                    </button>
+                    <button
+                        onClick={() => setFilter('cancelled')}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${filter === 'cancelled'
+                                ? 'bg-primary text-on-primary shadow-md'
+                                : 'hover:bg-surface-container-low text-on-surface-variant'
+                            }`}
+                    >
+                        Cancelled ({getFilterCount('cancelled')})
+                    </button>
+                </div>
+
+                {/* ✅ Selector de ordenamiento */}
+                <div className="flex items-center gap-2">
+                    <span className="text-body-sm text-on-surface-variant flex items-center gap-1">
+                        <span className="material-symbols-outlined text-sm">sort</span>
+                        Sort by:
+                    </span>
+                    <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                        className="bg-surface-container-low border border-outline-variant rounded-lg px-3 py-1.5 text-sm text-on-surface focus:border-primary focus:outline-none transition-all"
+                    >
+                        <option value="date_desc">📅 Date (Newest first)</option>
+                        <option value="date_asc">📅 Date (Oldest first)</option>
+                        <option value="price_desc">💰 Price (Highest first)</option>
+                        <option value="price_asc">💰 Price (Lowest first)</option>
+                        <option value="guests_desc">👥 Guests (Most first)</option>
+                        <option value="guests_asc">👥 Guests (Least first)</option>
+                    </select>
+                </div>
+            </div>
+
+            {/* Indicador de ordenamiento actual */}
+            <div className="flex items-center gap-2 mb-4 text-body-xs text-on-surface-variant">
+                <span className="material-symbols-outlined text-sm">info</span>
+                <span>
+                    Showing {filteredReservations.length} reservations sorted by: <strong>{getCurrentSortLabel()}</strong>
+                </span>
             </div>
 
             {/* Lista de reservaciones */}
@@ -350,10 +391,6 @@ const Reservations = () => {
                                                     Active Now
                                                 </span>
                                             )}
-                                            {/* ✅ Badge de última modificación */}
-                                            <span className="text-xs text-on-surface-variant bg-surface-container-low px-2 py-0.5 rounded-full">
-                                                {getLastModified(reservation)}
-                                            </span>
                                         </div>
 
                                         <div className="space-y-1 text-body-sm text-on-surface-variant">
