@@ -19,6 +19,28 @@ namespace KineticWorkspace.API.Controllers
             _logger = logger;
         }
 
+        // Endpoint con filtros y ordenamiento
+        [HttpGet("user/filtered")]
+        public async Task<IActionResult> GetUserReservationsFiltered(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? sortBy = "date_desc",
+            [FromQuery] string? status = "all")
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+                var result = await _reservationService.GetUserReservationsFilteredAsync(userId, page, pageSize, sortBy, status);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener reservaciones del usuario con filtros");
+                return StatusCode(500, new { message = "Error interno del servidor" });
+            }
+        }
+
+        // Endpoint original (se mantiene por compatibilidad)
         [HttpGet("user")]
         public async Task<IActionResult> GetUserReservations()
         {
