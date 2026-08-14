@@ -14,6 +14,8 @@ namespace KineticWorkspace.API.Models.Entities
         [Required]
         public int UserId { get; set; }
 
+        public int? InvoiceId { get; set; } // ✅ RELACIÓN CON FACTURA
+
         [Required]
         [Column(TypeName = "decimal(18,2)")]
         public decimal Amount { get; set; }
@@ -41,5 +43,8 @@ namespace KineticWorkspace.API.Models.Entities
 
         [ForeignKey("UserId")]
         public virtual User User { get; set; } = null!;
+
+        [ForeignKey("InvoiceId")]
+        public virtual Invoice? Invoice { get; set; } // ✅ RELACIÓN CON FACTURA
     }
 }
