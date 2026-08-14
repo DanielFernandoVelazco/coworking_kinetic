@@ -4,9 +4,11 @@ import axiosInstance from './axios.config';
 const API_URL = '/reservations';
 
 export const reservationsService = {
-    // Obtener reservas del usuario
-    getUserReservations: async () => {
-        const response = await axiosInstance.get(`${API_URL}/user`);
+    // Obtener reservas del usuario (con paginación)
+    getUserReservations: async (page = 1, pageSize = 10) => {
+        const response = await axiosInstance.get(`${API_URL}/user`, {
+            params: { page, pageSize }
+        });
         return response.data;
     },
 
