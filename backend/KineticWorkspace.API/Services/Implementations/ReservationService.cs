@@ -25,6 +25,38 @@ namespace KineticWorkspace.API.Services.Implementations
             _logger = logger;
         }
 
+        // Método con filtros y ordenamiento
+        public async Task<PaginatedReservationResponseDto> GetUserReservationsFilteredAsync(
+            int userId,
+            int page,
+            int pageSize,
+            string? sortBy,
+            string? status)
+        {
+            // Validar parámetros
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 10;
+            if (pageSize > 100) pageSize = 100;
+
+            // Obtener datos del repositorio
+            var (items, totalCount) = await _reservationRepository.GetUserReservationsFilteredAsync(
+                userId, page, pageSize, sortBy, status);
+
+            // Mapear a DTOs
+            var mappedItems = _mapper.Map<IEnumerable<ReservationResponseDto>>(items);
+
+            return new PaginatedReservationResponseDto
+            {
+                Items = mappedItems.ToList(),
+                CurrentPage = page,
+                PageSize = pageSize,
+                TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
+                TotalCount = totalCount,
+                SortBy = sortBy ?? "date_desc",
+                Status = status ?? "all"
+            };
+        }
+
         public async Task<IEnumerable<ReservationResponseDto>> GetUserReservationsAsync(int userId)
         {
             var reservations = await _reservationRepository.GetUserReservationsAsync(userId);
@@ -43,32 +75,25 @@ namespace KineticWorkspace.API.Services.Implementations
             return reservation != null ? _mapper.Map<ReservationResponseDto>(reservation) : null;
         }
 
-        /// <summary>
-        /// Valida que las fechas de una reserva sean correctas
-        /// </summary>
         private void ValidateReservationDates(DateTime startTime, DateTime endTime)
         {
-            // ✅ Validar que StartTime sea anterior a EndTime
             if (startTime >= endTime)
             {
                 throw new InvalidOperationException("La fecha de inicio debe ser anterior a la fecha de fin");
             }
 
-            // ✅ Validar que StartTime no sea en el pasado (con margen de 1 minuto para evitar problemas de redondeo)
             var minStartTime = DateTime.UtcNow.AddMinutes(-1);
             if (startTime < minStartTime)
             {
                 throw new InvalidOperationException("No se pueden hacer reservas en el pasado");
             }
 
-            // ✅ Validar duración máxima (opcional - 30 días máximo)
             var maxDuration = TimeSpan.FromDays(30);
             if (endTime - startTime > maxDuration)
             {
                 throw new InvalidOperationException($"La duración máxima de una reserva es de {maxDuration.Days} días");
             }
 
-            // ✅ Validar duración mínima (opcional - 30 minutos mínimo)
             var minDuration = TimeSpan.FromMinutes(30);
             if (endTime - startTime < minDuration)
             {
@@ -78,10 +103,8 @@ namespace KineticWorkspace.API.Services.Implementations
 
         public async Task<ReservationResponseDto> CreateReservationAsync(ReservationRequestDto request, int userId)
         {
-            // ✅ Validar fechas
             ValidateReservationDates(request.StartTime, request.EndTime);
 
-            // Verificar disponibilidad
             var isAvailable = await _spaceRepository.IsSpaceAvailableAsync(request.SpaceId, request.StartTime, request.EndTime);
             if (!isAvailable)
             {
@@ -94,14 +117,12 @@ namespace KineticWorkspace.API.Services.Implementations
                 throw new InvalidOperationException("Espacio no encontrado");
             }
 
-            // ✅ Validar que el número de invitados no exceda la capacidad
             var numberOfGuests = request.NumberOfGuests ?? space.Capacity;
             if (numberOfGuests > space.Capacity)
             {
                 throw new InvalidOperationException($"La capacidad máxima del espacio es de {space.Capacity} personas. Has seleccionado {numberOfGuests}.");
             }
 
-            // Calcular precio total (considerando precio por día si está disponible)
             var totalPrice = CalculateTotalPrice(space, request.StartTime, request.EndTime);
 
             var reservation = new Reservation
@@ -115,7 +136,7 @@ namespace KineticWorkspace.API.Services.Implementations
                 NumberOfGuests = numberOfGuests,
                 TotalPrice = totalPrice,
                 CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow  // ✅ AGREGADO: Se establece al crear
+                UpdatedAt = DateTime.UtcNow
             };
 
             var createdReservation = await _reservationRepository.AddAsync(reservation);
@@ -126,7 +147,6 @@ namespace KineticWorkspace.API.Services.Implementations
 
         public async Task<ReservationResponseDto?> UpdateReservationAsync(int id, ReservationRequestDto request, int userId)
         {
-            // ✅ Validar fechas
             ValidateReservationDates(request.StartTime, request.EndTime);
 
             var reservation = await _reservationRepository.GetReservationWithDetailsAsync(id);
@@ -142,7 +162,6 @@ namespace KineticWorkspace.API.Services.Implementations
                 throw new InvalidOperationException("No se puede modificar una reservación cancelada o completada");
             }
 
-            // Verificar nueva disponibilidad
             var isAvailable = await _spaceRepository.IsSpaceAvailableAsync(request.SpaceId, request.StartTime, request.EndTime, id);
             if (!isAvailable)
             {
@@ -155,7 +174,6 @@ namespace KineticWorkspace.API.Services.Implementations
                 throw new InvalidOperationException("Espacio no encontrado");
             }
 
-            // ✅ Validar que el número de invitados no exceda la capacidad
             var numberOfGuests = request.NumberOfGuests ?? space.Capacity;
             if (numberOfGuests > space.Capacity)
             {
@@ -170,7 +188,7 @@ namespace KineticWorkspace.API.Services.Implementations
             reservation.Notes = request.Notes;
             reservation.NumberOfGuests = numberOfGuests;
             reservation.TotalPrice = totalPrice;
-            reservation.UpdatedAt = DateTime.UtcNow;  // ✅ Actualiza la fecha de modificación
+            reservation.UpdatedAt = DateTime.UtcNow;
 
             await _reservationRepository.UpdateAsync(reservation);
             _logger.LogInformation("Reservación actualizada: {ReservationId}", id);
@@ -178,25 +196,18 @@ namespace KineticWorkspace.API.Services.Implementations
             return _mapper.Map<ReservationResponseDto>(reservation);
         }
 
-        /// <summary>
-        /// Calcula el precio total considerando precio por día si está disponible
-        /// </summary>
         private decimal CalculateTotalPrice(Space space, DateTime startTime, DateTime endTime)
         {
             var totalHours = (endTime - startTime).TotalHours;
             var totalDays = (endTime.Date - startTime.Date).Days;
 
-            // Si la reserva es de 1 día o más y el espacio tiene precio por día
             if (totalDays >= 1 && space.PricePerDay.HasValue && space.PricePerDay.Value > 0)
             {
-                // Calcular: días completos * precio por día + horas restantes * precio por hora
                 var days = totalDays;
                 var remainingHours = totalHours % 24;
-
                 return (decimal)days * space.PricePerDay.Value + (decimal)remainingHours * space.PricePerHour;
             }
 
-            // Si es menos de un día, usar precio por hora
             return space.PricePerHour * (decimal)totalHours;
         }
 
@@ -215,7 +226,6 @@ namespace KineticWorkspace.API.Services.Implementations
                 throw new InvalidOperationException("No se puede cancelar una reservación completada");
             }
 
-            // ✅ Actualizar UpdatedAt al cancelar
             reservation.UpdatedAt = DateTime.UtcNow;
 
             return await _reservationRepository.CancelReservationAsync(id, reason);
@@ -232,7 +242,7 @@ namespace KineticWorkspace.API.Services.Implementations
             }
 
             reservation.Status = "Confirmed";
-            reservation.UpdatedAt = DateTime.UtcNow;  // ✅ Actualiza la fecha de modificación al confirmar
+            reservation.UpdatedAt = DateTime.UtcNow;
             await _reservationRepository.UpdateAsync(reservation);
 
             _logger.LogInformation("Reservación confirmada: {ReservationId} por Admin: {AdminId}", id, adminUserId);
@@ -254,8 +264,6 @@ namespace KineticWorkspace.API.Services.Implementations
         public async Task<ReservationSummaryDto> GetReservationSummaryAsync(int userId)
         {
             var reservations = await _reservationRepository.GetUserReservationsAsync(userId);
-
-            // Corregir: Verificar que reservations no sea null
             var reservationList = reservations?.ToList() ?? new List<Reservation>();
 
             var summary = new ReservationSummaryDto
