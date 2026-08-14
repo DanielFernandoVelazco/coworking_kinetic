@@ -69,9 +69,14 @@ const Reservations = () => {
         const now = new Date();
         let filtered = [...reservations];
 
-        // Ordenar por fecha de creación (más reciente primero)
-        filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        // ✅ ORDENAR POR UpdatedAt (más reciente primero) con fallback a CreatedAt
+        filtered.sort((a, b) => {
+            const dateA = a.updatedAt ? new Date(a.updatedAt) : new Date(a.createdAt);
+            const dateB = b.updatedAt ? new Date(b.updatedAt) : new Date(b.createdAt);
+            return dateB - dateA;  // Descendente
+        });
 
+        // Aplicar filtros
         switch (filter) {
             case 'upcoming':
                 return filtered.filter(r =>
@@ -201,6 +206,14 @@ const Reservations = () => {
             </div>
         );
     }
+
+    // Mostrar la fecha de última modificación en la UI
+    const getLastModified = (reservation) => {
+        if (reservation.updatedAt) {
+            return `Updated: ${formatDateShort(reservation.updatedAt)}`;
+        }
+        return `Created: ${formatDateShort(reservation.createdAt)}`;
+    };
 
     return (
         <div className="max-w-container-max mx-auto px-margin-desktop py-12">
@@ -337,6 +350,10 @@ const Reservations = () => {
                                                     Active Now
                                                 </span>
                                             )}
+                                            {/* ✅ Badge de última modificación */}
+                                            <span className="text-xs text-on-surface-variant bg-surface-container-low px-2 py-0.5 rounded-full">
+                                                {getLastModified(reservation)}
+                                            </span>
                                         </div>
 
                                         <div className="space-y-1 text-body-sm text-on-surface-variant">
