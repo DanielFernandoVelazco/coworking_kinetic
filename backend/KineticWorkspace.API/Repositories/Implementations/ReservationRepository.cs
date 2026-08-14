@@ -17,7 +17,7 @@ namespace KineticWorkspace.API.Repositories.Implementations
                 .Include(r => r.Space)
                 .Include(r => r.Payments)
                 .Where(r => r.UserId == userId)
-                .OrderByDescending(r => r.StartTime)
+                .OrderByDescending(r => r.UpdatedAt ?? r.CreatedAt)  // ✅ ORDENAR POR UpdatedAt (con fallback a CreatedAt)
                 .ToListAsync();
         }
 
@@ -26,7 +26,7 @@ namespace KineticWorkspace.API.Repositories.Implementations
             return await _dbSet
                 .Include(r => r.User)
                 .Where(r => r.SpaceId == spaceId)
-                .OrderByDescending(r => r.StartTime)
+                .OrderByDescending(r => r.UpdatedAt ?? r.CreatedAt)  // ✅ ORDENAR POR UpdatedAt (con fallback a CreatedAt)
                 .ToListAsync();
         }
 
@@ -79,6 +79,7 @@ namespace KineticWorkspace.API.Repositories.Implementations
 
             reservation.Status = "Cancelled";
             reservation.CancelledAt = DateTime.UtcNow;
+            reservation.UpdatedAt = DateTime.UtcNow;  // ✅ Actualizar UpdatedAt al cancelar
             if (!string.IsNullOrEmpty(reason))
             {
                 reservation.Notes = $"{reservation.Notes}\nCancelado: {reason}";
@@ -95,6 +96,7 @@ namespace KineticWorkspace.API.Repositories.Implementations
 
             reservation.Status = "Completed";
             reservation.CompletedAt = DateTime.UtcNow;
+            reservation.UpdatedAt = DateTime.UtcNow;  // ✅ Actualizar UpdatedAt al completar
             await UpdateAsync(reservation);
             return true;
         }
