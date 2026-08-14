@@ -17,8 +17,74 @@ namespace KineticWorkspace.API.Repositories.Implementations
                 .Include(r => r.Space)
                 .Include(r => r.Payments)
                 .Where(r => r.UserId == userId)
-                .OrderByDescending(r => r.UpdatedAt ?? r.CreatedAt)  // ✅ ORDENAR POR UpdatedAt (con fallback a CreatedAt)
+                .OrderByDescending(r => r.UpdatedAt ?? r.CreatedAt)
                 .ToListAsync();
+        }
+
+        // ✅ NUEVO: Método con filtros y ordenamiento
+        public async Task<(IEnumerable<Reservation> Items, int TotalCount)> GetUserReservationsFilteredAsync(
+            int userId,
+            int page,
+            int pageSize,
+            string? sortBy,
+            string? status)
+        {
+            var query = _dbSet
+                .Include(r => r.Space)
+                .Include(r => r.Payments)
+                .Where(r => r.UserId == userId);
+
+            // ✅ Aplicar filtro por estado
+            if (!string.IsNullOrEmpty(status) && status != "all")
+            {
+                var now = DateTime.UtcNow;
+                switch (status)
+                {
+                    case "upcoming":
+                        query = query.Where(r => r.Status == "Confirmed" && r.StartTime > now);
+                        break;
+                    case "active":
+                        query = query.Where(r => r.Status == "Confirmed" && r.StartTime <= now && r.EndTime >= now);
+                        break;
+                    case "past":
+                        query = query.Where(r => r.Status == "Completed" || r.EndTime < now);
+                        break;
+                    case "pending":
+                        query = query.Where(r => r.Status == "Pending");
+                        break;
+                    case "cancelled":
+                        query = query.Where(r => r.Status == "Cancelled");
+                        break;
+                }
+            }
+
+            // ✅ Obtener total antes de paginar
+            var totalCount = await query.CountAsync();
+
+            // ✅ Aplicar ordenamiento
+            query = ApplySorting(query, sortBy);
+
+            // ✅ Aplicar paginación
+            var items = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, totalCount);
+        }
+
+        // auxiliar para aplicar ordenamiento
+        private IQueryable<Reservation> ApplySorting(IQueryable<Reservation> query, string? sortBy)
+        {
+            return sortBy switch
+            {
+                "date_asc" => query.OrderBy(r => r.CreatedAt),
+                "price_desc" => query.OrderByDescending(r => r.TotalPrice),
+                "price_asc" => query.OrderBy(r => r.TotalPrice),
+                "guests_desc" => query.OrderByDescending(r => r.NumberOfGuests ?? 0),
+                "guests_asc" => query.OrderBy(r => r.NumberOfGuests ?? 0),
+                _ => query.OrderByDescending(r => r.CreatedAt) // date_desc (default)
+            };
         }
 
         public async Task<IEnumerable<Reservation>> GetSpaceReservationsAsync(int spaceId)
@@ -26,7 +92,7 @@ namespace KineticWorkspace.API.Repositories.Implementations
             return await _dbSet
                 .Include(r => r.User)
                 .Where(r => r.SpaceId == spaceId)
-                .OrderByDescending(r => r.UpdatedAt ?? r.CreatedAt)  // ✅ ORDENAR POR UpdatedAt (con fallback a CreatedAt)
+                .OrderByDescending(r => r.UpdatedAt ?? r.CreatedAt)
                 .ToListAsync();
         }
 
@@ -79,7 +145,7 @@ namespace KineticWorkspace.API.Repositories.Implementations
 
             reservation.Status = "Cancelled";
             reservation.CancelledAt = DateTime.UtcNow;
-            reservation.UpdatedAt = DateTime.UtcNow;  // ✅ Actualizar UpdatedAt al cancelar
+            reservation.UpdatedAt = DateTime.UtcNow;
             if (!string.IsNullOrEmpty(reason))
             {
                 reservation.Notes = $"{reservation.Notes}\nCancelado: {reason}";
@@ -96,7 +162,7 @@ namespace KineticWorkspace.API.Repositories.Implementations
 
             reservation.Status = "Completed";
             reservation.CompletedAt = DateTime.UtcNow;
-            reservation.UpdatedAt = DateTime.UtcNow;  // ✅ Actualizar UpdatedAt al completar
+            reservation.UpdatedAt = DateTime.UtcNow;
             await UpdateAsync(reservation);
             return true;
         }
