@@ -10,6 +10,22 @@ export const preReservationsService = {
         return response.data;
     },
 
+    // ✅ NUEVO: Verificar estado de una pre-reserva
+    getStatus: async (id) => {
+        const response = await axiosInstance.get(`${API_URL}/${id}`);
+        return response.data;
+    },
+
+    // ✅ NUEVO: Verificar si una pre-reserva fue pagada
+    checkIfPaid: async (id) => {
+        try {
+            const data = await preReservationsService.getById(id);
+            return data.status === 'Paid';
+        } catch {
+            return false;
+        }
+    },
+
     // Obtener pre-reserva por ID
     getById: async (id) => {
         const response = await axiosInstance.get(`${API_URL}/${id}`);
