@@ -83,7 +83,14 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseMySql(
         connectionString,
         new MySqlServerVersion(new Version(10, 4, 32)),
-        mysqlOptions => mysqlOptions.EnableRetryOnFailure()
+        mysqlOptions =>
+        {
+            mysqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 3,
+                maxRetryDelay: TimeSpan.FromSeconds(30),
+                errorNumbersToAdd: null
+            );
+        }
     );
 
     options.EnableSensitiveDataLogging(builder.Environment.IsDevelopment());
