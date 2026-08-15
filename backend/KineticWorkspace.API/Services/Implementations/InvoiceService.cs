@@ -42,40 +42,56 @@ namespace KineticWorkspace.API.Services.Implementations
 
         public async Task<Invoice> CreateInvoiceAsync(int userId, int reservationId, decimal totalAmount, string paymentMethod, string? transactionId)
         {
-            var invoiceNumber = await GenerateInvoiceNumberAsync();
-
-            var invoice = new Invoice
+            try
             {
-                InvoiceNumber = invoiceNumber,
-                UserId = userId,
-                ReservationId = reservationId,
-                TotalAmount = totalAmount,
-                Status = "Pending",
-                PaymentMethod = paymentMethod,
-                TransactionId = transactionId,
-                CreatedAt = DateTime.UtcNow,
-                DueDate = DateTime.UtcNow.AddDays(15)
-            };
+                var invoiceNumber = await GenerateInvoiceNumberAsync();
 
-            await _context.Invoices.AddAsync(invoice);
-            await _context.SaveChangesAsync();
+                var invoice = new Invoice
+                {
+                    InvoiceNumber = invoiceNumber,
+                    UserId = userId,
+                    ReservationId = reservationId,
+                    TotalAmount = totalAmount,
+                    Status = "Pending",
+                    PaymentMethod = paymentMethod,
+                    TransactionId = transactionId,
+                    CreatedAt = DateTime.UtcNow,
+                    DueDate = DateTime.UtcNow.AddDays(15)
+                };
 
-            _logger.LogInformation("Factura creada: {InvoiceNumber} para usuario {UserId}", invoiceNumber, userId);
-            return invoice;
+                await _context.Invoices.AddAsync(invoice);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Factura creada: {invoiceNumber} para usuario {userId}");
+                return invoice;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error al crear factura para usuario {userId}");
+                throw;
+            }
         }
 
         public async Task<bool> MarkInvoiceAsPaidAsync(int invoiceId, string transactionId)
         {
-            var invoice = await _context.Invoices.FindAsync(invoiceId);
-            if (invoice == null) return false;
+            try
+            {
+                var invoice = await _context.Invoices.FindAsync(invoiceId);
+                if (invoice == null) return false;
 
-            invoice.Status = "Paid";
-            invoice.PaidAt = DateTime.UtcNow;
-            invoice.TransactionId = transactionId ?? invoice.TransactionId;
+                invoice.Status = "Paid";
+                invoice.PaidAt = DateTime.UtcNow;
+                invoice.TransactionId = transactionId ?? invoice.TransactionId;
 
-            await _context.SaveChangesAsync();
-            _logger.LogInformation("Factura marcada como pagada: {InvoiceNumber}", invoice.InvoiceNumber);
-            return true;
+                await _context.SaveChangesAsync();
+                _logger.LogInformation($"Factura marcada como pagada: {invoice.InvoiceNumber}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error al marcar factura como pagada: {invoiceId}");
+                throw;
+            }
         }
 
         public async Task<bool> MarkInvoiceAsCancelledAsync(int invoiceId)
