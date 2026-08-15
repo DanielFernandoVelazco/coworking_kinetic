@@ -13,7 +13,8 @@ import Register from './pages/Register';
 import Catalog from './pages/Catalog';
 import SpaceDetails from './pages/SpaceDetails';
 import Profile from './pages/Profile';
-import Reservations from './pages/Reservations'; // ✅ NUEVO
+import Reservations from './pages/Reservations';
+import CartPage from './pages/CartPage'; // ✅ NUEVO
 import AdminDashboard from './pages/AdminDashboard';
 import NotFound from './pages/NotFound';
 
@@ -80,7 +81,14 @@ const AppRoutes = () => {
 
                 <Route path="reservations" element={
                     <ProtectedRoute>
-                        <Reservations /> {/* ✅ NUEVO */}
+                        <Reservations />
+                    </ProtectedRoute>
+                } />
+
+                {/* ✅ Carrito */}
+                <Route path="cart" element={
+                    <ProtectedRoute>
+                        <CartPage />
                     </ProtectedRoute>
                 } />
 
