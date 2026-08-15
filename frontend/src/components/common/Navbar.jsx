@@ -2,15 +2,19 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useCart } from '../../context/CartContext';
 
 const Navbar = () => {
     const { user, isAuthenticated, logout } = useAuth();
+    const { getItemCount, cartItems } = useCart();
     const navigate = useNavigate();
 
     const handleLogout = async () => {
         await logout();
         navigate('/login');
     };
+
+    const cartCount = getItemCount();
 
     return (
         <nav className="bg-surface w-full top-0 border-b border-outline-variant z-50 sticky">
@@ -28,7 +32,7 @@ const Navbar = () => {
                             <Link to="/catalog" className="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors">
                                 Workspaces
                             </Link>
-                            <Link to="/reservations" className="font-body-md text-body-md text-primary border-b-2 border-primary pb-1 font-semibold">
+                            <Link to="/reservations" className="font-body-md text-body-md text-on-surface-variant hover:text-primary transition-colors">
                                 My Reservations
                             </Link>
                             {user?.isAdmin && (
@@ -42,6 +46,18 @@ const Navbar = () => {
 
                 {/* Actions */}
                 <div className="flex items-center gap-4">
+                    {/* ✅ Carrito */}
+                    {isAuthenticated && (
+                        <Link to="/cart" className="relative p-2 text-on-surface-variant hover:text-primary transition-colors">
+                            <span className="material-symbols-outlined">shopping_cart</span>
+                            {cartCount > 0 && (
+                                <span className="absolute -top-1 -right-1 bg-primary text-on-primary text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                                    {cartCount}
+                                </span>
+                            )}
+                        </Link>
+                    )}
+
                     {isAuthenticated ? (
                         <>
                             <button className="p-2 text-on-surface-variant hover:text-primary transition-colors">
