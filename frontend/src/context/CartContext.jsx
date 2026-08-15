@@ -122,18 +122,28 @@ export const CartProvider = ({ children }) => {
     const confirmPayment = async (preReservationId, paymentIntentId) => {
         setLoading(true);
         try {
+            console.log('📤 Confirmando pago:', { preReservationId, paymentIntentId });
+
             const result = await preReservationsService.confirmPayment({
                 preReservationId,
                 paymentIntentId
             });
 
-            // ✅ NO limpiar el carrito aquí - lo hará PaymentModal después de la redirección
-            toast.success('¡Pago confirmado!');
-            return { success: true, data: result };
+            console.log('📥 Resultado confirmación:', result);
+
+            if (result && result.status === 'Completed') {
+                toast.success('✅ Pago confirmado exitosamente');
+                return { success: true, data: result };
+            } else {
+                const errorMsg = result?.message || 'Error al confirmar el pago';
+                toast.error(errorMsg);
+                return { success: false, error: errorMsg };
+            }
         } catch (error) {
-            const message = error.response?.data?.message || 'Error al confirmar el pago';
-            toast.error(message);
-            return { success: false, error: message };
+            console.error('❌ Error en confirmPayment:', error);
+            const errorMsg = error.response?.data?.message || error.message || 'Error al confirmar el pago';
+            toast.error(errorMsg);
+            return { success: false, error: errorMsg };
         } finally {
             setLoading(false);
         }
@@ -154,11 +164,31 @@ export const CartProvider = ({ children }) => {
     };
 
     // ✅ Limpiar carrito (solo se llama en caso de éxito)
-    const clearCart = () => {
+    const clearCart = useCallback(() => {
         setCartItems([]);
-        // También limpiar las pre-reservas en el backend (opcional)
-        // Podríamos agregar un endpoint para limpiar todas las pre-reservas del usuario
-    };
+        // ✅ También limpiar la sessionId para forzar recarga
+        // localStorage.removeItem('cartSessionId');
+        console.log('🛒 Carrito limpiado');
+    }, []);
+
+
+    // ✅ AGREGAR MÉTODO PARA VERIFICAR SI HAY RESERVAS PENDIENTES
+    const hasPendingItems = useCallback(() => {
+        return cartItems.some(item =>
+            item.status === 'Pending' ||
+            item.status === 'PaymentPending'
+        );
+    }, [cartItems]);
+
+    // ✅ AGREGAR MÉTODO PARA FORZAR RECARGA DESPUÉS DEL PAGO
+    const refreshAfterPayment = useCallback(async () => {
+        console.log('🔄 Refrescando carrito después del pago...');
+        await clearCart();
+        // Esperar un momento para que el backend procese
+        await new Promise(resolve => setTimeout(resolve, 500));
+        await loadCart();
+        console.log('✅ Carrito refrescado');
+    }, [clearCart, loadCart]);
 
     // Recargar carrito
     const refreshCart = async () => {
@@ -184,8 +214,10 @@ export const CartProvider = ({ children }) => {
         cancelItem,
         clearCart,
         refreshCart,
+        refreshAfterPayment, // ✅ NUEVO
         getTotal,
         getItemCount,
+        hasPendingItems, // ✅ NUEVO
         loadCart
     };
 
