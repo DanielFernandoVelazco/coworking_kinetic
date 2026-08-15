@@ -19,6 +19,30 @@ namespace KineticWorkspace.API.Controllers
             _logger = logger;
         }
 
+        // VERIFICAR ÚLTIMA RESERVA
+
+        [HttpGet("latest")]
+        [Authorize]
+        public async Task<IActionResult> GetLatestReservation()
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+                var reservations = await _reservationService.GetUserReservationsAsync(userId);
+                var latest = reservations.OrderByDescending(r => r.CreatedAt).FirstOrDefault();
+
+                if (latest == null)
+                    return NotFound(new { message = "No se encontraron reservas" });
+
+                return Ok(latest);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener última reserva");
+                return StatusCode(500, new { message = "Error interno del servidor" });
+            }
+        }
+
         // Endpoint con filtros y ordenamiento
         [HttpGet("user/filtered")]
         public async Task<IActionResult> GetUserReservationsFiltered(
