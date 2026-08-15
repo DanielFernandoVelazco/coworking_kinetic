@@ -1,6 +1,8 @@
 // backend/KineticWorkspace.API/Controllers/PreReservationsController.cs
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore; // ✅ AGREGAR ESTE USING
+using KineticWorkspace.API.Data;
 using KineticWorkspace.API.Models.DTOs.PreReservations;
 using KineticWorkspace.API.Services.Interfaces;
 
@@ -13,11 +15,16 @@ namespace KineticWorkspace.API.Controllers
     {
         private readonly IPreReservationService _preReservationService;
         private readonly ILogger<PreReservationsController> _logger;
+        private readonly ApplicationDbContext _context;
 
-        public PreReservationsController(IPreReservationService preReservationService, ILogger<PreReservationsController> logger)
+        public PreReservationsController(
+            IPreReservationService preReservationService,
+            ILogger<PreReservationsController> logger,
+            ApplicationDbContext context)
         {
             _preReservationService = preReservationService;
             _logger = logger;
+            _context = context;
         }
 
         /// <summary>
@@ -192,6 +199,43 @@ namespace KineticWorkspace.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al limpiar pre-reservas expiradas");
+                return StatusCode(500, new { message = "Error interno del servidor" });
+            }
+        }
+
+        /// <summary>
+        /// Obtener estado de una pre-reserva (Endpoint de diagnóstico)
+        /// </summary>
+        [HttpGet("status/{id}")]
+        [Authorize]
+        public async Task<IActionResult> GetPreReservationStatus(int id)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+
+                // ✅ AHORA FirstOrDefaultAsync FUNCIONA CON EL using Microsoft.EntityFrameworkCore;
+                var preReservation = await _context.PreReservations
+                    .FirstOrDefaultAsync(pr => pr.Id == id && pr.UserId == userId);
+
+                if (preReservation == null)
+                    return NotFound(new { message = "Pre-reserva no encontrada" });
+
+                return Ok(new
+                {
+                    preReservation.Id,
+                    preReservation.Status,
+                    preReservation.PaymentIntentId,
+                    preReservation.ExpiresAt,
+                    preReservation.CreatedAt,
+                    preReservation.UpdatedAt,
+                    preReservation.TotalPrice,
+                    preReservation.PaidAmount
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener estado de pre-reserva {Id}", id);
                 return StatusCode(500, new { message = "Error interno del servidor" });
             }
         }
