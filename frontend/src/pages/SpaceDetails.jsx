@@ -2,13 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import spacesService from '../api/spaces.service';
-import reservationsService from '../api/reservations.service';
 import toast from 'react-hot-toast';
 
 const SpaceDetails = () => {
     const { id } = useParams();
     const { user, isAuthenticated } = useAuth();
+    const { addToCart } = useCart(); // ✅ Usar el carrito
     const navigate = useNavigate();
 
     const [space, setSpace] = useState(null);
@@ -46,7 +47,8 @@ const SpaceDetails = () => {
         });
     };
 
-    const handleBooking = async (e) => {
+    // ✅ Cambiado de handleBooking a handleAddToCart
+    const handleAddToCart = async (e) => {
         e.preventDefault();
 
         if (!isAuthenticated) {
@@ -71,21 +73,32 @@ const SpaceDetails = () => {
         setBookingLoading(true);
 
         try {
-            const reservationData = {
-                spaceId: parseInt(id),
-                startTime: startTime.toISOString(),
-                endTime: endTime.toISOString(),
-                notes: bookingData.notes,
-                numberOfGuests: parseInt(bookingData.numberOfGuests) || 1
-            };
+            const numberOfGuests = parseInt(bookingData.numberOfGuests) || 1;
 
-            const response = await reservationsService.create(reservationData);
-            toast.success('¡Reserva creada exitosamente!');
-            setShowBooking(false);
-            navigate('/reservations');
+            // ✅ Agregar al carrito usando el contexto
+            const result = await addToCart(
+                parseInt(id),
+                startTime.toISOString(),
+                endTime.toISOString(),
+                bookingData.notes,
+                numberOfGuests
+            );
+
+            if (result.success) {
+                setShowBooking(false);
+                // Resetear formulario
+                setBookingData({
+                    startTime: '',
+                    endTime: '',
+                    notes: '',
+                    numberOfGuests: 1
+                });
+                // ✅ Navegar al carrito
+                navigate('/cart');
+            }
         } catch (error) {
-            console.error('Error creating reservation:', error);
-            const message = error.response?.data?.message || 'Error al crear la reserva';
+            console.error('Error adding to cart:', error);
+            const message = error.response?.data?.message || 'Error al agregar al carrito';
             toast.error(message);
         } finally {
             setBookingLoading(false);
@@ -215,21 +228,24 @@ const SpaceDetails = () => {
                     )}
                 </div>
 
-                {/* Sidebar - Reserva */}
+                {/* Sidebar - Carrito */}
                 <div className="lg:col-span-1">
                     <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant sticky top-24">
-                        <h3 className="font-headline-md text-headline-md mb-4">Book This Space</h3>
+                        <h3 className="font-headline-md text-headline-md mb-4 flex items-center gap-2">
+                            <span className="material-symbols-outlined text-primary">shopping_cart</span>
+                            Reserve This Space
+                        </h3>
 
                         {!showBooking ? (
                             <button
                                 onClick={() => setShowBooking(true)}
-                                className="w-full bg-primary text-on-primary py-3 rounded-lg font-semibold hover:bg-secondary transition-colors"
+                                className="w-full bg-primary text-on-primary py-3 rounded-lg font-semibold hover:bg-secondary transition-colors flex items-center justify-center gap-2"
                             >
-                                <span className="material-symbols-outlined align-middle mr-2">calendar_today</span>
-                                Check Availability
+                                <span className="material-symbols-outlined">shopping_cart</span>
+                                Add to Cart
                             </button>
                         ) : (
-                            <form onSubmit={handleBooking}>
+                            <form onSubmit={handleAddToCart}>
                                 <div className="space-y-4">
                                     <div>
                                         <label className="font-label-caps text-label-caps text-on-surface-variant block mb-1">
@@ -291,9 +307,19 @@ const SpaceDetails = () => {
                                         <button
                                             type="submit"
                                             disabled={bookingLoading}
-                                            className="flex-1 bg-primary text-on-primary py-2 rounded-lg font-semibold hover:bg-secondary transition-colors disabled:opacity-50"
+                                            className="flex-1 bg-primary text-on-primary py-2 rounded-lg font-semibold hover:bg-secondary transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                                         >
-                                            {bookingLoading ? 'Booking...' : 'Confirm Booking'}
+                                            {bookingLoading ? (
+                                                <>
+                                                    <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+                                                    Adding...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <span className="material-symbols-outlined text-sm">shopping_cart</span>
+                                                    Add to Cart
+                                                </>
+                                            )}
                                         </button>
                                         <button
                                             type="button"
@@ -309,7 +335,15 @@ const SpaceDetails = () => {
 
                         <div className="mt-4 text-center text-body-sm text-on-surface-variant">
                             <span className="material-symbols-outlined text-sm align-middle">security</span>
-                            Secure booking • Free cancellation
+                            Secure booking • Pay after confirmation
+                        </div>
+
+                        {/* ✅ Info adicional del carrito */}
+                        <div className="mt-4 pt-4 border-t border-outline-variant text-center text-body-xs text-on-surface-variant">
+                            <p className="flex items-center justify-center gap-1">
+                                <span className="material-symbols-outlined text-sm">info</span>
+                                Your reservation will be held for 30 minutes
+                            </p>
                         </div>
                     </div>
                 </div>
