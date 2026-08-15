@@ -1,18 +1,22 @@
 // frontend/src/components/cart/PaymentModal.jsx
-import React, { useState, useEffect, useRef } from 'react';
+// ✅ CORREGIR: Agregar confirmación automática después del pago
+
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useCart } from '../../context/CartContext';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
-const PaymentModal = ({ item, onClose, onSuccess }) => {
+const PaymentModal = ({ item, onClose, onSuccess, onError }) => {
     const { processPayment, confirmPayment, clearCart } = useCart();
     const navigate = useNavigate();
-    const [step, setStep] = useState('payment'); // 'payment', 'processing', 'confirm', 'result'
+
+    const [step, setStep] = useState('payment');
     const [paymentMethod, setPaymentMethod] = useState('CreditCard');
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
     const [paymentIntentId, setPaymentIntentId] = useState(null);
     const [preReservationId, setPreReservationId] = useState(null);
-    const [paymentResult, setPaymentResult] = useState(null); // 'success' | 'failed' | null
+    const [paymentResult, setPaymentResult] = useState(null);
     const [countdown, setCountdown] = useState(5);
     const [isRedirecting, setIsRedirecting] = useState(false);
     const redirectTimerRef = useRef(null);
@@ -33,7 +37,7 @@ const PaymentModal = ({ item, onClose, onSuccess }) => {
         cardCvv: '123'
     });
 
-    const formatDate = (dateString) => {
+    const formatDate = useCallback((dateString) => {
         const date = new Date(dateString);
         return date.toLocaleDateString('en-US', {
             year: 'numeric',
@@ -42,21 +46,21 @@ const PaymentModal = ({ item, onClose, onSuccess }) => {
             hour: '2-digit',
             minute: '2-digit'
         });
-    };
+    }, []);
 
-    const handleBillingChange = (e) => {
+    const handleBillingChange = useCallback((e) => {
         setBillingInfo({
             ...billingInfo,
             [e.target.name]: e.target.value
         });
-    };
+    }, [billingInfo]);
 
-    const handleCardChange = (e) => {
+    const handleCardChange = useCallback((e) => {
         setCardData({
             ...cardData,
             [e.target.name]: e.target.value
         });
-    };
+    }, [cardData]);
 
     // ✅ Limpiar timer al desmontar
     useEffect(() => {
@@ -72,7 +76,6 @@ const PaymentModal = ({ item, onClose, onSuccess }) => {
         if (step === 'result' && paymentResult === 'success' && !isRedirecting) {
             setIsRedirecting(true);
 
-            // Limpiar timer anterior si existe
             if (redirectTimerRef.current) {
                 clearInterval(redirectTimerRef.current);
             }
@@ -87,119 +90,179 @@ const PaymentModal = ({ item, onClose, onSuccess }) => {
                 if (counter <= 0) {
                     clearInterval(redirectTimerRef.current);
                     redirectTimerRef.current = null;
-
-                    // ✅ Cerrar modal
                     onClose();
-
-                    // ✅ Limpiar carrito
                     clearCart();
-
-                    // ✅ Notificar éxito
-                    onSuccess();
-
-                    // ✅ Redirigir a reservas
+                    if (onSuccess) {
+                        onSuccess();
+                    }
                     navigate('/reservations');
-
-                    // ✅ Mostrar toast final
                     toast.success('¡Reserva creada exitosamente!');
                 }
             }, 1000);
         }
     }, [step, paymentResult, isRedirecting, onClose, clearCart, onSuccess, navigate]);
 
-    const handleProcessPayment = async () => {
+    // ✅ PROCESAR PAGO - MODIFICADO PARA CONFIRMAR AUTOMÁTICAMENTE
+    const handleProcessPayment = useCallback(async () => {
+        if (!item) {
+            toast.error('No hay item seleccionado');
+            return;
+        }
+
         setLoading(true);
         setStep('processing');
+        setError(null);
+
         try {
+            console.log('💰 Procesando pago para:', item.id);
+
             const result = await processPayment(
                 item.id,
                 paymentMethod,
                 billingInfo
             );
 
-            if (result.success) {
+            console.log('📦 Resultado del pago:', result);
+
+            if (result.success && result.data) {
+                // ✅ Guardar datos para la confirmación
                 setPaymentIntentId(result.data.paymentIntentId);
                 setPreReservationId(result.data.preReservationId);
-                setStep('confirm');
-                toast.success('Pago procesado. Confirma para completar la reserva.');
+
+                // ✅ IR DIRECTAMENTE A CONFIRMAR AUTOMÁTICAMENTE
+                console.log('🔄 Confirmando pago automáticamente...');
+
+                // Esperar un momento y confirmar automáticamente
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                // ✅ Ejecutar confirmación automática
+                await handleAutoConfirmPayment(result.data.preReservationId, result.data.paymentIntentId);
+
             } else {
+                setError(result.error || 'Error al procesar el pago');
                 setStep('payment');
                 toast.error(result.error || 'Error al procesar el pago');
             }
-        } catch (error) {
-            console.error('Payment error:', error);
+        } catch (err) {
+            console.error('❌ Payment error:', err);
+            const errorMessage = err.response?.data?.message || err.message || 'Error al procesar el pago';
+            setError(errorMessage);
             setStep('payment');
-            toast.error('Error al procesar el pago. Intenta nuevamente.');
+            toast.error(errorMessage);
+
+            if (onError) {
+                onError(err);
+            }
         } finally {
             setLoading(false);
         }
-    };
+    }, [item, processPayment, paymentMethod, billingInfo, onError]);
 
-    const handleConfirmPayment = async () => {
+    // ✅ NUEVA FUNCIÓN: Confirmación automática
+    const handleAutoConfirmPayment = useCallback(async (preResId, payIntentId) => {
         setLoading(true);
         setStep('processing');
-        try {
-            const result = await confirmPayment(preReservationId, paymentIntentId);
+        setError(null);
 
-            if (result.success) {
+        try {
+            console.log('✅ Confirmando pago automático para:', preResId, payIntentId);
+
+            const result = await confirmPayment(preResId, payIntentId);
+
+            console.log('📦 Resultado de confirmación:', result);
+
+            if (result.success && result.data) {
                 setPaymentResult('success');
                 setStep('result');
-                toast.success('¡Pago confirmado! Redirigiendo a tus reservas...');
+                toast.success('🎉 ¡Pago confirmado! Redirigiendo...');
+
+                if (onSuccess) {
+                    setTimeout(() => {
+                        onSuccess(result.data);
+                    }, 1000);
+                }
             } else {
                 setPaymentResult('failed');
                 setStep('result');
-                toast.error(result.error || 'Error al confirmar el pago');
+                const errorMsg = result.error || 'Error al confirmar el pago';
+                setError(errorMsg);
+                toast.error(errorMsg);
             }
-        } catch (error) {
-            console.error('Confirm payment error:', error);
+        } catch (err) {
+            console.error('❌ Confirm payment error:', err);
+            const errorMessage = err.response?.data?.message || err.message || 'Error al confirmar el pago';
             setPaymentResult('failed');
             setStep('result');
-            toast.error('Error al confirmar el pago. Intenta nuevamente.');
+            setError(errorMessage);
+            toast.error(errorMessage);
+
+            if (onError) {
+                onError(err);
+            }
         } finally {
             setLoading(false);
         }
-    };
+    }, [confirmPayment, onSuccess, onError]);
 
-    const handleBackToCart = () => {
-        // Limpiar timer si existe
+    // ✅ CONFIRMAR PAGO MANUAL (si el usuario quiere confirmar manualmente)
+    const handleManualConfirmPayment = useCallback(async () => {
+        if (!preReservationId || !paymentIntentId) {
+            toast.error('Faltan datos para confirmar el pago');
+            return;
+        }
+        await handleAutoConfirmPayment(preReservationId, paymentIntentId);
+    }, [preReservationId, paymentIntentId, handleAutoConfirmPayment]);
+
+    const handleBackToCart = useCallback(() => {
         if (redirectTimerRef.current) {
             clearInterval(redirectTimerRef.current);
             redirectTimerRef.current = null;
         }
         setStep('payment');
         setPaymentResult(null);
+        setError(null);
         setCountdown(5);
         setIsRedirecting(false);
         onClose();
-    };
+    }, [onClose]);
 
-    const handleRetry = () => {
-        // Limpiar timer si existe
+    const handleRetry = useCallback(() => {
         if (redirectTimerRef.current) {
             clearInterval(redirectTimerRef.current);
             redirectTimerRef.current = null;
         }
         setStep('payment');
         setPaymentResult(null);
+        setError(null);
         setCountdown(5);
         setIsRedirecting(false);
-    };
+    }, []);
 
-    const paymentMethods = [
-        { value: 'CreditCard', label: '💳 Credit Card', icon: 'credit_card' },
-        { value: 'PayPal', label: '🅿️ PayPal', icon: 'paypal' },
-        { value: 'BankTransfer', label: '🏦 Bank Transfer', icon: 'account_balance' },
-    ];
+    const handleGoToReservations = useCallback(() => {
+        if (redirectTimerRef.current) {
+            clearInterval(redirectTimerRef.current);
+            redirectTimerRef.current = null;
+        }
+        onClose();
+        clearCart();
+        if (onSuccess) {
+            onSuccess();
+        }
+        navigate('/reservations');
+        toast.success('¡Reserva creada exitosamente!');
+    }, [onClose, clearCart, onSuccess, navigate]);
 
-    const renderResult = () => {
+    // ✅ RENDER RESULTADO
+    const renderResult = useCallback(() => {
         const isSuccess = paymentResult === 'success';
         const icon = isSuccess ? 'check_circle' : 'cancel';
         const iconColor = isSuccess ? 'text-emerald-600' : 'text-red-600';
         const bgColor = isSuccess ? 'bg-emerald-100' : 'bg-red-100';
-        const title = isSuccess ? '¡Pago Confirmado!' : 'Error en el Pago';
+        const title = isSuccess ? '🎉 ¡Pago Confirmado!' : '❌ Error en el Pago';
+
         const message = isSuccess
             ? 'Tu reserva ha sido confirmada exitosamente. Serás redirigido a tus reservas en unos segundos.'
-            : 'Hubo un problema al procesar tu pago. Por favor, intenta nuevamente o contacta a soporte.';
+            : error || 'Hubo un problema al procesar tu pago. Por favor, intenta nuevamente o contacta a soporte.';
 
         return (
             <div className="text-center py-8">
@@ -225,6 +288,13 @@ const PaymentModal = ({ item, onClose, onSuccess }) => {
                                 style={{ width: `${(countdown / 5) * 100}%` }}
                             />
                         </div>
+                        <button
+                            onClick={handleGoToReservations}
+                            className="mt-2 px-6 py-2 bg-primary text-on-primary rounded-lg hover:bg-secondary transition-colors flex items-center gap-2"
+                        >
+                            <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                            Ir a mis reservas ahora
+                        </button>
                     </div>
                 ) : (
                     <div className="flex flex-col sm:flex-row gap-3 justify-center mt-4">
@@ -246,7 +316,16 @@ const PaymentModal = ({ item, onClose, onSuccess }) => {
                 )}
             </div>
         );
-    };
+    }, [paymentResult, error, countdown, handleBackToCart, handleRetry, handleGoToReservations]);
+
+    const paymentMethods = [
+        { value: 'CreditCard', label: '💳 Credit Card', icon: 'credit_card' },
+        { value: 'PayPal', label: '🅿️ PayPal', icon: 'paypal' },
+        { value: 'BankTransfer', label: '🏦 Bank Transfer', icon: 'account_balance' },
+    ];
+
+    // Si no hay item, no renderizar
+    if (!item) return null;
 
     return (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={handleBackToCart}>
@@ -259,10 +338,10 @@ const PaymentModal = ({ item, onClose, onSuccess }) => {
                             Checkout
                         </h2>
                         <p className="text-body-sm text-on-surface-variant">
-                            {step === 'payment' && 'Select payment method'}
-                            {step === 'processing' && 'Processing your payment...'}
-                            {step === 'confirm' && 'Confirm your payment'}
-                            {step === 'result' && (paymentResult === 'success' ? 'Payment Successful' : 'Payment Failed')}
+                            {step === 'payment' && 'Selecciona un método de pago'}
+                            {step === 'processing' && 'Procesando tu pago...'}
+                            {step === 'confirm' && 'Confirma tu pago'}
+                            {step === 'result' && (paymentResult === 'success' ? 'Pago Exitoso' : 'Pago Fallido')}
                         </p>
                     </div>
                     <button
@@ -296,6 +375,14 @@ const PaymentModal = ({ item, onClose, onSuccess }) => {
                         </div>
                     </div>
 
+                    {/* Mostrar error si existe */}
+                    {error && step !== 'result' && (
+                        <div className="p-3 bg-red-100 border border-red-300 rounded-lg text-red-700 text-sm">
+                            <span className="material-symbols-outlined text-sm align-middle mr-1">error</span>
+                            {error}
+                        </div>
+                    )}
+
                     {/* Estado de Resultado */}
                     {step === 'result' ? (
                         renderResult()
@@ -315,6 +402,7 @@ const PaymentModal = ({ item, onClose, onSuccess }) => {
                             </div>
                         </div>
                     ) : step === 'confirm' ? (
+                        // ✅ ESTADO DE CONFIRMACIÓN (solo se muestra si algo falla)
                         <div className="text-center py-8">
                             <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <span className="material-symbols-outlined text-amber-600 text-4xl">warning</span>
@@ -324,13 +412,13 @@ const PaymentModal = ({ item, onClose, onSuccess }) => {
                             </h3>
                             <p className="text-body-md text-on-surface-variant mb-6">
                                 Estás a punto de confirmar el pago de <strong className="text-primary">${item.totalPrice?.toFixed(2)}</strong>.
-                                Esta acción no se puede deshacer.
                             </p>
                             <div className="flex flex-col sm:flex-row gap-3 justify-center">
                                 <button
                                     onClick={() => {
                                         setStep('payment');
                                         setPaymentResult(null);
+                                        setError(null);
                                     }}
                                     className="px-6 py-2 border border-outline-variant rounded-lg hover:bg-surface-container-low transition-colors flex items-center gap-2"
                                 >
@@ -338,7 +426,7 @@ const PaymentModal = ({ item, onClose, onSuccess }) => {
                                     Volver
                                 </button>
                                 <button
-                                    onClick={handleConfirmPayment}
+                                    onClick={handleManualConfirmPayment}
                                     disabled={loading}
                                     className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center gap-2"
                                 >
@@ -362,7 +450,7 @@ const PaymentModal = ({ item, onClose, onSuccess }) => {
                             {/* Método de pago */}
                             <div>
                                 <label className="font-label-caps text-label-caps text-on-surface-variant block mb-3">
-                                    Payment Method
+                                    Método de Pago
                                 </label>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                     {paymentMethods.map((method) => (
@@ -370,8 +458,8 @@ const PaymentModal = ({ item, onClose, onSuccess }) => {
                                             key={method.value}
                                             onClick={() => setPaymentMethod(method.value)}
                                             className={`p-4 rounded-xl border-2 transition-all text-center ${paymentMethod === method.value
-                                                    ? 'border-primary bg-primary/5'
-                                                    : 'border-outline-variant hover:border-primary/50'
+                                                ? 'border-primary bg-primary/5'
+                                                : 'border-outline-variant hover:border-primary/50'
                                                 }`}
                                         >
                                             <span className="material-symbols-outlined text-2xl block mb-1">
@@ -386,10 +474,10 @@ const PaymentModal = ({ item, onClose, onSuccess }) => {
                             {/* Datos de tarjeta */}
                             {paymentMethod === 'CreditCard' && (
                                 <div className="p-4 bg-surface-container-low rounded-xl border border-outline-variant">
-                                    <h4 className="font-body-sm font-semibold text-on-surface mb-3">Card Details</h4>
+                                    <h4 className="font-body-sm font-semibold text-on-surface mb-3">Datos de la Tarjeta</h4>
                                     <div className="space-y-3">
                                         <div>
-                                            <label className="text-body-xs text-on-surface-variant block mb-1">Card Number</label>
+                                            <label className="text-body-xs text-on-surface-variant block mb-1">Número de Tarjeta</label>
                                             <input
                                                 type="text"
                                                 name="cardNumber"
@@ -401,7 +489,7 @@ const PaymentModal = ({ item, onClose, onSuccess }) => {
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
-                                                <label className="text-body-xs text-on-surface-variant block mb-1">Expiry Date</label>
+                                                <label className="text-body-xs text-on-surface-variant block mb-1">Fecha Expiración</label>
                                                 <input
                                                     type="text"
                                                     name="cardExpiry"
@@ -430,19 +518,19 @@ const PaymentModal = ({ item, onClose, onSuccess }) => {
                             {/* PayPal */}
                             {paymentMethod === 'PayPal' && (
                                 <div className="p-4 bg-surface-container-low rounded-xl border border-outline-variant">
-                                    <h4 className="font-body-sm font-semibold text-on-surface mb-3">PayPal Details</h4>
+                                    <h4 className="font-body-sm font-semibold text-on-surface mb-3">Datos de PayPal</h4>
                                     <div>
                                         <label className="text-body-xs text-on-surface-variant block mb-1">Email</label>
                                         <input
                                             type="email"
                                             value={localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).email : ''}
                                             className="w-full bg-surface-container-lowest border-b border-outline-variant px-0 py-2 text-on-surface focus:border-primary focus:outline-none transition-all"
-                                            placeholder="your@email.com"
+                                            placeholder="tu@email.com"
                                             disabled
                                         />
                                     </div>
                                     <p className="text-body-xs text-on-surface-variant mt-2">
-                                        You will be redirected to PayPal to complete the payment.
+                                        Serás redirigido a PayPal para completar el pago.
                                     </p>
                                 </div>
                             )}
@@ -450,45 +538,45 @@ const PaymentModal = ({ item, onClose, onSuccess }) => {
                             {/* Bank Transfer */}
                             {paymentMethod === 'BankTransfer' && (
                                 <div className="p-4 bg-surface-container-low rounded-xl border border-outline-variant">
-                                    <h4 className="font-body-sm font-semibold text-on-surface mb-3">Bank Transfer Details</h4>
+                                    <h4 className="font-body-sm font-semibold text-on-surface mb-3">Datos de Transferencia</h4>
                                     <div className="space-y-2 text-body-sm text-on-surface-variant">
-                                        <p><strong>Bank:</strong> SEB</p>
-                                        <p><strong>Account Name:</strong> Kinetic Workspace AB</p>
-                                        <p><strong>Account Number:</strong> 1234 5678 9012</p>
+                                        <p><strong>Banco:</strong> SEB</p>
+                                        <p><strong>Nombre:</strong> Kinetic Workspace AB</p>
+                                        <p><strong>Número de Cuenta:</strong> 1234 5678 9012</p>
                                         <p><strong>SWIFT:</strong> SEBSSEBB</p>
-                                        <p><strong>Reference:</strong> INV-{Date.now()}</p>
+                                        <p><strong>Referencia:</strong> INV-{Date.now()}</p>
                                     </div>
                                 </div>
                             )}
 
                             {/* Billing Information */}
                             <div className="p-4 bg-surface-container-low rounded-xl border border-outline-variant">
-                                <h4 className="font-body-sm font-semibold text-on-surface mb-3">Billing Information</h4>
+                                <h4 className="font-body-sm font-semibold text-on-surface mb-3">Información de Facturación</h4>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                     <div>
-                                        <label className="text-body-xs text-on-surface-variant block mb-1">Address</label>
+                                        <label className="text-body-xs text-on-surface-variant block mb-1">Dirección</label>
                                         <input
                                             type="text"
                                             name="billingAddress"
                                             value={billingInfo.billingAddress}
                                             onChange={handleBillingChange}
                                             className="w-full bg-surface-container-lowest border-b border-outline-variant px-0 py-2 text-on-surface focus:border-primary focus:outline-none transition-all"
-                                            placeholder="Street address"
+                                            placeholder="Dirección"
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-body-xs text-on-surface-variant block mb-1">City</label>
+                                        <label className="text-body-xs text-on-surface-variant block mb-1">Ciudad</label>
                                         <input
                                             type="text"
                                             name="billingCity"
                                             value={billingInfo.billingCity}
                                             onChange={handleBillingChange}
                                             className="w-full bg-surface-container-lowest border-b border-outline-variant px-0 py-2 text-on-surface focus:border-primary focus:outline-none transition-all"
-                                            placeholder="Stockholm"
+                                            placeholder="Estocolmo"
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-body-xs text-on-surface-variant block mb-1">Postal Code</label>
+                                        <label className="text-body-xs text-on-surface-variant block mb-1">Código Postal</label>
                                         <input
                                             type="text"
                                             name="billingPostalCode"
@@ -499,22 +587,22 @@ const PaymentModal = ({ item, onClose, onSuccess }) => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-body-xs text-on-surface-variant block mb-1">Country</label>
+                                        <label className="text-body-xs text-on-surface-variant block mb-1">País</label>
                                         <select
                                             name="billingCountry"
                                             value={billingInfo.billingCountry}
                                             onChange={handleBillingChange}
                                             className="w-full bg-surface-container-lowest border-b border-outline-variant px-0 py-2 text-on-surface focus:border-primary focus:outline-none transition-all"
                                         >
-                                            <option value="Sweden">Sweden</option>
-                                            <option value="Norway">Norway</option>
-                                            <option value="Denmark">Denmark</option>
-                                            <option value="Finland">Finland</option>
-                                            <option value="Other">Other</option>
+                                            <option value="Sweden">Suecia</option>
+                                            <option value="Norway">Noruega</option>
+                                            <option value="Denmark">Dinamarca</option>
+                                            <option value="Finland">Finlandia</option>
+                                            <option value="Other">Otro</option>
                                         </select>
                                     </div>
                                     <div className="md:col-span-2">
-                                        <label className="text-body-xs text-on-surface-variant block mb-1">VAT Number (Optional)</label>
+                                        <label className="text-body-xs text-on-surface-variant block mb-1">VAT Number (Opcional)</label>
                                         <input
                                             type="text"
                                             name="billingVatNumber"
@@ -533,7 +621,7 @@ const PaymentModal = ({ item, onClose, onSuccess }) => {
                                     onClick={handleBackToCart}
                                     className="flex-1 px-4 py-2 border border-outline-variant rounded-lg hover:bg-surface-container-low transition-colors"
                                 >
-                                    Cancel
+                                    Cancelar
                                 </button>
                                 <button
                                     onClick={handleProcessPayment}
@@ -543,12 +631,12 @@ const PaymentModal = ({ item, onClose, onSuccess }) => {
                                     {loading ? (
                                         <>
                                             <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
-                                            Processing...
+                                            Procesando...
                                         </>
                                     ) : (
                                         <>
                                             <span className="material-symbols-outlined text-sm">payment</span>
-                                            Pay ${item.totalPrice?.toFixed(2)}
+                                            Pagar ${item.totalPrice?.toFixed(2)}
                                         </>
                                     )}
                                 </button>
@@ -557,6 +645,17 @@ const PaymentModal = ({ item, onClose, onSuccess }) => {
                     )}
                 </div>
             </div>
+
+            {/* Estilos de animación */}
+            <style>{`
+                @keyframes bounce {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(-10px); }
+                }
+                .animate-bounce {
+                    animation: bounce 1s infinite;
+                }
+            `}</style>
         </div>
     );
 };
