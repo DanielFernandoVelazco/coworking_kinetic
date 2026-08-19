@@ -1,28 +1,86 @@
-/* Las importaciones deben ir primero */
+/* frontend/src/index.css */
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Work+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
-/* Luego Tailwind */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Después los estilos base */
+/* ===== VARIABLES CSS PARA DARK MODE ===== */
+:root {
+  /* Colores base (modo claro) */
+  --color-primary: #a03f28;
+  --color-primary-dark: #c0573e;
+  --color-surface: #fbf8fc;
+  --color-surface-container-low: #f5f3f6;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-high: #ede8ea;
+  --color-on-surface: #1b1b1e;
+  --color-on-surface-variant: #56423d;
+  --color-outline-variant: #ddc0ba;
+  --color-background: #fbf8fc;
+}
+
+/* ===== DARK MODE ===== */
+.dark {
+  --color-primary: #c0573e;
+  --color-primary-dark: #d46b50;
+  --color-surface: #121212;
+  --color-surface-container-low: #1e1e1e;
+  --color-surface-container-lowest: #121212;
+  --color-surface-container-high: #2a2a2a;
+  --color-on-surface: #e8e4e6;
+  --color-on-surface-variant: #b0a09b;
+  --color-outline-variant: #3d2e2a;
+  --color-background: #121212;
+}
+
+/* ===== ESTILOS BASE ===== */
 body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
   font-family: 'Work Sans', sans-serif;
-  background-color: #fbf8fc;
-  color: #1b1b1e;
+  background-color: var(--color-background);
+  color: var(--color-on-surface);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 #root {
   min-height: 100vh;
 }
 
-/* Componentes personalizados */
+/* ===== TRANSICIONES SUAVES ===== */
+* {
+  transition: background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+/* ===== SCROLLBAR PARA DARK MODE ===== */
+.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: var(--color-surface-container-low);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: var(--color-outline-variant);
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
+}
+
+/* ===== COMPONENTES ===== */
+
+/* Botones primarios */
 .btn-primary {
-  background-color: #a03f28;
+  background-color: var(--color-primary);
   color: #ffffff;
   padding: 0.75rem 1.5rem;
   border-radius: 0.5rem;
@@ -33,20 +91,51 @@ body {
 }
 
 .btn-primary:hover {
-  background-color: #c0573e;
+  background-color: var(--color-primary-dark);
 }
 
 .btn-primary:active {
   transform: scale(0.95);
 }
 
+.btn-primary-dark {
+  background-color: #c0573e;
+  color: #ffffff;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  transition: all 0.3s;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary-dark:hover {
+  background-color: #d46b50;
+}
+
+.btn-secondary-dark {
+  background-color: transparent;
+  color: #e8e4e6;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  transition: all 0.3s;
+  border: 1px solid var(--color-outline-variant);
+  cursor: pointer;
+}
+
+.btn-secondary-dark:hover {
+  background-color: var(--color-surface-container-low);
+}
+
+/* Inputs */
 .input-primary {
   width: 100%;
-  background-color: #f5f3f6;
+  background-color: var(--color-surface-container-low);
   border: none;
-  border-bottom: 1px solid #ddc0ba;
+  border-bottom: 1px solid var(--color-outline-variant);
   padding: 0.75rem 0;
-  color: #1b1b1e;
+  color: var(--color-on-surface);
   transition: all 0.3s;
   outline: none;
   font-family: 'Work Sans', sans-serif;
@@ -54,8 +143,8 @@ body {
 }
 
 .input-primary:focus {
-  border-bottom-color: #a03f28;
-  background-color: #ffffff;
+  border-bottom-color: var(--color-primary);
+  background-color: var(--color-surface-container-lowest);
 }
 
 /* Material Icons */
@@ -65,43 +154,48 @@ body {
   line-height: 1;
 }
 
-/* Clases de utilidad */
+/* Colores */
 .text-primary {
-  color: #a03f28;
+  color: var(--color-primary);
 }
 
 .bg-primary {
-  background-color: #a03f28;
+  background-color: var(--color-primary);
 }
 
 .bg-primary:hover {
-  background-color: #c0573e;
+  background-color: var(--color-primary-dark);
 }
 
 .text-on-surface {
-  color: #1b1b1e;
+  color: var(--color-on-surface);
 }
 
 .text-on-surface-variant {
-  color: #56423d;
+  color: var(--color-on-surface-variant);
 }
 
 .bg-surface {
-  background-color: #fbf8fc;
+  background-color: var(--color-surface);
 }
 
 .bg-surface-container-lowest {
-  background-color: #ffffff;
+  background-color: var(--color-surface-container-lowest);
 }
 
 .bg-surface-container-low {
-  background-color: #f5f3f6;
+  background-color: var(--color-surface-container-low);
+}
+
+.bg-surface-container-high {
+  background-color: var(--color-surface-container-high);
 }
 
 .border-outline-variant {
-  border-color: #ddc0ba;
+  border-color: var(--color-outline-variant);
 }
 
+/* Animaciones */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -116,4 +210,41 @@ body {
 
 .animate-fadeIn {
   animation: fadeIn 0.3s ease-out;
+}
+
+/* ===== UTILIDADES PARA DARK MODE ===== */
+.dark .bg-surface-container-lowest {
+  background-color: #121212;
+}
+
+.dark .bg-surface-container-low {
+  background-color: #1e1e1e;
+}
+
+.dark .bg-surface-container-high {
+  background-color: #2a2a2a;
+}
+
+.dark .border-outline-variant {
+  border-color: #3d2e2a;
+}
+
+.dark .text-on-surface {
+  color: #e8e4e6;
+}
+
+.dark .text-on-surface-variant {
+  color: #b0a09b;
+}
+
+.dark .text-primary {
+  color: #c0573e;
+}
+
+.dark .bg-primary {
+  background-color: #c0573e;
+}
+
+.dark .bg-primary:hover {
+  background-color: #d46b50;
 }
