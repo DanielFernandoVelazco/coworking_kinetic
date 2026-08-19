@@ -1,49 +1,47 @@
 // frontend/src/pages/Home.jsx
-import React, { useState, useEffect } from 'react'
-import { useAuth } from '../context/AuthContext'
-import { Link, useNavigate } from 'react-router-dom'
-import spacesService from '../api/spaces.service'
-import reservationsService from '../api/reservations.service'
-import toast from 'react-hot-toast'
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { Link, useNavigate } from 'react-router-dom';
+import spacesService from '../api/spaces.service';
+import reservationsService from '../api/reservations.service';
+import toast from 'react-hot-toast';
+import useTheme from '../context/ThemeContext'; // ✅ Importar el tema
 
 const Home = () => {
-    const { user, logout } = useAuth()
-    const navigate = useNavigate()
-    const [featuredSpaces, setFeaturedSpaces] = useState([])
-    const [loading, setLoading] = useState(true)
+    const { user, logout } = useAuth();
+    const { isDark } = useTheme(); // ✅ Obtener el estado del tema
+    const navigate = useNavigate();
+    const [featuredSpaces, setFeaturedSpaces] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [summary, setSummary] = useState({
         totalReservations: 0,
         activeReservations: 0,
         totalSpent: 0,
         upcomingReservations: 0
-    })
+    });
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // ✅ Obtener espacios destacados (3 por cada tipo = 15 espacios)
-                const spacesData = await spacesService.getFeatured(15)
-                setFeaturedSpaces(spacesData || [])
+                const spacesData = await spacesService.getFeatured(15);
+                setFeaturedSpaces(spacesData || []);
 
-                // ✅ Si está autenticado, obtener resumen de reservas
                 if (user) {
                     try {
-                        const summaryData = await reservationsService.getSummary()
+                        const summaryData = await reservationsService.getSummary();
                         setSummary({
                             totalReservations: summaryData?.totalReservations || 0,
                             activeReservations: summaryData?.activeReservations || 0,
                             totalSpent: summaryData?.totalSpent || 0,
                             upcomingReservations: summaryData?.upcomingReservations || 0
-                        })
+                        });
                     } catch (err) {
-                        console.log('Reservations summary not available yet')
+                        console.log('Reservations summary not available yet');
                     }
                 }
             } catch (error) {
-                console.error('Error fetching data:', error)
-                toast.error('Error al cargar los espacios')
-
-                // Datos de ejemplo para desarrollo (si falla la API)
+                console.error('Error fetching data:', error);
+                toast.error('Error al cargar los espacios');
                 setFeaturedSpaces([
                     {
                         id: 1,
@@ -78,206 +76,92 @@ const Home = () => {
                         capacity: 15,
                         imageUrls: ['https://images.unsplash.com/photo-1511578314322-379afb476865?w=800']
                     },
-                ])
+                ]);
             } finally {
-                setLoading(false)
+                setLoading(false);
             }
-        }
+        };
 
-        fetchData()
-    }, [user])
+        fetchData();
+    }, [user]);
 
     const handleLogout = async () => {
-        await logout()
-        navigate('/login')
-    }
+        await logout();
+        navigate('/login');
+    };
 
-    // Si no está autenticado, redirigir al login
     if (!user && !loading) {
-        navigate('/login')
-        return null
+        navigate('/login');
+        return null;
     }
 
+    // ✅ Usar clases de Tailwind en lugar de estilos inline
     return (
-        <div style={{
-            minHeight: '100vh',
-            backgroundColor: '#fbf8fc'
-        }}>
+        <div className="min-h-screen bg-background dark:bg-dark-background transition-colors duration-300">
             {/* Navbar */}
-            <nav style={{
-                backgroundColor: '#ffffff',
-                borderBottom: '1px solid #ddc0ba',
-                padding: '16px 40px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                position: 'sticky',
-                top: 0,
-                zIndex: 100
-            }}>
-                <div style={{
-                    fontSize: '24px',
-                    fontWeight: '700',
-                    color: '#a03f28',
-                    fontFamily: 'Manrope, sans-serif'
-                }}>
+            <nav className="bg-surface dark:bg-surface-dark border-b border-outline-variant dark:border-outline-dark-variant px-4 md:px-10 py-4 flex justify-between items-center sticky top-0 z-100 transition-colors duration-300">
+                <div className="text-2xl font-bold text-primary dark:text-primary-dark font-manrope">
                     Kinetic Workspace
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <span style={{ color: '#56423d', fontFamily: 'Work Sans, sans-serif' }}>
+                <div className="flex items-center gap-4">
+                    <span className="text-on-surface-variant dark:text-on-dark-surface-variant font-work-sans">
                         {user?.firstName} {user?.lastName}
                     </span>
                     <button
                         onClick={handleLogout}
-                        style={{
-                            backgroundColor: '#a03f28',
-                            color: '#ffffff',
-                            padding: '8px 20px',
-                            border: 'none',
-                            borderRadius: '4px',
-                            cursor: 'pointer',
-                            fontFamily: 'Work Sans, sans-serif',
-                            fontSize: '14px',
-                            transition: 'all 0.3s'
-                        }}
-                        onMouseEnter={(e) => e.target.style.backgroundColor = '#c0573e'}
-                        onMouseLeave={(e) => e.target.style.backgroundColor = '#a03f28'}
+                        className="bg-primary dark:bg-primary-dark text-white px-5 py-2 rounded transition-colors hover:bg-primary-dark dark:hover:bg-primary font-work-sans text-sm"
                     >
                         Logout
                     </button>
                 </div>
             </nav>
 
-            <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px' }}>
+            <div className="max-w-[1200px] mx-auto px-4 md:px-10 py-10">
                 {/* Hero Section */}
-                <div style={{
-                    background: 'linear-gradient(135deg, #a03f28 0%, #c0573e 100%)',
-                    borderRadius: '12px',
-                    padding: '48px',
-                    marginBottom: '40px',
-                    color: '#ffffff'
-                }}>
-                    <h1 style={{
-                        fontSize: '48px',
-                        fontWeight: '700',
-                        fontFamily: 'Manrope, sans-serif',
-                        marginBottom: '8px'
-                    }}>
+                <div className="bg-gradient-to-r from-primary to-primary-dark dark:from-primary-dark dark:to-primary rounded-xl p-8 md:p-12 mb-10 text-white">
+                    <h1 className="text-3xl md:text-5xl font-bold font-manrope mb-2">
                         Welcome back, {user?.firstName}! 👋
                     </h1>
-                    <p style={{
-                        fontSize: '18px',
-                        fontFamily: 'Work Sans, sans-serif',
-                        opacity: 0.9
-                    }}>
+                    <p className="text-lg font-work-sans opacity-90">
                         Your high-performance workspace awaits.
                     </p>
                 </div>
 
-                {/* Stats Cards - Solo si hay datos de reservas */}
+                {/* Stats Cards */}
                 {summary.totalReservations > 0 && (
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                        gap: '24px',
-                        marginBottom: '40px'
-                    }}>
-                        <div style={{
-                            backgroundColor: '#ffffff',
-                            padding: '24px',
-                            borderRadius: '8px',
-                            border: '1px solid #ddc0ba',
-                            boxShadow: '0 4px 12px rgba(147, 74, 35, 0.05)',
-                            textAlign: 'center'
-                        }}>
-                            <div style={{
-                                fontSize: '32px',
-                                fontWeight: '700',
-                                color: '#a03f28',
-                                fontFamily: 'Manrope, sans-serif'
-                            }}>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-10">
+                        <div className="bg-surface-container-lowest dark:bg-surface-dark-container-lowest p-6 rounded-lg border border-outline-variant dark:border-outline-dark-variant text-center shadow-sm transition-colors duration-300">
+                            <div className="text-3xl md:text-4xl font-bold text-primary dark:text-primary-dark font-manrope">
                                 {summary.totalReservations}
                             </div>
-                            <div style={{
-                                fontSize: '14px',
-                                color: '#56423d',
-                                fontFamily: 'Work Sans, sans-serif'
-                            }}>
+                            <div className="text-sm text-on-surface-variant dark:text-on-dark-surface-variant font-work-sans">
                                 Total Bookings
                             </div>
                         </div>
 
-                        <div style={{
-                            backgroundColor: '#ffffff',
-                            padding: '24px',
-                            borderRadius: '8px',
-                            border: '1px solid #ddc0ba',
-                            boxShadow: '0 4px 12px rgba(147, 74, 35, 0.05)',
-                            textAlign: 'center'
-                        }}>
-                            <div style={{
-                                fontSize: '32px',
-                                fontWeight: '700',
-                                color: '#a03f28',
-                                fontFamily: 'Manrope, sans-serif'
-                            }}>
+                        <div className="bg-surface-container-lowest dark:bg-surface-dark-container-lowest p-6 rounded-lg border border-outline-variant dark:border-outline-dark-variant text-center shadow-sm transition-colors duration-300">
+                            <div className="text-3xl md:text-4xl font-bold text-primary dark:text-primary-dark font-manrope">
                                 {summary.activeReservations}
                             </div>
-                            <div style={{
-                                fontSize: '14px',
-                                color: '#56423d',
-                                fontFamily: 'Work Sans, sans-serif'
-                            }}>
+                            <div className="text-sm text-on-surface-variant dark:text-on-dark-surface-variant font-work-sans">
                                 Active Bookings
                             </div>
                         </div>
 
-                        <div style={{
-                            backgroundColor: '#ffffff',
-                            padding: '24px',
-                            borderRadius: '8px',
-                            border: '1px solid #ddc0ba',
-                            boxShadow: '0 4px 12px rgba(147, 74, 35, 0.05)',
-                            textAlign: 'center'
-                        }}>
-                            <div style={{
-                                fontSize: '32px',
-                                fontWeight: '700',
-                                color: '#a03f28',
-                                fontFamily: 'Manrope, sans-serif'
-                            }}>
+                        <div className="bg-surface-container-lowest dark:bg-surface-dark-container-lowest p-6 rounded-lg border border-outline-variant dark:border-outline-dark-variant text-center shadow-sm transition-colors duration-300">
+                            <div className="text-3xl md:text-4xl font-bold text-primary dark:text-primary-dark font-manrope">
                                 ${summary.totalSpent.toFixed(0)}
                             </div>
-                            <div style={{
-                                fontSize: '14px',
-                                color: '#56423d',
-                                fontFamily: 'Work Sans, sans-serif'
-                            }}>
+                            <div className="text-sm text-on-surface-variant dark:text-on-dark-surface-variant font-work-sans">
                                 Total Spent
                             </div>
                         </div>
 
-                        <div style={{
-                            backgroundColor: '#ffffff',
-                            padding: '24px',
-                            borderRadius: '8px',
-                            border: '1px solid #ddc0ba',
-                            boxShadow: '0 4px 12px rgba(147, 74, 35, 0.05)',
-                            textAlign: 'center'
-                        }}>
-                            <div style={{
-                                fontSize: '32px',
-                                fontWeight: '700',
-                                color: '#a03f28',
-                                fontFamily: 'Manrope, sans-serif'
-                            }}>
+                        <div className="bg-surface-container-lowest dark:bg-surface-dark-container-lowest p-6 rounded-lg border border-outline-variant dark:border-outline-dark-variant text-center shadow-sm transition-colors duration-300">
+                            <div className="text-3xl md:text-4xl font-bold text-primary dark:text-primary-dark font-manrope">
                                 {summary.upcomingReservations}
                             </div>
-                            <div style={{
-                                fontSize: '14px',
-                                color: '#56423d',
-                                fontFamily: 'Work Sans, sans-serif'
-                            }}>
+                            <div className="text-sm text-on-surface-variant dark:text-on-dark-surface-variant font-work-sans">
                                 Upcoming
                             </div>
                         </div>
@@ -285,189 +169,79 @@ const Home = () => {
                 )}
 
                 {/* Featured Spaces */}
-                <div style={{ marginBottom: '40px' }}>
-                    <div style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        marginBottom: '20px'
-                    }}>
-                        <h2 style={{
-                            fontSize: '28px',
-                            fontWeight: '700',
-                            color: '#1b1b1e',
-                            fontFamily: 'Manrope, sans-serif'
-                        }}>
+                <div className="mb-10">
+                    <div className="flex justify-between items-center mb-5">
+                        <h2 className="text-2xl md:text-3xl font-bold text-on-surface dark:text-on-dark-surface font-manrope">
                             Featured Spaces
                         </h2>
-                        <Link to="/catalog" style={{
-                            color: '#a03f28',
-                            textDecoration: 'none',
-                            fontFamily: 'Work Sans, sans-serif',
-                            fontWeight: '500'
-                        }}>
+                        <Link to="/catalog" className="text-primary dark:text-primary-dark hover:underline font-work-sans font-medium">
                             View All →
                         </Link>
                     </div>
 
                     {loading ? (
-                        <div style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                            gap: '24px'
-                        }}>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {[1, 2, 3, 4, 5, 6].map((i) => (
-                                <div key={i} style={{
-                                    backgroundColor: '#f5f3f6',
-                                    height: '300px',
-                                    borderRadius: '8px',
-                                    animation: 'pulse 1.5s ease-in-out infinite'
-                                }} />
+                                <div key={i} className="bg-surface-container-low dark:bg-surface-dark-container-low h-72 rounded-lg animate-pulse transition-colors duration-300"></div>
                             ))}
                         </div>
                     ) : featuredSpaces.length === 0 ? (
-                        <div style={{
-                            backgroundColor: '#ffffff',
-                            padding: '40px',
-                            borderRadius: '8px',
-                            border: '1px solid #ddc0ba',
-                            textAlign: 'center',
-                            color: '#56423d'
-                        }}>
-                            <p style={{ fontSize: '18px' }}>No featured spaces available yet.</p>
-                            <p style={{ fontSize: '14px' }}>Check back later!</p>
+                        <div className="bg-surface-container-lowest dark:bg-surface-dark-container-lowest p-10 rounded-lg border border-outline-variant dark:border-outline-dark-variant text-center text-on-surface-variant dark:text-on-dark-surface-variant transition-colors duration-300">
+                            <p className="text-lg">No featured spaces available yet.</p>
+                            <p className="text-sm">Check back later!</p>
                         </div>
                     ) : (
                         <>
-                            {/* Mostrar 3 tipos de espacios destacados */}
                             {['Premium Office', 'Creative Space', 'Meeting Room'].map((type) => {
                                 const spacesOfType = featuredSpaces
                                     .filter(s => s.type === type)
-                                    .slice(0, 3)
+                                    .slice(0, 3);
 
-                                if (spacesOfType.length === 0) return null
+                                if (spacesOfType.length === 0) return null;
 
                                 return (
-                                    <div key={type} style={{ marginBottom: '32px' }}>
-                                        <h3 style={{
-                                            fontSize: '20px',
-                                            fontWeight: '600',
-                                            color: '#1b1b1e',
-                                            fontFamily: 'Manrope, sans-serif',
-                                            marginBottom: '16px'
-                                        }}>
+                                    <div key={type} className="mb-8">
+                                        <h3 className="text-xl font-semibold text-on-surface dark:text-on-dark-surface font-manrope mb-4">
                                             {type}
                                         </h3>
-                                        <div style={{
-                                            display: 'grid',
-                                            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                                            gap: '20px'
-                                        }}>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                                             {spacesOfType.map((space) => (
                                                 <Link
                                                     key={space.id}
                                                     to={`/spaces/${space.id}`}
-                                                    style={{
-                                                        textDecoration: 'none',
-                                                        backgroundColor: '#ffffff',
-                                                        borderRadius: '8px',
-                                                        border: '1px solid #ddc0ba',
-                                                        overflow: 'hidden',
-                                                        transition: 'all 0.3s',
-                                                        boxShadow: '0 4px 12px rgba(147, 74, 35, 0.05)'
-                                                    }}
-                                                    onMouseEnter={(e) => {
-                                                        e.currentTarget.style.transform = 'translateY(-4px)'
-                                                        e.currentTarget.style.boxShadow = '0 8px 24px rgba(147, 74, 35, 0.15)'
-                                                    }}
-                                                    onMouseLeave={(e) => {
-                                                        e.currentTarget.style.transform = 'translateY(0)'
-                                                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(147, 74, 35, 0.05)'
-                                                    }}
+                                                    className="bg-surface-container-lowest dark:bg-surface-dark-container-lowest rounded-lg border border-outline-variant dark:border-outline-dark-variant overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
                                                 >
-                                                    <div style={{
-                                                        height: '180px',
-                                                        backgroundColor: '#f5f3f6',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        color: '#56423d',
-                                                        fontSize: '14px',
-                                                        overflow: 'hidden'
-                                                    }}>
+                                                    <div className="h-44 bg-surface-container-low dark:bg-surface-dark-container-low flex items-center justify-center text-on-surface-variant dark:text-on-dark-surface-variant overflow-hidden relative">
                                                         {space.imageUrls?.[0] ? (
                                                             <img
                                                                 src={space.imageUrls[0]}
                                                                 alt={space.name}
-                                                                style={{
-                                                                    width: '100%',
-                                                                    height: '100%',
-                                                                    objectFit: 'cover'
-                                                                }}
+                                                                className="w-full h-full object-cover"
                                                             />
                                                         ) : (
                                                             '📸 Space Image'
                                                         )}
                                                         {space.isFeatured && (
-                                                            <span style={{
-                                                                position: 'absolute',
-                                                                top: '12px',
-                                                                left: '12px',
-                                                                backgroundColor: '#a03f28',
-                                                                color: '#ffffff',
-                                                                padding: '4px 12px',
-                                                                fontSize: '12px',
-                                                                fontWeight: '600',
-                                                                borderRadius: '4px',
-                                                                fontFamily: 'Work Sans, sans-serif'
-                                                            }}>
+                                                            <span className="absolute top-3 left-3 bg-primary dark:bg-primary-dark text-white px-3 py-1 text-xs font-semibold rounded">
                                                                 Featured
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <div style={{ padding: '16px' }}>
-                                                        <h3 style={{
-                                                            fontSize: '18px',
-                                                            fontWeight: '600',
-                                                            color: '#1b1b1e',
-                                                            fontFamily: 'Manrope, sans-serif',
-                                                            marginBottom: '4px'
-                                                        }}>
+                                                    <div className="p-4">
+                                                        <h3 className="text-lg font-semibold text-on-surface dark:text-on-dark-surface font-manrope mb-1">
                                                             {space.name}
                                                         </h3>
-                                                        <p style={{
-                                                            fontSize: '14px',
-                                                            color: '#56423d',
-                                                            fontFamily: 'Work Sans, sans-serif'
-                                                        }}>
+                                                        <p className="text-sm text-on-surface-variant dark:text-on-dark-surface-variant font-work-sans">
                                                             {space.city}, {space.country}
                                                         </p>
-                                                        <div style={{
-                                                            display: 'flex',
-                                                            justifyContent: 'space-between',
-                                                            alignItems: 'center',
-                                                            marginTop: '12px'
-                                                        }}>
-                                                            <span style={{
-                                                                fontSize: '18px',
-                                                                fontWeight: '700',
-                                                                color: '#a03f28',
-                                                                fontFamily: 'Manrope, sans-serif'
-                                                            }}>
+                                                        <div className="flex justify-between items-center mt-3">
+                                                            <span className="text-lg font-bold text-primary dark:text-primary-dark font-manrope">
                                                                 ${space.pricePerHour}
-                                                                <span style={{
-                                                                    fontSize: '14px',
-                                                                    fontWeight: '400',
-                                                                    color: '#56423d'
-                                                                }}>
+                                                                <span className="text-sm font-normal text-on-surface-variant dark:text-on-dark-surface-variant">
                                                                     /hr
                                                                 </span>
                                                             </span>
-                                                            <span style={{
-                                                                fontSize: '14px',
-                                                                color: '#56423d',
-                                                                fontFamily: 'Work Sans, sans-serif'
-                                                            }}>
+                                                            <span className="text-sm text-on-surface-variant dark:text-on-dark-surface-variant font-work-sans">
                                                                 ⭐ {space.averageRating?.toFixed(1) || 'New'} · 👥 {space.capacity}
                                                             </span>
                                                         </div>
@@ -476,141 +250,47 @@ const Home = () => {
                                             ))}
                                         </div>
                                     </div>
-                                )
+                                );
                             })}
                         </>
                     )}
                 </div>
 
                 {/* Quick Actions */}
-                <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                    gap: '24px'
-                }}>
-                    <Link to="/catalog" style={{
-                        textDecoration: 'none',
-                        backgroundColor: '#ffffff',
-                        padding: '24px',
-                        borderRadius: '8px',
-                        border: '1px solid #ddc0ba',
-                        textAlign: 'center',
-                        transition: 'all 0.3s',
-                        boxShadow: '0 4px 12px rgba(147, 74, 35, 0.05)'
-                    }}
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = 'translateY(-2px)'
-                            e.currentTarget.style.boxShadow = '0 8px 24px rgba(147, 74, 35, 0.12)'
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = 'translateY(0)'
-                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(147, 74, 35, 0.05)'
-                        }}
-                    >
-                        <div style={{ fontSize: '32px', marginBottom: '8px' }}>🏢</div>
-                        <div style={{
-                            fontSize: '16px',
-                            fontWeight: '600',
-                            color: '#1b1b1e',
-                            fontFamily: 'Manrope, sans-serif'
-                        }}>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <Link to="/catalog" className="bg-surface-container-lowest dark:bg-surface-dark-container-lowest p-6 rounded-lg border border-outline-variant dark:border-outline-dark-variant text-center hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                        <div className="text-4xl mb-2">🏢</div>
+                        <div className="text-lg font-semibold text-on-surface dark:text-on-dark-surface font-manrope">
                             Browse All Spaces
                         </div>
-                        <div style={{
-                            fontSize: '14px',
-                            color: '#56423d',
-                            fontFamily: 'Work Sans, sans-serif'
-                        }}>
+                        <div className="text-sm text-on-surface-variant dark:text-on-dark-surface-variant font-work-sans">
                             {featuredSpaces.length} premium spaces available
                         </div>
                     </Link>
 
-                    <Link to="/profile" style={{
-                        textDecoration: 'none',
-                        backgroundColor: '#ffffff',
-                        padding: '24px',
-                        borderRadius: '8px',
-                        border: '1px solid #ddc0ba',
-                        textAlign: 'center',
-                        transition: 'all 0.3s',
-                        boxShadow: '0 4px 12px rgba(147, 74, 35, 0.05)'
-                    }}
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = 'translateY(-2px)'
-                            e.currentTarget.style.boxShadow = '0 8px 24px rgba(147, 74, 35, 0.12)'
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = 'translateY(0)'
-                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(147, 74, 35, 0.05)'
-                        }}
-                    >
-                        <div style={{ fontSize: '32px', marginBottom: '8px' }}>👤</div>
-                        <div style={{
-                            fontSize: '16px',
-                            fontWeight: '600',
-                            color: '#1b1b1e',
-                            fontFamily: 'Manrope, sans-serif'
-                        }}>
+                    <Link to="/profile" className="bg-surface-container-lowest dark:bg-surface-dark-container-lowest p-6 rounded-lg border border-outline-variant dark:border-outline-dark-variant text-center hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                        <div className="text-4xl mb-2">👤</div>
+                        <div className="text-lg font-semibold text-on-surface dark:text-on-dark-surface font-manrope">
                             My Profile
                         </div>
-                        <div style={{
-                            fontSize: '14px',
-                            color: '#56423d',
-                            fontFamily: 'Work Sans, sans-serif'
-                        }}>
+                        <div className="text-sm text-on-surface-variant dark:text-on-dark-surface-variant font-work-sans">
                             View and edit your profile
                         </div>
                     </Link>
 
-                    <Link to="/reservations" style={{
-                        textDecoration: 'none',
-                        backgroundColor: '#ffffff',
-                        padding: '24px',
-                        borderRadius: '8px',
-                        border: '1px solid #ddc0ba',
-                        textAlign: 'center',
-                        transition: 'all 0.3s',
-                        boxShadow: '0 4px 12px rgba(147, 74, 35, 0.05)'
-                    }}
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.transform = 'translateY(-2px)'
-                            e.currentTarget.style.boxShadow = '0 8px 24px rgba(147, 74, 35, 0.12)'
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.transform = 'translateY(0)'
-                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(147, 74, 35, 0.05)'
-                        }}
-                    >
-                        <div style={{ fontSize: '32px', marginBottom: '8px' }}>📅</div>
-                        <div style={{
-                            fontSize: '16px',
-                            fontWeight: '600',
-                            color: '#1b1b1e',
-                            fontFamily: 'Manrope, sans-serif'
-                        }}>
+                    <Link to="/reservations" className="bg-surface-container-lowest dark:bg-surface-dark-container-lowest p-6 rounded-lg border border-outline-variant dark:border-outline-dark-variant text-center hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                        <div className="text-4xl mb-2">📅</div>
+                        <div className="text-lg font-semibold text-on-surface dark:text-on-dark-surface font-manrope">
                             My Reservations
                         </div>
-                        <div style={{
-                            fontSize: '14px',
-                            color: '#56423d',
-                            fontFamily: 'Work Sans, sans-serif'
-                        }}>
+                        <div className="text-sm text-on-surface-variant dark:text-on-dark-surface-variant font-work-sans">
                             View your booking history
                         </div>
                     </Link>
                 </div>
             </div>
-
-            {/* Animación de pulse para loading */}
-            <style>{`
-                @keyframes pulse {
-                    0% { opacity: 1; }
-                    50% { opacity: 0.5; }
-                    100% { opacity: 1; }
-                }
-            `}</style>
         </div>
-    )
-}
+    );
+};
 
-export default Home
+export default Home;
