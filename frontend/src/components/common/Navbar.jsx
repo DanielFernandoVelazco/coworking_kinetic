@@ -3,12 +3,13 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
-import useTheme from '../../hooks/useTheme'; // ✅ NUEVO
+// ✅ IMPORTAR DESDE EL CONTEXTO
+import { useTheme } from '../../context/ThemeContext';
 
 const Navbar = () => {
     const { user, isAuthenticated, logout } = useAuth();
-    const { getItemCount, cartItems } = useCart();
-    const { theme, toggleTheme, isDark } = useTheme(); // ✅ NUEVO
+    const { getItemCount } = useCart();
+    const { theme, toggleTheme, isDark } = useTheme();
     const navigate = useNavigate();
 
     const handleLogout = async () => {
@@ -21,7 +22,6 @@ const Navbar = () => {
     return (
         <nav className="bg-surface dark:bg-surface-dark w-full top-0 border-b border-outline-variant dark:border-outline-dark-variant z-50 sticky">
             <div className="flex justify-between items-center h-20 px-margin-desktop max-w-container-max mx-auto">
-                {/* Brand */}
                 <div className="flex items-center gap-8">
                     <Link to="/" className="font-headline-md text-headline-md font-bold text-primary dark:text-primary-dark">
                         Kinetic Workspace
@@ -46,9 +46,7 @@ const Navbar = () => {
                     )}
                 </div>
 
-                {/* Actions */}
                 <div className="flex items-center gap-4">
-                    {/* ✅ Toggle tema en el navbar (para móviles) */}
                     <button
                         onClick={toggleTheme}
                         className="md:hidden p-2 text-on-surface-variant dark:text-on-dark-surface-variant hover:text-primary dark:hover:text-primary-dark transition-colors rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-dark-container-low"
@@ -59,7 +57,6 @@ const Navbar = () => {
                         </span>
                     </button>
 
-                    {/* Carrito */}
                     {isAuthenticated && (
                         <Link to="/cart" className="relative p-2 text-on-surface-variant dark:text-on-dark-surface-variant hover:text-primary dark:hover:text-primary-dark transition-colors">
                             <span className="material-symbols-outlined">shopping_cart</span>
