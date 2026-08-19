@@ -1,6 +1,5 @@
 // frontend/src/components/common/ThemeToggle.jsx
 import React, { useState, useEffect } from 'react';
-// ✅ IMPORTAR EL HOOK DESDE EL CONTEXTO (no desde el archivo de hooks)
 import { useTheme } from '../../context/ThemeContext';
 
 const ThemeToggle = () => {
@@ -58,7 +57,7 @@ const ThemeToggle = () => {
     return (
         <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
             {isExpanded && (
-                <div className="bg-surface-container-high dark:bg-surface-dark-container-high px-4 py-2 rounded-lg shadow-lg border border-outline-variant dark:border-outline-dark-variant animate-fadeInUp text-body-sm text-on-surface dark:text-on-dark-surface">
+                <div className="bg-surface-container-high dark:bg-surface-dark-container-high px-4 py-2 rounded-lg shadow-lg border border-outline-variant dark:border-outline-dark-variant animate-fadeInUp text-sm text-on-surface dark:text-on-dark-surface">
                     {isDark ? '🌙 Modo oscuro activado' : '☀️ Modo claro activado'}
                 </div>
             )}
@@ -76,8 +75,8 @@ const ThemeToggle = () => {
                     focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2
                     dark:focus:ring-offset-dark-surface
                     ${isDark
-                        ? 'bg-surface-dark-container-high text-primary-dark border-primary-dark/30 hover:border-primary-dark'
-                        : 'bg-surface-container-high text-primary border-primary/30 hover:border-primary'
+                        ? 'bg-[#1e1e1e] text-yellow-400 border-yellow-400/30 hover:border-yellow-400'
+                        : 'bg-white text-primary border-primary/30 hover:border-primary'
                     }
                     ${isHovered ? 'scale-110' : 'scale-100'}
                 `}
@@ -95,7 +94,6 @@ const ThemeToggle = () => {
 
                 <span className={`
                     relative z-10
-                    ${isDark ? 'text-yellow-400' : 'text-primary'}
                     ${isHovered ? 'rotate-12' : 'rotate-0'}
                 `}>
                     {getIcon()}
@@ -103,7 +101,7 @@ const ThemeToggle = () => {
 
                 <span className={`
                     absolute -top-1 -right-1 w-4 h-4 rounded-full
-                    border-2 border-surface-container-lowest dark:border-surface-dark-container-lowest
+                    border-2 border-white dark:border-[#1e1e1e]
                     transition-colors duration-300
                     ${isDark ? 'bg-indigo-500' : 'bg-yellow-500'}
                 `} />
@@ -111,7 +109,7 @@ const ThemeToggle = () => {
 
             <span className={`
                 text-xs font-medium px-3 py-1 rounded-full
-                bg-surface-container-high dark:bg-surface-dark-container-high
+                bg-white dark:bg-[#1e1e1e]
                 text-on-surface-variant dark:text-on-dark-surface-variant
                 border border-outline-variant dark:border-outline-dark-variant
                 transition-all duration-300
