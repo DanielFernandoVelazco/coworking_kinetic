@@ -2,14 +2,15 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import useTheme from '../context/ThemeContext';
+// ✅ IMPORTAR CORRECTAMENTE
+import { useTheme } from '../context/ThemeContext';
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const { login } = useAuth();
-    const { isDark } = useTheme();
+    const { isDark } = useTheme(); // ✅ Ahora funciona
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
