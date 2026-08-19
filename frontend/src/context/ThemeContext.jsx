@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const ThemeContext = createContext(null);
 
+// ✅ Exportar el hook useTheme correctamente
 export const useTheme = () => {
     const context = useContext(ThemeContext);
     if (!context) {
@@ -61,7 +62,6 @@ export const ThemeProvider = ({ children }) => {
     const setLight = () => setTheme('light');
     const setDark = () => setTheme('dark');
 
-    // Evitar el flash de contenido incorrecto durante el montaje
     if (!mounted) {
         return null;
     }
@@ -80,4 +80,5 @@ export const ThemeProvider = ({ children }) => {
     );
 };
 
+// ✅ Exportación por defecto del contexto
 export default ThemeContext;
