@@ -1,13 +1,13 @@
 // frontend/src/components/common/ThemeToggle.jsx
 import React, { useState, useEffect } from 'react';
-import useTheme from '../../hooks/useTheme';
+// ✅ IMPORTAR EL HOOK DESDE EL CONTEXTO (no desde el archivo de hooks)
+import { useTheme } from '../../context/ThemeContext';
 
 const ThemeToggle = () => {
     const { theme, toggleTheme, isDark } = useTheme();
     const [isHovered, setIsHovered] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
 
-    // Efecto para cerrar el tooltip después de un tiempo
     useEffect(() => {
         if (isExpanded) {
             const timer = setTimeout(() => {
@@ -21,13 +21,11 @@ const ThemeToggle = () => {
         toggleTheme();
         setIsExpanded(true);
 
-        // Feedback táctil (vibración en móvil)
         if (navigator.vibrate) {
             navigator.vibrate(10);
         }
     };
 
-    // Obtener icono y texto según el tema
     const getIcon = () => {
         if (isDark) {
             return (
@@ -59,14 +57,12 @@ const ThemeToggle = () => {
 
     return (
         <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
-            {/* Tooltip/Indicador de estado */}
             {isExpanded && (
                 <div className="bg-surface-container-high dark:bg-surface-dark-container-high px-4 py-2 rounded-lg shadow-lg border border-outline-variant dark:border-outline-dark-variant animate-fadeInUp text-body-sm text-on-surface dark:text-on-dark-surface">
                     {isDark ? '🌙 Modo oscuro activado' : '☀️ Modo claro activado'}
                 </div>
             )}
 
-            {/* Botón principal */}
             <button
                 onClick={handleClick}
                 onMouseEnter={() => setIsHovered(true)}
@@ -87,7 +83,6 @@ const ThemeToggle = () => {
                 `}
                 aria-label={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
             >
-                {/* Efecto de fondo animado */}
                 <span className={`
                     absolute inset-0 rounded-full
                     transition-opacity duration-300
@@ -98,7 +93,6 @@ const ThemeToggle = () => {
                     ${isHovered ? 'opacity-100' : 'opacity-0'}
                 `} />
 
-                {/* Icono con animación */}
                 <span className={`
                     relative z-10
                     ${isDark ? 'text-yellow-400' : 'text-primary'}
@@ -107,7 +101,6 @@ const ThemeToggle = () => {
                     {getIcon()}
                 </span>
 
-                {/* Badge de estado */}
                 <span className={`
                     absolute -top-1 -right-1 w-4 h-4 rounded-full
                     border-2 border-surface-container-lowest dark:border-surface-dark-container-lowest
@@ -116,7 +109,6 @@ const ThemeToggle = () => {
                 `} />
             </button>
 
-            {/* Texto de ayuda al hacer hover */}
             <span className={`
                 text-xs font-medium px-3 py-1 rounded-full
                 bg-surface-container-high dark:bg-surface-dark-container-high
@@ -131,7 +123,7 @@ const ThemeToggle = () => {
     );
 };
 
-// Estilos de animación personalizados
+// Estilos de animación
 const styles = `
     @keyframes fadeInUp {
         from {
@@ -148,7 +140,6 @@ const styles = `
     }
 `;
 
-// Agregar estilos globales si no existen
 if (!document.getElementById('theme-toggle-styles')) {
     const styleSheet = document.createElement('style');
     styleSheet.id = 'theme-toggle-styles';
