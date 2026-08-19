@@ -2,11 +2,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import useTheme from '../context/ThemeContext';
+// ✅ IMPORTAR CORRECTAMENTE
+import { useTheme } from '../context/ThemeContext';
 
 const Register = () => {
     const navigate = useNavigate();
-    const { isDark } = useTheme();
+    const { isDark } = useTheme(); // ✅ Ahora funciona
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [formData, setFormData] = useState({
