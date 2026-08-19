@@ -2,14 +2,15 @@
 import React from 'react';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
-import { ThemeProvider } from './context/ThemeContext'; // ✅ NUEVO
+import { ThemeProvider } from './context/ThemeContext';
 import AppRoutes from './AppRoutes';
 import { Toaster } from 'react-hot-toast';
-import ThemeToggle from './components/common/ThemeToggle'; // ✅ NUEVO
+import ThemeToggle from './components/common/ThemeToggle';
 
 function App() {
   return (
-    <ThemeProvider> {/* ✅ ENVOLVER CON THEME PROVIDER */}
+    // ✅ ThemeProvider debe ser el más externo
+    <ThemeProvider>
       <AuthProvider>
         <CartProvider>
           <AppRoutes />
@@ -23,7 +24,7 @@ function App() {
               },
             }}
           />
-          <ThemeToggle /> {/* ✅ BOTÓN FLOTANTE */}
+          <ThemeToggle />
         </CartProvider>
       </AuthProvider>
     </ThemeProvider>
