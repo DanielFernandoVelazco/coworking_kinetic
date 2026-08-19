@@ -3,12 +3,13 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
+// ✅ IMPORTAR CORRECTAMENTE
 import { useTheme } from '../../context/ThemeContext';
 
 const Navbar = () => {
     const { user, isAuthenticated, logout } = useAuth();
     const { getItemCount } = useCart();
-    const { theme, toggleTheme, isDark } = useTheme(); // ✅ Ahora funciona
+    const { theme, toggleTheme, isDark } = useTheme();
     const navigate = useNavigate();
 
     const handleLogout = async () => {
@@ -19,7 +20,7 @@ const Navbar = () => {
     const cartCount = getItemCount();
 
     return (
-        <nav className="bg-surface dark:bg-surface-dark w-full top-0 border-b border-outline-variant dark:border-outline-dark-variant z-50 sticky">
+        <nav className="bg-surface dark:bg-surface-dark w-full top-0 border-b border-outline-variant dark:border-outline-dark-variant z-50 sticky transition-colors duration-300">
             <div className="flex justify-between items-center h-20 px-4 md:px-10 max-w-[1200px] mx-auto">
                 <div className="flex items-center gap-8">
                     <Link to="/" className="font-bold text-xl md:text-2xl text-primary dark:text-primary-dark font-manrope">
@@ -46,7 +47,6 @@ const Navbar = () => {
                 </div>
 
                 <div className="flex items-center gap-4">
-                    {/* Botón de tema en móvil */}
                     <button
                         onClick={toggleTheme}
                         className="md:hidden p-2 text-on-surface-variant dark:text-on-dark-surface-variant hover:text-primary dark:hover:text-primary-dark transition-colors rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-dark-container-low"
@@ -93,7 +93,7 @@ const Navbar = () => {
                         </>
                     ) : (
                         <div className="flex gap-4">
-                            <Link to="/login" className="px-4 py-2 border border-outline-variant dark:border-outline-dark-variant rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-dark-container-low transition-colors text-sm font-medium">
+                            <Link to="/login" className="px-4 py-2 border border-outline-variant dark:border-outline-dark-variant rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-dark-container-low transition-colors text-sm font-medium text-on-surface dark:text-on-dark-surface">
                                 Sign In
                             </Link>
                             <Link to="/register" className="px-4 py-2 bg-primary dark:bg-primary-dark text-white rounded-lg hover:bg-primary-dark dark:hover:bg-primary transition-colors text-sm font-medium">
