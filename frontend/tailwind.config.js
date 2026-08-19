@@ -5,19 +5,19 @@ export default {
         "./index.html",
         "./src/**/*.{js,ts,jsx,tsx}",
     ],
-    darkMode: 'class', // ✅ IMPORTANTE: usar class para dark mode
+    darkMode: 'class',
     theme: {
         extend: {
             colors: {
                 // Modo claro
                 primary: '#a03f28',
                 'primary-dark': '#c0573e',
-                'primary-container': '#a03f28',
-                'primary-dark-container': '#c0573e',
                 secondary: '#c0573e',
                 'secondary-dark': '#d46b50',
                 'on-primary': '#ffffff',
                 'on-dark-primary': '#ffffff',
+
+                // Superficies
                 surface: '#fbf8fc',
                 'surface-dark': '#121212',
                 'surface-container-low': '#f5f3f6',
@@ -26,12 +26,18 @@ export default {
                 'surface-dark-container-low': '#1e1e1e',
                 'surface-dark-container-lowest': '#121212',
                 'surface-dark-container-high': '#2a2a2a',
+
+                // Textos
                 'on-surface': '#1b1b1e',
                 'on-dark-surface': '#e8e4e6',
                 'on-surface-variant': '#56423d',
                 'on-dark-surface-variant': '#b0a09b',
+
+                // Bordes
                 'outline-variant': '#ddc0ba',
                 'outline-dark-variant': '#3d2e2a',
+
+                // Fondos
                 background: '#fbf8fc',
                 'dark-background': '#121212',
             },
@@ -58,6 +64,9 @@ export default {
             },
             maxWidth: {
                 'container-max': '1200px',
+            },
+            zIndex: {
+                '100': '100',
             },
         },
     },
