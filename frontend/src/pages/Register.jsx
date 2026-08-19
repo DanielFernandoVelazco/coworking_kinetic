@@ -1,11 +1,14 @@
-import React, { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import axios from 'axios'
+// frontend/src/pages/Register.jsx
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import useTheme from '../context/ThemeContext';
 
 const Register = () => {
-    const navigate = useNavigate()
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState('')
+    const navigate = useNavigate();
+    const { isDark } = useTheme();
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -13,117 +16,69 @@ const Register = () => {
         password: '',
         confirmPassword: '',
         company: ''
-    })
+    });
 
     const handleChange = (e) => {
         setFormData({
             ...formData,
             [e.target.name]: e.target.value
-        })
-    }
+        });
+    };
 
     const handleSubmit = async (e) => {
-        e.preventDefault()
-        setError('')
-        setLoading(true)
+        e.preventDefault();
+        setError('');
+        setLoading(true);
 
-        // Validar que las contraseñas coincidan
         if (formData.password !== formData.confirmPassword) {
-            setError('Las contraseñas no coinciden')
-            setLoading(false)
-            return
+            setError('Las contraseñas no coinciden');
+            setLoading(false);
+            return;
         }
 
-        // Validar longitud de contraseña
         if (formData.password.length < 6) {
-            setError('La contraseña debe tener al menos 6 caracteres')
-            setLoading(false)
-            return
+            setError('La contraseña debe tener al menos 6 caracteres');
+            setLoading(false);
+            return;
         }
 
         try {
-            const { confirmPassword, ...userData } = formData
-            const response = await axios.post('/api/auth/register', userData)
+            const { confirmPassword, ...userData } = formData;
+            const response = await axios.post('/api/auth/register', userData);
 
             if (response.data) {
-                // Si el registro es exitoso, redirigir al login
-                navigate('/login', { state: { message: 'Registro exitoso. Ahora puedes iniciar sesión.' } })
+                navigate('/login', { state: { message: 'Registro exitoso. Ahora puedes iniciar sesión.' } });
             }
         } catch (error) {
-            const message = error.response?.data?.message || 'Error al registrar usuario'
-            setError(message)
+            const message = error.response?.data?.message || 'Error al registrar usuario';
+            setError(message);
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
-    }
+    };
 
     return (
-        <div style={{
-            minHeight: '100vh',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: '#fbf8fc',
-            padding: '20px 16px'
-        }}>
-            <div style={{
-                width: '100%',
-                maxWidth: '480px',
-                backgroundColor: '#ffffff',
-                border: '1px solid #ddc0ba',
-                padding: '40px',
-                boxShadow: '0 4px 12px rgba(147, 74, 35, 0.05)',
-                borderRadius: '4px',
-                maxHeight: '90vh',
-                overflowY: 'auto'
-            }}>
-                <div style={{ marginBottom: '32px' }}>
-                    <h1 style={{
-                        fontSize: '36px',
-                        fontWeight: '700',
-                        color: '#1b1b1e',
-                        marginBottom: '8px',
-                        fontFamily: 'Manrope, sans-serif',
-                        lineHeight: '44px',
-                        letterSpacing: '-0.01em'
-                    }}>
+        <div className="min-h-screen flex items-center justify-center bg-background dark:bg-dark-background px-4 py-5 transition-colors duration-300">
+            <div className="w-full max-w-md bg-surface-container-lowest dark:bg-surface-dark-container-lowest border border-outline-variant dark:border-outline-dark-variant p-8 md:p-10 rounded shadow-sm max-h-[90vh] overflow-y-auto transition-colors duration-300">
+                <div className="mb-8">
+                    <h1 className="text-3xl md:text-4xl font-bold text-on-surface dark:text-on-dark-surface font-manrope mb-2">
                         Create Account
                     </h1>
-                    <p style={{
-                        fontSize: '16px',
-                        color: '#56423d',
-                        fontFamily: 'Work Sans, sans-serif',
-                        lineHeight: '24px'
-                    }}>
+                    <p className="text-base text-on-surface-variant dark:text-on-dark-surface-variant font-work-sans">
                         Join the Kinetic Workspace community
                     </p>
                 </div>
 
                 {error && (
-                    <div style={{
-                        backgroundColor: '#ffdad6',
-                        color: '#ba1a1a',
-                        padding: '12px',
-                        borderRadius: '4px',
-                        marginBottom: '16px',
-                        fontSize: '14px',
-                        fontFamily: 'Work Sans, sans-serif'
-                    }}>
+                    <div className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 p-3 rounded mb-4 text-sm font-work-sans">
                         {error}
                     </div>
                 )}
 
                 <form onSubmit={handleSubmit}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                        <div style={{ marginBottom: '16px' }}>
-                            <label style={{
-                                fontSize: '12px',
-                                fontFamily: 'JetBrains Mono, monospace',
-                                letterSpacing: '0.05em',
-                                color: '#56423d',
-                                display: 'block',
-                                marginBottom: '4px'
-                            }}>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="mb-4">
+                            <label className="text-xs font-mono tracking-wider text-on-surface-variant dark:text-on-dark-surface-variant block mb-1">
                                 FIRST NAME
                             </label>
                             <input
@@ -133,38 +88,12 @@ const Register = () => {
                                 onChange={handleChange}
                                 placeholder="John"
                                 required
-                                style={{
-                                    width: '100%',
-                                    backgroundColor: '#f5f3f6',
-                                    border: 'none',
-                                    borderBottom: '1px solid #ddc0ba',
-                                    padding: '12px 0',
-                                    color: '#1b1b1e',
-                                    transition: 'all 0.3s',
-                                    outline: 'none',
-                                    fontFamily: 'Work Sans, sans-serif',
-                                    fontSize: '16px'
-                                }}
-                                onFocus={(e) => {
-                                    e.target.style.borderBottomColor = '#a03f28'
-                                    e.target.style.backgroundColor = '#ffffff'
-                                }}
-                                onBlur={(e) => {
-                                    e.target.style.borderBottomColor = '#ddc0ba'
-                                    e.target.style.backgroundColor = '#f5f3f6'
-                                }}
+                                className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-3 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none font-work-sans text-base"
                             />
                         </div>
 
-                        <div style={{ marginBottom: '16px' }}>
-                            <label style={{
-                                fontSize: '12px',
-                                fontFamily: 'JetBrains Mono, monospace',
-                                letterSpacing: '0.05em',
-                                color: '#56423d',
-                                display: 'block',
-                                marginBottom: '4px'
-                            }}>
+                        <div className="mb-4">
+                            <label className="text-xs font-mono tracking-wider text-on-surface-variant dark:text-on-dark-surface-variant block mb-1">
                                 LAST NAME
                             </label>
                             <input
@@ -174,39 +103,13 @@ const Register = () => {
                                 onChange={handleChange}
                                 placeholder="Doe"
                                 required
-                                style={{
-                                    width: '100%',
-                                    backgroundColor: '#f5f3f6',
-                                    border: 'none',
-                                    borderBottom: '1px solid #ddc0ba',
-                                    padding: '12px 0',
-                                    color: '#1b1b1e',
-                                    transition: 'all 0.3s',
-                                    outline: 'none',
-                                    fontFamily: 'Work Sans, sans-serif',
-                                    fontSize: '16px'
-                                }}
-                                onFocus={(e) => {
-                                    e.target.style.borderBottomColor = '#a03f28'
-                                    e.target.style.backgroundColor = '#ffffff'
-                                }}
-                                onBlur={(e) => {
-                                    e.target.style.borderBottomColor = '#ddc0ba'
-                                    e.target.style.backgroundColor = '#f5f3f6'
-                                }}
+                                className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-3 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none font-work-sans text-base"
                             />
                         </div>
                     </div>
 
-                    <div style={{ marginBottom: '16px' }}>
-                        <label style={{
-                            fontSize: '12px',
-                            fontFamily: 'JetBrains Mono, monospace',
-                            letterSpacing: '0.05em',
-                            color: '#56423d',
-                            display: 'block',
-                            marginBottom: '4px'
-                        }}>
+                    <div className="mb-4">
+                        <label className="text-xs font-mono tracking-wider text-on-surface-variant dark:text-on-dark-surface-variant block mb-1">
                             EMAIL ADDRESS
                         </label>
                         <input
@@ -216,38 +119,12 @@ const Register = () => {
                             onChange={handleChange}
                             placeholder="john@kinetic.com"
                             required
-                            style={{
-                                width: '100%',
-                                backgroundColor: '#f5f3f6',
-                                border: 'none',
-                                borderBottom: '1px solid #ddc0ba',
-                                padding: '12px 0',
-                                color: '#1b1b1e',
-                                transition: 'all 0.3s',
-                                outline: 'none',
-                                fontFamily: 'Work Sans, sans-serif',
-                                fontSize: '16px'
-                            }}
-                            onFocus={(e) => {
-                                e.target.style.borderBottomColor = '#a03f28'
-                                e.target.style.backgroundColor = '#ffffff'
-                            }}
-                            onBlur={(e) => {
-                                e.target.style.borderBottomColor = '#ddc0ba'
-                                e.target.style.backgroundColor = '#f5f3f6'
-                            }}
+                            className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-3 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none font-work-sans text-base"
                         />
                     </div>
 
-                    <div style={{ marginBottom: '16px' }}>
-                        <label style={{
-                            fontSize: '12px',
-                            fontFamily: 'JetBrains Mono, monospace',
-                            letterSpacing: '0.05em',
-                            color: '#56423d',
-                            display: 'block',
-                            marginBottom: '4px'
-                        }}>
+                    <div className="mb-4">
+                        <label className="text-xs font-mono tracking-wider text-on-surface-variant dark:text-on-dark-surface-variant block mb-1">
                             PASSWORD
                         </label>
                         <input
@@ -257,38 +134,12 @@ const Register = () => {
                             onChange={handleChange}
                             placeholder="••••••••"
                             required
-                            style={{
-                                width: '100%',
-                                backgroundColor: '#f5f3f6',
-                                border: 'none',
-                                borderBottom: '1px solid #ddc0ba',
-                                padding: '12px 0',
-                                color: '#1b1b1e',
-                                transition: 'all 0.3s',
-                                outline: 'none',
-                                fontFamily: 'Work Sans, sans-serif',
-                                fontSize: '16px'
-                            }}
-                            onFocus={(e) => {
-                                e.target.style.borderBottomColor = '#a03f28'
-                                e.target.style.backgroundColor = '#ffffff'
-                            }}
-                            onBlur={(e) => {
-                                e.target.style.borderBottomColor = '#ddc0ba'
-                                e.target.style.backgroundColor = '#f5f3f6'
-                            }}
+                            className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-3 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none font-work-sans text-base"
                         />
                     </div>
 
-                    <div style={{ marginBottom: '16px' }}>
-                        <label style={{
-                            fontSize: '12px',
-                            fontFamily: 'JetBrains Mono, monospace',
-                            letterSpacing: '0.05em',
-                            color: '#56423d',
-                            display: 'block',
-                            marginBottom: '4px'
-                        }}>
+                    <div className="mb-4">
+                        <label className="text-xs font-mono tracking-wider text-on-surface-variant dark:text-on-dark-surface-variant block mb-1">
                             CONFIRM PASSWORD
                         </label>
                         <input
@@ -298,38 +149,12 @@ const Register = () => {
                             onChange={handleChange}
                             placeholder="••••••••"
                             required
-                            style={{
-                                width: '100%',
-                                backgroundColor: '#f5f3f6',
-                                border: 'none',
-                                borderBottom: '1px solid #ddc0ba',
-                                padding: '12px 0',
-                                color: '#1b1b1e',
-                                transition: 'all 0.3s',
-                                outline: 'none',
-                                fontFamily: 'Work Sans, sans-serif',
-                                fontSize: '16px'
-                            }}
-                            onFocus={(e) => {
-                                e.target.style.borderBottomColor = '#a03f28'
-                                e.target.style.backgroundColor = '#ffffff'
-                            }}
-                            onBlur={(e) => {
-                                e.target.style.borderBottomColor = '#ddc0ba'
-                                e.target.style.backgroundColor = '#f5f3f6'
-                            }}
+                            className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-3 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none font-work-sans text-base"
                         />
                     </div>
 
-                    <div style={{ marginBottom: '24px' }}>
-                        <label style={{
-                            fontSize: '12px',
-                            fontFamily: 'JetBrains Mono, monospace',
-                            letterSpacing: '0.05em',
-                            color: '#56423d',
-                            display: 'block',
-                            marginBottom: '4px'
-                        }}>
+                    <div className="mb-6">
+                        <label className="text-xs font-mono tracking-wider text-on-surface-variant dark:text-on-dark-surface-variant block mb-1">
                             COMPANY (Optional)
                         </label>
                         <input
@@ -338,72 +163,28 @@ const Register = () => {
                             value={formData.company}
                             onChange={handleChange}
                             placeholder="Your Company"
-                            style={{
-                                width: '100%',
-                                backgroundColor: '#f5f3f6',
-                                border: 'none',
-                                borderBottom: '1px solid #ddc0ba',
-                                padding: '12px 0',
-                                color: '#1b1b1e',
-                                transition: 'all 0.3s',
-                                outline: 'none',
-                                fontFamily: 'Work Sans, sans-serif',
-                                fontSize: '16px'
-                            }}
-                            onFocus={(e) => {
-                                e.target.style.borderBottomColor = '#a03f28'
-                                e.target.style.backgroundColor = '#ffffff'
-                            }}
-                            onBlur={(e) => {
-                                e.target.style.borderBottomColor = '#ddc0ba'
-                                e.target.style.backgroundColor = '#f5f3f6'
-                            }}
+                            className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-3 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none font-work-sans text-base"
                         />
                     </div>
 
                     <button
                         type="submit"
                         disabled={loading}
-                        style={{
-                            width: '100%',
-                            backgroundColor: '#a03f28',
-                            color: '#ffffff',
-                            padding: '16px 0',
-                            fontSize: '24px',
-                            fontFamily: 'Manrope, sans-serif',
-                            fontWeight: '600',
-                            border: 'none',
-                            borderRadius: '2px',
-                            cursor: loading ? 'not-allowed' : 'pointer',
-                            transition: 'all 0.3s',
-                            opacity: loading ? 0.7 : 1
-                        }}
-                        onMouseEnter={(e) => {
-                            if (!loading) e.target.style.backgroundColor = '#c0573e'
-                        }}
-                        onMouseLeave={(e) => {
-                            if (!loading) e.target.style.backgroundColor = '#a03f28'
-                        }}
+                        className="w-full bg-primary dark:bg-primary-dark text-white py-4 text-2xl font-semibold font-manrope border-none rounded transition-colors hover:bg-primary-dark dark:hover:bg-primary disabled:opacity-70"
                     >
                         {loading ? 'Creating account...' : 'Create Account'}
                     </button>
                 </form>
 
-                <p style={{
-                    marginTop: '24px',
-                    textAlign: 'center',
-                    fontSize: '14px',
-                    fontFamily: 'Work Sans, sans-serif',
-                    color: '#56423d'
-                }}>
+                <p className="mt-6 text-center text-sm text-on-surface-variant dark:text-on-dark-surface-variant font-work-sans">
                     Already have an account?{' '}
-                    <Link to="/login" style={{ color: '#a03f28', fontWeight: 'bold', textDecoration: 'none' }}>
+                    <Link to="/login" className="text-primary dark:text-primary-dark font-bold hover:underline">
                         Sign in
                     </Link>
                 </p>
             </div>
         </div>
-    )
-}
+    );
+};
 
-export default Register
+export default Register;
