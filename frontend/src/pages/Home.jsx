@@ -5,11 +5,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import spacesService from '../api/spaces.service';
 import reservationsService from '../api/reservations.service';
 import toast from 'react-hot-toast';
-import useTheme from '../context/ThemeContext'; // ✅ Importar el tema
+// ✅ IMPORTAR CORRECTAMENTE - usar llaves {}
+import { useTheme } from '../context/ThemeContext';
 
 const Home = () => {
     const { user, logout } = useAuth();
-    const { isDark } = useTheme(); // ✅ Obtener el estado del tema
+    const { isDark } = useTheme(); // ✅ Ahora funciona correctamente
     const navigate = useNavigate();
     const [featuredSpaces, setFeaturedSpaces] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -95,11 +96,10 @@ const Home = () => {
         return null;
     }
 
-    // ✅ Usar clases de Tailwind en lugar de estilos inline
     return (
         <div className="min-h-screen bg-background dark:bg-dark-background transition-colors duration-300">
             {/* Navbar */}
-            <nav className="bg-surface dark:bg-surface-dark border-b border-outline-variant dark:border-outline-dark-variant px-4 md:px-10 py-4 flex justify-between items-center sticky top-0 z-100 transition-colors duration-300">
+            <nav className="bg-surface dark:bg-surface-dark border-b border-outline-variant dark:border-outline-dark-variant px-4 md:px-10 py-4 flex justify-between items-center sticky top-0 z-50 transition-colors duration-300">
                 <div className="text-2xl font-bold text-primary dark:text-primary-dark font-manrope">
                     Kinetic Workspace
                 </div>
