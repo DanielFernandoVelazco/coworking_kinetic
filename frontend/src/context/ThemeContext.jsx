@@ -1,12 +1,8 @@
 // frontend/src/context/ThemeContext.jsx
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-const ThemeContext = createContext();
+const ThemeContext = createContext(null);
 
-// ✅ Exportar el contexto para usarlo directamente si es necesario
-export { ThemeContext };
-
-// ✅ Exportar el hook useTheme desde aquí también (para evitar importaciones duplicadas)
 export const useTheme = () => {
     const context = useContext(ThemeContext);
     if (!context) {
@@ -29,6 +25,9 @@ export const ThemeProvider = ({ children }) => {
 
     useEffect(() => {
         setMounted(true);
+    }, []);
+
+    useEffect(() => {
         const root = document.documentElement;
 
         if (theme === 'dark') {
@@ -62,8 +61,9 @@ export const ThemeProvider = ({ children }) => {
     const setLight = () => setTheme('light');
     const setDark = () => setTheme('dark');
 
+    // Evitar el flash de contenido incorrecto durante el montaje
     if (!mounted) {
-        return <div style={{ visibility: 'hidden' }}>{children}</div>;
+        return null;
     }
 
     return (
