@@ -14,7 +14,7 @@ import Catalog from './pages/Catalog';
 import SpaceDetails from './pages/SpaceDetails';
 import Profile from './pages/Profile';
 import Reservations from './pages/Reservations';
-import CartPage from './pages/CartPage'; // ✅ NUEVO
+import CartPage from './pages/CartPage';
 import AdminDashboard from './pages/AdminDashboard';
 import NotFound from './pages/NotFound';
 
@@ -85,7 +85,6 @@ const AppRoutes = () => {
                     </ProtectedRoute>
                 } />
 
-                {/* ✅ Carrito */}
                 <Route path="cart" element={
                     <ProtectedRoute>
                         <CartPage />
