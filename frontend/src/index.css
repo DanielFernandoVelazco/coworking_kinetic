@@ -248,3 +248,116 @@ body {
 .dark .bg-primary:hover {
   background-color: #d46b50;
 }
+
+/* Fondos */
+.bg-surface-dark {
+  background-color: #121212;
+}
+
+.bg-surface-dark-container-low {
+  background-color: #1e1e1e;
+}
+
+.bg-surface-dark-container-lowest {
+  background-color: #121212;
+}
+
+.bg-surface-dark-container-high {
+  background-color: #2a2a2a;
+}
+
+/* Textos */
+.text-on-dark-surface {
+  color: #e8e4e6;
+}
+
+.text-on-dark-surface-variant {
+  color: #b0a09b;
+}
+
+/* Bordes */
+.border-outline-dark-variant {
+  border-color: #3d2e2a;
+}
+
+/* Colores primarios oscuros */
+.text-primary-dark {
+  color: #c0573e;
+}
+
+.bg-primary-dark {
+  background-color: #c0573e;
+}
+
+.bg-primary-dark:hover {
+  background-color: #d46b50;
+}
+
+.hover\\:bg-primary-dark:hover {
+  background-color: #c0573e;
+}
+
+.hover\\:bg-primary:hover {
+  background-color: #a03f28;
+}
+
+/* Contenedores */
+.bg-dark-background {
+  background-color: #121212;
+}
+
+/* Transiciones */
+.transition-colors {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
+.duration-300 {
+  transition-duration: 300ms;
+}
+
+/* Sombras en modo oscuro */
+.dark .shadow-sm {
+  box-shadow: 0 1px 2px 0 rgba(255, 255, 255, 0.05);
+}
+
+.dark .shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(255, 255, 255, 0.05), 0 4px 6px -2px rgba(255, 255, 255, 0.025);
+}
+
+/* Scrollbar modo oscuro */
+.dark ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #3d2e2a;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #c0573e;
+}
+
+/* Placeholder en modo oscuro */
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #6b5a55;
+}
+
+/* Focus en modo oscuro */
+.dark input:focus,
+.dark textarea:focus {
+  border-color: #c0573e;
+}
+
+.dark input:focus-visible,
+.dark textarea:focus-visible {
+  outline-color: #c0573e;
+}
