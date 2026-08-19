@@ -1,13 +1,15 @@
-// src/pages/Login.jsx
+// frontend/src/pages/Login.jsx
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import useTheme from '../context/ThemeContext';
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const { login } = useAuth();
+    const { isDark } = useTheme();
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
@@ -23,58 +25,20 @@ const Login = () => {
     };
 
     return (
-        <div style={{
-            minHeight: '100vh',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: '#fbf8fc',
-            padding: '0 16px'
-        }}>
-            <div style={{
-                width: '100%',
-                maxWidth: '480px',
-                backgroundColor: '#ffffff',
-                border: '1px solid #ddc0ba',
-                padding: '40px',
-                boxShadow: '0 4px 12px rgba(147, 74, 35, 0.05)',
-                borderRadius: '4px'
-            }}>
-                {/* Header */}
-                <div style={{ marginBottom: '40px' }}>
-                    <h1 style={{
-                        fontSize: '36px',
-                        fontWeight: '700',
-                        color: '#1b1b1e',
-                        marginBottom: '8px',
-                        fontFamily: 'Manrope, sans-serif',
-                        lineHeight: '44px',
-                        letterSpacing: '-0.01em'
-                    }}>
+        <div className="min-h-screen flex items-center justify-center bg-background dark:bg-dark-background px-4 transition-colors duration-300">
+            <div className="w-full max-w-md bg-surface-container-lowest dark:bg-surface-dark-container-lowest border border-outline-variant dark:border-outline-dark-variant p-8 md:p-10 rounded shadow-sm transition-colors duration-300">
+                <div className="mb-10">
+                    <h1 className="text-3xl md:text-4xl font-bold text-on-surface dark:text-on-dark-surface font-manrope mb-2">
                         Welcome back
                     </h1>
-                    <p style={{
-                        fontSize: '16px',
-                        color: '#56423d',
-                        fontFamily: 'Work Sans, sans-serif',
-                        lineHeight: '24px'
-                    }}>
+                    <p className="text-base text-on-surface-variant dark:text-on-dark-surface-variant font-work-sans">
                         Access your high-performance workspace.
                     </p>
                 </div>
 
-                {/* Form */}
                 <form onSubmit={handleSubmit}>
-                    {/* Email */}
-                    <div style={{ marginBottom: '24px' }}>
-                        <label style={{
-                            fontSize: '12px',
-                            fontFamily: 'JetBrains Mono, monospace',
-                            letterSpacing: '0.05em',
-                            color: '#56423d',
-                            display: 'block',
-                            marginBottom: '4px'
-                        }}>
+                    <div className="mb-6">
+                        <label className="text-xs font-mono tracking-wider text-on-surface-variant dark:text-on-dark-surface-variant block mb-1">
                             EMAIL ADDRESS
                         </label>
                         <input
@@ -82,47 +46,16 @@ const Login = () => {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="executive@kinetic.com"
-                            style={{
-                                width: '100%',
-                                backgroundColor: '#f5f3f6',
-                                border: 'none',
-                                borderBottom: '1px solid #ddc0ba',
-                                padding: '12px 0',
-                                color: '#1b1b1e',
-                                transition: 'all 0.3s',
-                                outline: 'none',
-                                fontFamily: 'Work Sans, sans-serif',
-                                fontSize: '16px'
-                            }}
-                            onFocus={(e) => {
-                                e.target.style.borderBottomColor = '#a03f28';
-                                e.target.style.backgroundColor = '#ffffff';
-                            }}
-                            onBlur={(e) => {
-                                e.target.style.borderBottomColor = '#ddc0ba';
-                                e.target.style.backgroundColor = '#f5f3f6';
-                            }}
+                            className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-3 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none font-work-sans text-base"
                         />
                     </div>
 
-                    {/* Password */}
-                    <div style={{ marginBottom: '24px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                            <label style={{
-                                fontSize: '12px',
-                                fontFamily: 'JetBrains Mono, monospace',
-                                letterSpacing: '0.05em',
-                                color: '#56423d',
-                                display: 'block'
-                            }}>
+                    <div className="mb-6">
+                        <div className="flex justify-between items-center mb-1">
+                            <label className="text-xs font-mono tracking-wider text-on-surface-variant dark:text-on-dark-surface-variant block">
                                 PASSWORD
                             </label>
-                            <Link to="/forgot-password" style={{
-                                fontSize: '14px',
-                                color: '#a03f28',
-                                fontFamily: 'Work Sans, sans-serif',
-                                textDecoration: 'none'
-                            }}>
+                            <Link to="/forgot-password" className="text-sm text-primary dark:text-primary-dark hover:underline font-work-sans">
                                 Forgot?
                             </Link>
                         </div>
@@ -131,131 +64,44 @@ const Login = () => {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             placeholder="••••••••"
-                            style={{
-                                width: '100%',
-                                backgroundColor: '#f5f3f6',
-                                border: 'none',
-                                borderBottom: '1px solid #ddc0ba',
-                                padding: '12px 0',
-                                color: '#1b1b1e',
-                                transition: 'all 0.3s',
-                                outline: 'none',
-                                fontFamily: 'Work Sans, sans-serif',
-                                fontSize: '16px'
-                            }}
-                            onFocus={(e) => {
-                                e.target.style.borderBottomColor = '#a03f28';
-                                e.target.style.backgroundColor = '#ffffff';
-                            }}
-                            onBlur={(e) => {
-                                e.target.style.borderBottomColor = '#ddc0ba';
-                                e.target.style.backgroundColor = '#f5f3f6';
-                            }}
+                            className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-3 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none font-work-sans text-base"
                         />
                     </div>
 
-                    {/* Submit Button */}
                     <button
                         type="submit"
                         disabled={loading}
-                        style={{
-                            width: '100%',
-                            backgroundColor: '#a03f28',
-                            color: '#ffffff',
-                            padding: '16px 0',
-                            fontSize: '24px',
-                            fontFamily: 'Manrope, sans-serif',
-                            fontWeight: '600',
-                            border: 'none',
-                            borderRadius: '2px',
-                            cursor: loading ? 'not-allowed' : 'pointer',
-                            transition: 'all 0.3s',
-                            opacity: loading ? 0.7 : 1
-                        }}
-                        onMouseEnter={(e) => {
-                            if (!loading) e.target.style.backgroundColor = '#c0573e';
-                        }}
-                        onMouseLeave={(e) => {
-                            if (!loading) e.target.style.backgroundColor = '#a03f28';
-                        }}
+                        className="w-full bg-primary dark:bg-primary-dark text-white py-4 text-2xl font-semibold font-manrope border-none rounded transition-colors hover:bg-primary-dark dark:hover:bg-primary disabled:opacity-70"
                     >
                         {loading ? 'Signing in...' : 'Sign In'}
                     </button>
                 </form>
 
-                {/* Divider */}
-                <div style={{ position: 'relative', margin: '40px 0' }}>
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center' }}>
-                        <div style={{ width: '100%', borderTop: '1px solid #ddc0ba' }}></div>
+                <div className="relative my-10">
+                    <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-outline-variant dark:border-outline-dark-variant"></div>
                     </div>
-                    <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
-                        <span style={{
-                            backgroundColor: '#ffffff',
-                            padding: '0 16px',
-                            fontSize: '12px',
-                            fontFamily: 'JetBrains Mono, monospace',
-                            letterSpacing: '0.05em',
-                            color: '#56423d'
-                        }}>
+                    <div className="relative flex justify-center">
+                        <span className="bg-surface-container-lowest dark:bg-surface-dark-container-lowest px-4 text-xs font-mono tracking-wider text-on-surface-variant dark:text-on-dark-surface-variant">
                             OR CONTINUE WITH
                         </span>
                     </div>
                 </div>
 
-                {/* Social Buttons */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                    <button style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px',
-                        border: '1px solid #ddc0ba',
-                        padding: '12px 16px',
-                        backgroundColor: 'transparent',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontFamily: 'Work Sans, sans-serif',
-                        fontSize: '14px',
-                        transition: 'all 0.3s'
-                    }}
-                        onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f3f6'}
-                        onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-                    >
-                        <span style={{ color: '#a03f28' }}>G</span>
+                <div className="grid grid-cols-2 gap-4">
+                    <button className="flex items-center justify-center gap-2 border border-outline-variant dark:border-outline-dark-variant py-3 px-4 bg-transparent rounded hover:bg-surface-container-low dark:hover:bg-surface-dark-container-low transition-colors font-work-sans text-sm">
+                        <span className="text-primary dark:text-primary-dark font-bold">G</span>
                         Google
                     </button>
-                    <button style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '8px',
-                        border: '1px solid #ddc0ba',
-                        padding: '12px 16px',
-                        backgroundColor: 'transparent',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontFamily: 'Work Sans, sans-serif',
-                        fontSize: '14px',
-                        transition: 'all 0.3s'
-                    }}
-                        onMouseEnter={(e) => e.target.style.backgroundColor = '#f5f3f6'}
-                        onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
-                    >
-                        <span style={{ color: '#a03f28' }}>W</span>
+                    <button className="flex items-center justify-center gap-2 border border-outline-variant dark:border-outline-dark-variant py-3 px-4 bg-transparent rounded hover:bg-surface-container-low dark:hover:bg-surface-dark-container-low transition-colors font-work-sans text-sm">
+                        <span className="text-primary dark:text-primary-dark font-bold">W</span>
                         SSO
                     </button>
                 </div>
 
-                {/* Register Link */}
-                <p style={{
-                    marginTop: '40px',
-                    textAlign: 'center',
-                    fontSize: '14px',
-                    fontFamily: 'Work Sans, sans-serif',
-                    color: '#56423d'
-                }}>
+                <p className="mt-10 text-center text-sm text-on-surface-variant dark:text-on-dark-surface-variant font-work-sans">
                     New to Kinetic?{' '}
-                    <Link to="/register" style={{ color: '#a03f28', fontWeight: 'bold', textDecoration: 'none' }}>
+                    <Link to="/register" className="text-primary dark:text-primary-dark font-bold hover:underline">
                         Create an account
                     </Link>
                 </p>
