@@ -1,5 +1,6 @@
 // frontend/src/components/common/ThemeToggle.jsx
 import React, { useState, useEffect } from 'react';
+// ✅ IMPORTAR CORRECTAMENTE
 import { useTheme } from '../../context/ThemeContext';
 
 const ThemeToggle = () => {
