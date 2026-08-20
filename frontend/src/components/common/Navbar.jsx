@@ -3,13 +3,13 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
-// ✅ IMPORTAR CORRECTAMENTE
 import { useTheme } from '../../context/ThemeContext';
+import AlertBell from './AlertBell'; // AGREGAR
 
 const Navbar = () => {
     const { user, isAuthenticated, logout } = useAuth();
     const { getItemCount } = useCart();
-    const { theme, toggleTheme, isDark } = useTheme();
+    const { isDark, toggleTheme } = useTheme();
     const navigate = useNavigate();
 
     const handleLogout = async () => {
@@ -46,7 +46,8 @@ const Navbar = () => {
                     )}
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                    {/* Theme Toggle - Mobile */}
                     <button
                         onClick={toggleTheme}
                         className="md:hidden p-2 text-on-surface-variant dark:text-on-dark-surface-variant hover:text-primary dark:hover:text-primary-dark transition-colors rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-dark-container-low"
@@ -57,6 +58,7 @@ const Navbar = () => {
                         </span>
                     </button>
 
+                    {/* Cart */}
                     {isAuthenticated && (
                         <Link to="/cart" className="relative p-2 text-on-surface-variant dark:text-on-dark-surface-variant hover:text-primary dark:hover:text-primary-dark transition-colors">
                             <span className="material-symbols-outlined">shopping_cart</span>
@@ -70,9 +72,9 @@ const Navbar = () => {
 
                     {isAuthenticated ? (
                         <>
-                            <button className="p-2 text-on-surface-variant dark:text-on-dark-surface-variant hover:text-primary dark:hover:text-primary-dark transition-colors">
-                                <span className="material-symbols-outlined">notifications</span>
-                            </button>
+                            {/* Alert Bell */}
+                            {isAuthenticated && <AlertBell />}
+                            {/* profile */}
                             <Link to="/profile" className="flex items-center gap-2">
                                 <div className="w-10 h-10 rounded-full overflow-hidden border border-outline-variant dark:border-outline-dark-variant">
                                     {user?.profileImageUrl ? (
