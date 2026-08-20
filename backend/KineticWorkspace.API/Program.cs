@@ -137,6 +137,7 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ISpaceRepository, SpaceRepository>();
 builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+builder.Services.AddScoped<IAlertRepository, AlertRepository>();
 
 // Registrar Services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -145,6 +146,7 @@ builder.Services.AddScoped<IReservationService, ReservationService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IPreReservationService, PreReservationService>();
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();
+builder.Services.AddScoped<IAlertService, AlertService>();
 
 // Registrar Helpers
 builder.Services.AddScoped<JwtHelper>();
