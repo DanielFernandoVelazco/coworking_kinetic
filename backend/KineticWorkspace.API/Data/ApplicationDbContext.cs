@@ -22,6 +22,7 @@ namespace KineticWorkspace.API.Data
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
+        public DbSet<Alert> Alerts { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -143,8 +144,25 @@ namespace KineticWorkspace.API.Data
                 .Property(pr => pr.PaidAmount)
                 .HasPrecision(18, 2);
 
-            // Resto de configuraciones existentes...
-            // (Mantener las configuraciones de Space, Amenity, etc.)
+            // Alert
+            modelBuilder.Entity<Alert>().ToTable("Alerts");
+            modelBuilder.Entity<Alert>()
+                .HasOne(a => a.User)
+                .WithMany()
+                .HasForeignKey(a => a.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Alert>()
+                .HasIndex(a => new { a.UserId, a.IsRead });
+
+            modelBuilder.Entity<Alert>()
+                .HasIndex(a => a.CreatedAt);
+
+            modelBuilder.Entity<Alert>()
+                .HasIndex(a => a.Type);
+
+            modelBuilder.Entity<Alert>()
+                .HasIndex(a => a.Category);
         }
     }
 }
