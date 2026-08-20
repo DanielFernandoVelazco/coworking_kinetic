@@ -242,17 +242,28 @@ const ProfileOverview = () => {
                         <p className="text-body-sm text-on-surface-variant mt-1">{profile.company}</p>
                     )}
                     <div className="flex flex-wrap gap-4 mt-3">
-                        <div className="flex items-center gap-1">
-                            <span className="font-headline-sm text-primary">{summary?.totalReservations || 0}</span>
-                            <span className="text-body-sm text-on-surface-variant">Total Bookings</span>
+                        {/* Job Title */}
+                        <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-primary text-sm">work</span>
+                            <span className="text-body-md text-on-surface">
+                                {profile?.jobTitle || 'No job title set'}
+                            </span>
                         </div>
-                        <div className="flex items-center gap-1">
-                            <span className="font-headline-sm text-primary">{summary?.totalHoursBooked || 0}h</span>
-                            <span className="text-body-sm text-on-surface-variant">Hours</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <span className="font-headline-sm text-primary">${summary?.totalSpent?.toFixed(0) || 0}</span>
-                            <span className="text-body-sm text-on-surface-variant">Total Spent</span>
+
+                        {/* Company */}
+                        {profile?.company && (
+                            <div className="flex items-center gap-2">
+                                <span className="material-symbols-outlined text-primary text-sm">business</span>
+                                <span className="text-body-md text-on-surface">{profile.company}</span>
+                            </div>
+                        )}
+
+                        {/* Member since */}
+                        <div className="flex items-center gap-2">
+                            <span className="material-symbols-outlined text-primary text-sm">calendar_today</span>
+                            <span className="text-body-sm text-on-surface-variant">
+                                Member since {new Date(profile?.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                            </span>
                         </div>
                     </div>
                 </div>
