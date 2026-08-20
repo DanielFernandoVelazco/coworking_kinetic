@@ -15,6 +15,7 @@ import SpaceDetails from './pages/SpaceDetails';
 import Profile from './pages/Profile';
 import Reservations from './pages/Reservations';
 import CartPage from './pages/CartPage';
+import Alerts from './pages/Alerts';
 import AdminDashboard from './pages/AdminDashboard';
 import NotFound from './pages/NotFound';
 
@@ -88,6 +89,13 @@ const AppRoutes = () => {
                 <Route path="cart" element={
                     <ProtectedRoute>
                         <CartPage />
+                    </ProtectedRoute>
+                } />
+
+                {/* Alerts Route */}
+                <Route path="alerts" element={
+                    <ProtectedRoute>
+                        <Alerts />
                     </ProtectedRoute>
                 } />
 
