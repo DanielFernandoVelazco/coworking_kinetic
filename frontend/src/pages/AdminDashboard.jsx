@@ -517,7 +517,7 @@ const AdminDashboard = () => {
                 <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="font-headline-md text-headline-md">Reservas Recientes</h3>
-                        <Link to="/reservations" className="text-primary hover:underline text-sm">
+                        <Link to="/admin/reservations" className="text-primary hover:underline text-sm">
                             Ver todas →
                         </Link>
                     </div>
