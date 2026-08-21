@@ -22,5 +22,17 @@ namespace KineticWorkspace.API.Services.Interfaces
             int pageSize,
             string? sortBy,
             string? status);
+
+
+        // Obtiene todas las reservas con filtros (solo para administradores)
+
+        Task<PaginatedReservationResponseDto> GetAllReservationsFilteredAsync(
+            int page,
+            int pageSize,
+            string? sortBy,
+            string? status,
+            string? searchTerm,
+            int? userId,
+            int? spaceId);
     }
 }
