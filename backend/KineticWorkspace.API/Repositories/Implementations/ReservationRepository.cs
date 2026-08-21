@@ -213,5 +213,96 @@ namespace KineticWorkspace.API.Repositories.Implementations
 
             return await query.AnyAsync();
         }
+
+        // Obtiene todas las reservas con filtros (solo para administradores)
+        public async Task<(IEnumerable<Reservation> Items, int TotalCount)> GetAllReservationsFilteredAsync(
+    int page,
+    int pageSize,
+    string? sortBy,
+    string? status,
+    string? searchTerm,
+    int? userId,
+    int? spaceId)
+        {
+            var query = _dbSet
+                .Include(r => r.User)
+                .Include(r => r.Space)
+                .Include(r => r.Payments)
+                .AsQueryable();
+
+            // ✅ Filtro por estado
+            if (!string.IsNullOrEmpty(status) && status != "all")
+            {
+                switch (status.ToLower())
+                {
+                    case "confirmed":
+                        query = query.Where(r => r.Status == "Confirmed");
+                        break;
+                    case "pending":
+                        query = query.Where(r => r.Status == "Pending");
+                        break;
+                    case "completed":
+                        query = query.Where(r => r.Status == "Completed");
+                        break;
+                    case "cancelled":
+                        query = query.Where(r => r.Status == "Cancelled");
+                        break;
+                }
+            }
+
+            // ✅ Filtro por usuario
+            if (userId.HasValue && userId.Value > 0)
+            {
+                query = query.Where(r => r.UserId == userId.Value);
+            }
+
+            // ✅ Filtro por espacio
+            if (spaceId.HasValue && spaceId.Value > 0)
+            {
+                query = query.Where(r => r.SpaceId == spaceId.Value);
+            }
+
+            // ✅ Búsqueda por nombre de usuario o espacio
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                var searchLower = searchTerm.ToLower();
+                query = query.Where(r =>
+                    r.User.FirstName.ToLower().Contains(searchLower) ||
+                    r.User.LastName.ToLower().Contains(searchLower) ||
+                    r.User.Email.ToLower().Contains(searchLower) ||
+                    r.Space.Name.ToLower().Contains(searchLower) ||
+                    r.Space.Type.ToLower().Contains(searchLower)
+                );
+            }
+
+            // ✅ Obtener total antes de paginar
+            var totalCount = await query.CountAsync();
+
+            // ✅ Aplicar ordenamiento
+            query = ApplyAdminSorting(query, sortBy);
+
+            // ✅ Aplicar paginación
+            var items = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, totalCount);
+        }
+
+
+        // Aplica ordenamiento para el endpoint de admin
+        private IQueryable<Reservation> ApplyAdminSorting(IQueryable<Reservation> query, string? sortBy)
+        {
+            return sortBy?.ToLower() switch
+            {
+                "date_asc" => query.OrderBy(r => r.CreatedAt),
+                "price_desc" => query.OrderByDescending(r => r.TotalPrice),
+                "price_asc" => query.OrderBy(r => r.TotalPrice),
+                "guests_desc" => query.OrderByDescending(r => r.NumberOfGuests ?? 0),
+                "guests_asc" => query.OrderBy(r => r.NumberOfGuests ?? 0),
+                _ => query.OrderByDescending(r => r.CreatedAt) // date_desc (default)
+            };
+        }
     }
 }
