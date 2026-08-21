@@ -184,7 +184,7 @@ const AdminDashboard = () => {
         }));
     };
 
-    // ✅ Render personalizado para etiquetas de pastel
+    // ✅ Render personalizado para etiquetas de pastel (solo porcentaje)
     const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name }) => {
         const RADIAN = Math.PI / 180;
         const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
@@ -202,6 +202,26 @@ const AdminDashboard = () => {
             >
                 {`${(percent * 100).toFixed(0)}%`}
             </text>
+        );
+    };
+
+    // ✅ Render personalizado para leyenda (con colores y counts)
+    const renderLegend = (props) => {
+        const { payload } = props;
+        return (
+            <ul className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-2 text-xs">
+                {payload.map((entry, index) => (
+                    <li key={`item-${index}`} className="flex items-center gap-1.5">
+                        <span
+                            className="w-3 h-3 rounded-full flex-shrink-0"
+                            style={{ backgroundColor: entry.color }}
+                        />
+                        <span className="text-on-surface-variant">
+                            {entry.value}: {entry.payload?.count || 0}
+                        </span>
+                    </li>
+                ))}
+            </ul>
         );
     };
 
@@ -323,20 +343,20 @@ const AdminDashboard = () => {
                 </div>
             </div>
 
-            {/* ✅ Distribution Charts - CORREGIDOS */}
+            {/* ✅ Distribution Charts - CORREGIDOS con mejor leyenda */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 {/* Space Status Distribution */}
                 <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant">
-                    <h3 className="font-headline-md text-headline-md mb-4">Estado de Espacios</h3>
-                    <div className="h-64">
+                    <h3 className="font-headline-md text-headline-md mb-4 text-center">Estado de Espacios</h3>
+                    <div className="h-56">
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Pie
                                     data={formatPieData(spaceStatus)}
                                     cx="50%"
-                                    cy="50%"
-                                    innerRadius={50}
-                                    outerRadius={80}
+                                    cy="45%"
+                                    innerRadius={40}
+                                    outerRadius={70}
                                     paddingAngle={2}
                                     dataKey="value"
                                     nameKey="name"
@@ -348,40 +368,40 @@ const AdminDashboard = () => {
                                     ))}
                                 </Pie>
                                 <Tooltip content={<PieTooltip />} />
-                                <Legend
-                                    verticalAlign="bottom"
-                                    height={36}
-                                    formatter={(value, entry) => {
-                                        const data = entry.payload;
-                                        return `${value}: ${data.count || 0}`;
-                                    }}
-                                />
                             </PieChart>
                         </ResponsiveContainer>
                     </div>
-                    {/* ✅ Resumen adicional debajo del gráfico */}
-                    <div className="mt-4 pt-4 border-t border-outline-variant flex flex-wrap justify-center gap-4 text-body-xs text-on-surface-variant">
-                        {formatPieData(spaceStatus).map((item, index) => (
-                            <span key={index} className="flex items-center gap-1">
-                                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color || COLORS[index % COLORS.length] }}></span>
-                                {item.name}: {item.count} ({item.percentage}%)
-                            </span>
-                        ))}
+                    {/* ✅ Leyenda personalizada en grid */}
+                    <div className="mt-3 pt-3 border-t border-outline-variant">
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-body-xs">
+                            {formatPieData(spaceStatus).map((item, index) => (
+                                <div key={index} className="flex items-center gap-2">
+                                    <span
+                                        className="w-3 h-3 rounded-full flex-shrink-0"
+                                        style={{ backgroundColor: item.color || COLORS[index % COLORS.length] }}
+                                    />
+                                    <span className="text-on-surface-variant truncate">
+                                        {item.name}: <strong>{item.count}</strong>
+                                        <span className="text-on-surface-variant/60"> ({item.percentage}%)</span>
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
 
                 {/* Reservation Status Distribution */}
                 <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant">
-                    <h3 className="font-headline-md text-headline-md mb-4">Estado de Reservas</h3>
-                    <div className="h-64">
+                    <h3 className="font-headline-md text-headline-md mb-4 text-center">Estado de Reservas</h3>
+                    <div className="h-56">
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Pie
                                     data={formatPieData(reservationStatusDistribution)}
                                     cx="50%"
-                                    cy="50%"
-                                    innerRadius={50}
-                                    outerRadius={80}
+                                    cy="45%"
+                                    innerRadius={40}
+                                    outerRadius={70}
                                     paddingAngle={2}
                                     dataKey="value"
                                     nameKey="name"
@@ -393,39 +413,39 @@ const AdminDashboard = () => {
                                     ))}
                                 </Pie>
                                 <Tooltip content={<PieTooltip />} />
-                                <Legend
-                                    verticalAlign="bottom"
-                                    height={36}
-                                    formatter={(value, entry) => {
-                                        const data = entry.payload;
-                                        return `${value}: ${data.count || 0}`;
-                                    }}
-                                />
                             </PieChart>
                         </ResponsiveContainer>
                     </div>
-                    <div className="mt-4 pt-4 border-t border-outline-variant flex flex-wrap justify-center gap-4 text-body-xs text-on-surface-variant">
-                        {formatPieData(reservationStatusDistribution).map((item, index) => (
-                            <span key={index} className="flex items-center gap-1">
-                                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color || COLORS[index % COLORS.length] }}></span>
-                                {item.name}: {item.count} ({item.percentage}%)
-                            </span>
-                        ))}
+                    <div className="mt-3 pt-3 border-t border-outline-variant">
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-body-xs">
+                            {formatPieData(reservationStatusDistribution).map((item, index) => (
+                                <div key={index} className="flex items-center gap-2">
+                                    <span
+                                        className="w-3 h-3 rounded-full flex-shrink-0"
+                                        style={{ backgroundColor: item.color || COLORS[index % COLORS.length] }}
+                                    />
+                                    <span className="text-on-surface-variant truncate">
+                                        {item.name}: <strong>{item.count}</strong>
+                                        <span className="text-on-surface-variant/60"> ({item.percentage}%)</span>
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
 
                 {/* Space Type Distribution */}
                 <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant">
-                    <h3 className="font-headline-md text-headline-md mb-4">Tipos de Espacios</h3>
-                    <div className="h-64">
+                    <h3 className="font-headline-md text-headline-md mb-4 text-center">Tipos de Espacios</h3>
+                    <div className="h-56">
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Pie
                                     data={formatPieData(spaceTypeDistribution)}
                                     cx="50%"
-                                    cy="50%"
-                                    innerRadius={50}
-                                    outerRadius={80}
+                                    cy="45%"
+                                    innerRadius={40}
+                                    outerRadius={70}
                                     paddingAngle={2}
                                     dataKey="value"
                                     nameKey="name"
@@ -437,24 +457,25 @@ const AdminDashboard = () => {
                                     ))}
                                 </Pie>
                                 <Tooltip content={<PieTooltip />} />
-                                <Legend
-                                    verticalAlign="bottom"
-                                    height={36}
-                                    formatter={(value, entry) => {
-                                        const data = entry.payload;
-                                        return `${value}: ${data.count || 0}`;
-                                    }}
-                                />
                             </PieChart>
                         </ResponsiveContainer>
                     </div>
-                    <div className="mt-4 pt-4 border-t border-outline-variant flex flex-wrap justify-center gap-4 text-body-xs text-on-surface-variant">
-                        {formatPieData(spaceTypeDistribution).map((item, index) => (
-                            <span key={index} className="flex items-center gap-1">
-                                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color || COLORS[index % COLORS.length] }}></span>
-                                {item.name}: {item.count} ({item.percentage}%)
-                            </span>
-                        ))}
+                    {/* ✅ Leyenda en grid de 2 columnas para tipos de espacios */}
+                    <div className="mt-3 pt-3 border-t border-outline-variant">
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-body-xs">
+                            {formatPieData(spaceTypeDistribution).map((item, index) => (
+                                <div key={index} className="flex items-center gap-2">
+                                    <span
+                                        className="w-3 h-3 rounded-full flex-shrink-0"
+                                        style={{ backgroundColor: item.color || COLORS[index % COLORS.length] }}
+                                    />
+                                    <span className="text-on-surface-variant truncate">
+                                        {item.name}: <strong>{item.count}</strong>
+                                        <span className="text-on-surface-variant/60"> ({item.percentage}%)</span>
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>
