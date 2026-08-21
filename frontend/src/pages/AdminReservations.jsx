@@ -252,10 +252,6 @@ const AdminReservations = () => {
             toast.error('La fecha de inicio debe ser anterior a la fecha de fin');
             return;
         }
-        if (startTime < new Date() && editingReservation.status !== 'Pending') {
-            toast.error('No se puede modificar una reserva en el pasado');
-            return;
-        }
 
         // Validar nota de cambio
         if (!editFormData.changeNote.trim()) {
@@ -265,8 +261,9 @@ const AdminReservations = () => {
 
         setEditing(true);
         try {
+            // ✅ Incluir UserId en el objeto de actualización
             const updateData = {
-                userId: parseInt(editFormData.userId),
+                userId: parseInt(editFormData.userId), // ✅ El admin puede cambiar el usuario
                 spaceId: parseInt(editFormData.spaceId),
                 startTime: editFormData.startTime,
                 endTime: editFormData.endTime,
@@ -276,6 +273,7 @@ const AdminReservations = () => {
                 numberOfGuests: parseInt(editFormData.numberOfGuests) || 1
             };
 
+            // ✅ Llamar al servicio con los datos actualizados
             await reservationsService.update(editingReservation.id, updateData);
 
             toast.success(`✅ Reserva actualizada exitosamente`);
@@ -287,7 +285,8 @@ const AdminReservations = () => {
             await loadReservations(currentPage, sortBy, filter, searchTerm, selectedUserId, selectedSpaceId);
         } catch (error) {
             console.error('Error updating reservation:', error);
-            toast.error(error.response?.data?.message || 'Error al actualizar la reserva');
+            const message = error.response?.data?.message || 'Error al actualizar la reserva';
+            toast.error(message);
         } finally {
             setEditing(false);
         }
