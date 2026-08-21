@@ -90,7 +90,7 @@ namespace KineticWorkspace.API.Services.Implementations
             return _mapper.Map<ReservationResponseDto>(createdReservation);
         }
 
-        // ==================== MÉTODO UPDATE CORREGIDO ====================
+        // ==================== UPDATE RESERVA ====================
 
         public async Task<ReservationResponseDto?> UpdateReservationAsync(int id, ReservationRequestDto request, int userId, bool isAdmin = false)
         {
@@ -100,7 +100,6 @@ namespace KineticWorkspace.API.Services.Implementations
             if (reservation == null) return null;
 
             // ✅ PERMITIR: Si es administrador, puede modificar cualquier reserva
-            // ✅ PERMITIR: Si es el propietario, puede modificar su propia reserva
             if (reservation.UserId != userId && !isAdmin)
             {
                 throw new UnauthorizedAccessException("No tienes permiso para modificar esta reservación");
@@ -135,13 +134,11 @@ namespace KineticWorkspace.API.Services.Implementations
 
             var totalPrice = CalculateTotalPrice(space, request.StartTime, request.EndTime);
 
-            // ✅ Guardar el usuario anterior para el log
             var previousUserId = reservation.UserId;
             var previousSpaceId = reservation.SpaceId;
             var previousStartTime = reservation.StartTime;
             var previousEndTime = reservation.EndTime;
 
-            // ✅ Actualizar datos
             reservation.SpaceId = request.SpaceId;
             reservation.StartTime = request.StartTime;
             reservation.EndTime = request.EndTime;
@@ -150,7 +147,6 @@ namespace KineticWorkspace.API.Services.Implementations
             reservation.TotalPrice = totalPrice;
             reservation.UpdatedAt = DateTime.UtcNow;
 
-            // ✅ Si el admin cambió el usuario, actualizar el UserId
             if (isAdmin && request.UserId.HasValue && request.UserId.Value > 0)
             {
                 reservation.UserId = request.UserId.Value;
@@ -158,105 +154,51 @@ namespace KineticWorkspace.API.Services.Implementations
 
             await _reservationRepository.UpdateAsync(reservation);
 
-            // ✅ Log de cambios
             _logger.LogInformation(
                 "Reservación {ReservationId} actualizada por Admin {AdminId}. " +
                 "Usuario: {PreviousUserId} → {NewUserId}, " +
-                "Espacio: {PreviousSpaceId} → {NewSpaceId}, " +
-                "Inicio: {PreviousStart} → {NewStart}, " +
-                "Fin: {PreviousEnd} → {NewEnd}",
+                "Espacio: {PreviousSpaceId} → {NewSpaceId}",
                 id, userId, previousUserId, reservation.UserId,
-                previousSpaceId, reservation.SpaceId,
-                previousStartTime, reservation.StartTime,
-                previousEndTime, reservation.EndTime
+                previousSpaceId, reservation.SpaceId
             );
 
             return _mapper.Map<ReservationResponseDto>(reservation);
         }
 
-        // ==================== MÉTODOS CON FILTROS ====================
+        // ==================== ✅ CANCELAR RESERVA (CORREGIDO) ====================
 
-        public async Task<PaginatedReservationResponseDto> GetUserReservationsFilteredAsync(
-            int userId,
-            int page,
-            int pageSize,
-            string? sortBy,
-            string? status)
-        {
-            if (page < 1) page = 1;
-            if (pageSize < 1) pageSize = 10;
-            if (pageSize > 100) pageSize = 100;
-
-            var (items, totalCount) = await _reservationRepository.GetUserReservationsFilteredAsync(
-                userId, page, pageSize, sortBy, status);
-
-            var mappedItems = _mapper.Map<IEnumerable<ReservationResponseDto>>(items);
-
-            return new PaginatedReservationResponseDto
-            {
-                Items = mappedItems.ToList(),
-                CurrentPage = page,
-                PageSize = pageSize,
-                TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
-                TotalCount = totalCount,
-                SortBy = sortBy ?? "date_desc",
-                Status = status ?? "all"
-            };
-        }
-
-        // ==================== NUEVO: MÉTODO PARA ADMIN ====================
-
-        public async Task<PaginatedReservationResponseDto> GetAllReservationsFilteredAsync(
-            int page,
-            int pageSize,
-            string? sortBy,
-            string? status,
-            string? searchTerm,
-            int? userId,
-            int? spaceId)
-        {
-            if (page < 1) page = 1;
-            if (pageSize < 1) pageSize = 15;
-            if (pageSize > 100) pageSize = 100;
-
-            var (items, totalCount) = await _reservationRepository.GetAllReservationsFilteredAsync(
-                page, pageSize, sortBy, status, searchTerm, userId, spaceId);
-
-            var mappedItems = _mapper.Map<IEnumerable<ReservationResponseDto>>(items);
-
-            return new PaginatedReservationResponseDto
-            {
-                Items = mappedItems.ToList(),
-                CurrentPage = page,
-                PageSize = pageSize,
-                TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
-                TotalCount = totalCount,
-                SortBy = sortBy ?? "date_desc",
-                Status = status ?? "all"
-            };
-        }
-
-        // ==================== MÉTODOS EXISTENTES ====================
-
-        public async Task<bool> CancelReservationAsync(int id, int userId, string reason)
+        public async Task<bool> CancelReservationAsync(int id, int userId, string reason, bool isAdmin = false)
         {
             var reservation = await _reservationRepository.GetReservationWithDetailsAsync(id);
             if (reservation == null) return false;
 
-            if (reservation.UserId != userId)
+            // ✅ PERMITIR: Si es administrador, puede cancelar cualquier reserva
+            if (reservation.UserId != userId && !isAdmin)
             {
                 throw new UnauthorizedAccessException("No tienes permiso para cancelar esta reservación");
             }
 
-            if (reservation.Status == "Completed")
+            // ✅ Si no es admin, verificar que la reserva no esté completada
+            if (!isAdmin && reservation.Status == "Completed")
             {
                 throw new InvalidOperationException("No se puede cancelar una reservación completada");
             }
 
-            reservation.UpdatedAt = DateTime.UtcNow;
+            // ✅ Log de cancelación por admin
+            if (isAdmin && reservation.UserId != userId)
+            {
+                _logger.LogInformation(
+                    "Reservación {ReservationId} cancelada por Administrador {AdminId}. " +
+                    "Propietario original: {OwnerId}. Motivo: {Reason}",
+                    id, userId, reservation.UserId, reason
+                );
+            }
 
+            reservation.UpdatedAt = DateTime.UtcNow;
             return await _reservationRepository.CancelReservationAsync(id, reason);
         }
+
+        // ==================== CONFIRMAR RESERVA ====================
 
         public async Task<bool> ConfirmReservationAsync(int id, int adminUserId)
         {
@@ -275,6 +217,8 @@ namespace KineticWorkspace.API.Services.Implementations
             _logger.LogInformation("Reservación confirmada: {ReservationId} por Admin: {AdminId}", id, adminUserId);
             return true;
         }
+
+        // ==================== MÉTODOS CON FILTROS ====================
 
         public async Task<IEnumerable<ReservationResponseDto>> GetUpcomingReservationsAsync(int userId, int limit = 10)
         {
@@ -310,6 +254,64 @@ namespace KineticWorkspace.API.Services.Implementations
             }
 
             return summary;
+        }
+
+        public async Task<PaginatedReservationResponseDto> GetUserReservationsFilteredAsync(
+            int userId,
+            int page,
+            int pageSize,
+            string? sortBy,
+            string? status)
+        {
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 10;
+            if (pageSize > 100) pageSize = 100;
+
+            var (items, totalCount) = await _reservationRepository.GetUserReservationsFilteredAsync(
+                userId, page, pageSize, sortBy, status);
+
+            var mappedItems = _mapper.Map<IEnumerable<ReservationResponseDto>>(items);
+
+            return new PaginatedReservationResponseDto
+            {
+                Items = mappedItems.ToList(),
+                CurrentPage = page,
+                PageSize = pageSize,
+                TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
+                TotalCount = totalCount,
+                SortBy = sortBy ?? "date_desc",
+                Status = status ?? "all"
+            };
+        }
+
+        public async Task<PaginatedReservationResponseDto> GetAllReservationsFilteredAsync(
+            int page,
+            int pageSize,
+            string? sortBy,
+            string? status,
+            string? searchTerm,
+            int? userId,
+            int? spaceId)
+        {
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 15;
+            if (pageSize > 100) pageSize = 100;
+
+            var (items, totalCount) = await _reservationRepository.GetAllReservationsFilteredAsync(
+                page, pageSize, sortBy, status, searchTerm, userId, spaceId);
+
+            var mappedItems = _mapper.Map<IEnumerable<ReservationResponseDto>>(items);
+
+            return new PaginatedReservationResponseDto
+            {
+                Items = mappedItems.ToList(),
+                CurrentPage = page,
+                PageSize = pageSize,
+                TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
+                TotalCount = totalCount,
+                SortBy = sortBy ?? "date_desc",
+                Status = status ?? "all"
+            };
         }
 
         // ==================== MÉTODOS PRIVADOS AUXILIARES ====================
