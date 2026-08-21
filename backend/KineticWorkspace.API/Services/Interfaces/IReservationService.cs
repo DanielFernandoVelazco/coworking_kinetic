@@ -10,10 +10,12 @@ namespace KineticWorkspace.API.Services.Interfaces
         Task<ReservationResponseDto?> GetReservationByIdAsync(int id);
         Task<ReservationResponseDto> CreateReservationAsync(ReservationRequestDto request, int userId);
 
-        // ✅ FIRMA CORREGIDA: Incluye isAdmin como parámetro opcional
+        // Incluye isAdmin como parámetro opcional
         Task<ReservationResponseDto?> UpdateReservationAsync(int id, ReservationRequestDto request, int userId, bool isAdmin = false);
 
-        Task<bool> CancelReservationAsync(int id, int userId, string reason);
+        // Incluye isAdmin como parámetro opcional
+        Task<bool> CancelReservationAsync(int id, int userId, string reason, bool isAdmin = false);
+
         Task<bool> ConfirmReservationAsync(int id, int adminUserId);
         Task<IEnumerable<ReservationResponseDto>> GetUpcomingReservationsAsync(int userId, int limit = 10);
         Task<IEnumerable<ReservationResponseDto>> GetActiveReservationsAsync();
@@ -27,7 +29,7 @@ namespace KineticWorkspace.API.Services.Interfaces
             string? sortBy,
             string? status);
 
-        // ✅ NUEVO: Método para administradores (todas las reservas)
+        // Método para administradores (todas las reservas)
         Task<PaginatedReservationResponseDto> GetAllReservationsFilteredAsync(
             int page,
             int pageSize,
