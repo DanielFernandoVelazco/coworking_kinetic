@@ -75,6 +75,17 @@ export const reservationsService = {
         const response = await axiosInstance.get(`${API_URL}/active`);
         return response.data;
     },
+
+    // Obtener TODAS las reservas (solo admin)
+    getAllReservations: async (page = 1, pageSize = 15, sortBy = 'date_desc', status = 'all', search = '', userId = null, spaceId = null) => {
+        const params = { page, pageSize, sortBy, status };
+        if (search) params.search = search;
+        if (userId) params.userId = userId;
+        if (spaceId) params.spaceId = spaceId;
+
+        const response = await axiosInstance.get(`${API_URL}/admin/all`, { params });
+        return response.data;
+    },
 };
 
 export default reservationsService;
