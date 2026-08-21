@@ -112,42 +112,20 @@ const AdminReservations = () => {
     const loadReservations = useCallback(async (page, sort, status, search, userId, spaceId) => {
         setLoading(true);
         try {
-            // Usar el endpoint para obtener reservas filtradas
-            // Nota: El backend actual no soporta búsqueda por usuario/espacio en este endpoint
-            // Por lo que haremos el filtrado en el frontend
-            const response = await reservationsService.getUserReservationsFiltered(
+            const response = await reservationsService.getAllReservations(
                 page,
                 PAGE_SIZE,
                 sort,
-                status
+                status,
+                search,
+                userId ? parseInt(userId) : null,
+                spaceId ? parseInt(spaceId) : null
             );
 
             if (response) {
-                let items = response.items || [];
-
-                // ✅ Filtro por búsqueda (nombre de usuario o espacio)
-                if (search) {
-                    const searchLower = search.toLowerCase();
-                    items = items.filter(r =>
-                        r.userName?.toLowerCase().includes(searchLower) ||
-                        r.spaceName?.toLowerCase().includes(searchLower) ||
-                        r.userEmail?.toLowerCase().includes(searchLower)
-                    );
-                }
-
-                // ✅ Filtro por usuario
-                if (userId) {
-                    items = items.filter(r => r.userId === parseInt(userId));
-                }
-
-                // ✅ Filtro por espacio
-                if (spaceId) {
-                    items = items.filter(r => r.spaceId === parseInt(spaceId));
-                }
-
-                setReservations(items);
-                setTotalPages(Math.ceil(items.length / PAGE_SIZE));
-                setTotalItems(items.length);
+                setReservations(response.items || []);
+                setTotalPages(response.totalPages || 1);
+                setTotalItems(response.totalCount || 0);
             } else {
                 setReservations([]);
                 setTotalPages(1);
