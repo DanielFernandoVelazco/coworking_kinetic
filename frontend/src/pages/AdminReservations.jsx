@@ -88,14 +88,17 @@ const AdminReservations = () => {
         }
     }, [user]);
 
-    // Cargar todas las reservas
+    // ✅ Cargar TODAS las reservas (usando el endpoint de admin)
     const loadAllReservations = useCallback(async () => {
         try {
-            const response = await reservationsService.getUserReservationsFiltered(
+            const response = await reservationsService.getAllReservations(
                 1,
                 999,
                 'date_desc',
-                'all'
+                'all',
+                '',
+                null,
+                null
             );
             if (response && response.items) {
                 setAllReservations(response.items);
@@ -108,7 +111,7 @@ const AdminReservations = () => {
         }
     }, []);
 
-    // Cargar reservas con filtros
+    // ✅ Cargar reservas con filtros (usando el endpoint de admin)
     const loadReservations = useCallback(async (page, sort, status, search, userId, spaceId) => {
         setLoading(true);
         try {
@@ -135,6 +138,8 @@ const AdminReservations = () => {
             console.error('Error loading reservations:', error);
             toast.error('Error al cargar las reservaciones');
             setReservations([]);
+            setTotalPages(1);
+            setTotalItems(0);
         } finally {
             setLoading(false);
         }
@@ -166,7 +171,7 @@ const AdminReservations = () => {
         }
     }, []);
 
-    // Cargar datos iniciales
+    // ✅ Cargar datos iniciales - primero todas las reservas, luego las filtradas
     useEffect(() => {
         const loadData = async () => {
             await loadAllReservations();
@@ -252,6 +257,12 @@ const AdminReservations = () => {
             return;
         }
 
+        // Validar nota de cambio
+        if (!editFormData.changeNote.trim()) {
+            toast.error('Por favor, ingresa una nota describiendo los cambios');
+            return;
+        }
+
         setEditing(true);
         try {
             const updateData = {
@@ -259,20 +270,15 @@ const AdminReservations = () => {
                 spaceId: parseInt(editFormData.spaceId),
                 startTime: editFormData.startTime,
                 endTime: editFormData.endTime,
-                notes: editFormData.notes,
+                notes: editFormData.notes
+                    ? `${editFormData.notes}\n[Cambio: ${editFormData.changeNote}]`
+                    : `[Cambio: ${editFormData.changeNote}]`,
                 numberOfGuests: parseInt(editFormData.numberOfGuests) || 1
             };
 
             await reservationsService.update(editingReservation.id, updateData);
 
-            // ✅ Añadir nota de cambio si se proporcionó
-            if (editFormData.changeNote) {
-                // Nota: El backend no tiene un campo específico para historial de cambios
-                // Podríamos agregarlo como una nota en la reserva
-                toast.success(`Cambios guardados: ${editFormData.changeNote}`);
-            }
-
-            toast.success('Reserva actualizada exitosamente');
+            toast.success(`✅ Reserva actualizada exitosamente`);
             setShowEditModal(false);
             setEditingReservation(null);
 
@@ -363,22 +369,16 @@ const AdminReservations = () => {
         });
     };
 
-    // Obtener nombre de usuario por ID
-    const getUserName = (userId) => {
-        const user = users.find(u => u.id === userId);
-        return user ? `${user.firstName} ${user.lastName}` : `User ${userId}`;
-    };
-
-    // Obtener nombre de espacio por ID
-    const getSpaceName = (spaceId) => {
-        const space = spaces.find(s => s.id === spaceId);
-        return space ? space.name : `Space ${spaceId}`;
-    };
-
-    // Calcular estadísticas
+    // ✅ Calcular estadísticas basadas en allReservations
     const stats = useMemo(() => {
         if (!allReservations || allReservations.length === 0) {
-            return { total: 0, confirmed: 0, pending: 0, completed: 0, cancelled: 0 };
+            return {
+                total: 0,
+                confirmed: 0,
+                pending: 0,
+                completed: 0,
+                cancelled: 0
+            };
         }
         return {
             total: allReservations.length,
@@ -389,6 +389,7 @@ const AdminReservations = () => {
         };
     }, [allReservations]);
 
+    // Verificar que el usuario es admin
     if (!user?.isAdmin) {
         return null;
     }
@@ -403,7 +404,7 @@ const AdminReservations = () => {
                         Todas las Reservas
                     </h1>
                     <p className="text-body-md text-on-surface-variant dark:text-on-dark-surface-variant">
-                        Gestiona todas las reservas del sistema
+                        Gestiona todas las reservas del sistema {allReservations.length > 0 && `(${allReservations.length} total)`}
                     </p>
                 </div>
                 <button
@@ -415,7 +416,7 @@ const AdminReservations = () => {
                 </button>
             </div>
 
-            {/* Statistics Cards */}
+            {/* ✅ Statistics Cards */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                 <div className="bg-surface-container-lowest dark:bg-surface-dark-container-lowest p-4 rounded-xl border border-outline-variant dark:border-outline-dark-variant text-center transition-colors duration-300">
                     <div className="font-headline-md text-primary dark:text-primary-dark">{stats.total}</div>
@@ -559,6 +560,14 @@ const AdminReservations = () => {
                             ? `No hay reservas con estado "${filter}"`
                             : 'No hay reservas en el sistema'}
                     </p>
+                    {filter !== 'all' && (
+                        <button
+                            onClick={() => handleFilterChange('all')}
+                            className="mt-4 text-primary dark:text-primary-dark hover:underline"
+                        >
+                            Ver todas las reservas
+                        </button>
+                    )}
                 </div>
             ) : (
                 <div className="overflow-x-auto">
@@ -837,7 +846,7 @@ const AdminReservations = () => {
                                 />
                             </div>
 
-                            {/* Nota de Cambio */}
+                            {/* ✅ Nota de Cambio - OBLIGATORIA */}
                             <div>
                                 <label className="font-label-caps text-label-caps text-on-surface-variant dark:text-on-dark-surface-variant block mb-1">
                                     Nota del Cambio <span className="text-red-500">*</span>
@@ -850,7 +859,7 @@ const AdminReservations = () => {
                                     placeholder="Describe los cambios realizados..."
                                     required
                                 />
-                                <p className="text-body-xs text-on-surface-variant dark:text-on-dark-surface-variant mt-1">
+                                <p className="text-body-xs text-red-500 dark:text-red-400 mt-1">
                                     * Obligatorio - Describe qué cambios se están realizando
                                 </p>
                             </div>
@@ -865,7 +874,7 @@ const AdminReservations = () => {
                                 </button>
                                 <button
                                     onClick={handleSaveEdit}
-                                    disabled={editing || !editFormData.changeNote}
+                                    disabled={editing || !editFormData.changeNote.trim()}
                                     className="flex-1 px-4 py-2 bg-primary dark:bg-primary-dark text-on-primary rounded-lg hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 >
                                     {editing ? (
@@ -1009,7 +1018,7 @@ const AdminReservations = () => {
                             {selectedReservation.notes && (
                                 <div className="p-3 bg-surface-container-low dark:bg-surface-dark-container-low rounded-lg">
                                     <p className="text-body-xs text-on-surface-variant dark:text-on-dark-surface-variant">Notas</p>
-                                    <p className="text-body-md text-on-surface dark:text-on-dark-surface mt-1">
+                                    <p className="text-body-md text-on-surface dark:text-on-dark-surface mt-1 whitespace-pre-wrap">
                                         {selectedReservation.notes}
                                     </p>
                                 </div>
