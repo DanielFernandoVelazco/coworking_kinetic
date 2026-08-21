@@ -284,5 +284,39 @@ namespace KineticWorkspace.API.Services.Implementations
 
             return summary;
         }
+
+        // Obtiene todas las reservas con filtros (solo para administradores)
+        public async Task<PaginatedReservationResponseDto> GetAllReservationsFilteredAsync(
+    int page,
+    int pageSize,
+    string? sortBy,
+    string? status,
+    string? searchTerm,
+    int? userId,
+    int? spaceId)
+        {
+            // Validar parámetros
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 15;
+            if (pageSize > 100) pageSize = 100;
+
+            // Obtener datos del repositorio
+            var (items, totalCount) = await _reservationRepository.GetAllReservationsFilteredAsync(
+                page, pageSize, sortBy, status, searchTerm, userId, spaceId);
+
+            // Mapear a DTOs
+            var mappedItems = _mapper.Map<IEnumerable<ReservationResponseDto>>(items);
+
+            return new PaginatedReservationResponseDto
+            {
+                Items = mappedItems.ToList(),
+                CurrentPage = page,
+                PageSize = pageSize,
+                TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
+                TotalCount = totalCount,
+                SortBy = sortBy ?? "date_desc",
+                Status = status ?? "all"
+            };
+        }
     }
 }
