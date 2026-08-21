@@ -28,14 +28,19 @@ const AdminDashboard = () => {
     const { isDark } = useTheme();
     const [loading, setLoading] = useState(true);
     const [dashboardData, setDashboardData] = useState(null);
-    const [selectedPeriod, setSelectedPeriod] = useState(12);
+    const [selectedPeriod, setSelectedPeriod] = useState(12); // Default: 12 meses
     const [refreshing, setRefreshing] = useState(false);
+    const [monthlyReservationsData, setMonthlyReservationsData] = useState([]);
+    const [monthlyRevenueData, setMonthlyRevenueData] = useState([]);
 
     const loadDashboard = useCallback(async () => {
         setLoading(true);
         try {
             const data = await adminService.getDashboard();
             setDashboardData(data);
+
+            // ✅ Cargar datos iniciales con el período seleccionado
+            await loadMonthlyData(selectedPeriod);
         } catch (error) {
             console.error('Error loading dashboard:', error);
             toast.error('Error al cargar el dashboard');
@@ -44,6 +49,33 @@ const AdminDashboard = () => {
         }
     }, []);
 
+    // ✅ Función para cargar datos mensuales según el período
+    const loadMonthlyData = useCallback(async (months) => {
+        try {
+            // Cargar reservas mensuales
+            const reservations = await adminService.getMonthlyReservations(months);
+            setMonthlyReservationsData(reservations || []);
+
+            // Cargar ingresos mensuales
+            const revenue = await adminService.getMonthlyRevenue(months);
+            setMonthlyRevenueData(revenue || []);
+        } catch (error) {
+            console.error('Error loading monthly data:', error);
+            toast.error('Error al cargar datos mensuales');
+        }
+    }, []);
+
+    useEffect(() => {
+        loadDashboard();
+    }, [loadDashboard]);
+
+    // ✅ Efecto para cargar datos cuando cambia el período
+    useEffect(() => {
+        if (selectedPeriod) {
+            loadMonthlyData(selectedPeriod);
+        }
+    }, [selectedPeriod, loadMonthlyData]);
+
     const refreshData = useCallback(async () => {
         setRefreshing(true);
         await loadDashboard();
@@ -51,9 +83,11 @@ const AdminDashboard = () => {
         toast.success('Dashboard actualizado');
     }, [loadDashboard]);
 
-    useEffect(() => {
-        loadDashboard();
-    }, [loadDashboard]);
+    // ✅ Manejar cambio de período
+    const handlePeriodChange = useCallback((e) => {
+        const newPeriod = parseInt(e.target.value);
+        setSelectedPeriod(newPeriod);
+    }, []);
 
     const handleExportReport = useCallback(async () => {
         try {
@@ -105,7 +139,7 @@ const AdminDashboard = () => {
         );
     }
 
-    const { summary, monthlyReservations, monthlyRevenue, recentReservations, topUsers, topSpaces, spaceStatus, systemHealth, reservationStatusDistribution, spaceTypeDistribution } = dashboardData;
+    const { summary, recentReservations, topUsers, topSpaces, spaceStatus, systemHealth, reservationStatusDistribution, spaceTypeDistribution } = dashboardData;
 
     const COLORS = ['#8b5cf6', '#3b82f6', '#22c55e', '#f59e0b', '#ec4899', '#6b7280'];
 
@@ -205,26 +239,6 @@ const AdminDashboard = () => {
         );
     };
 
-    // ✅ Render personalizado para leyenda (con colores y counts)
-    const renderLegend = (props) => {
-        const { payload } = props;
-        return (
-            <ul className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-2 text-xs">
-                {payload.map((entry, index) => (
-                    <li key={`item-${index}`} className="flex items-center gap-1.5">
-                        <span
-                            className="w-3 h-3 rounded-full flex-shrink-0"
-                            style={{ backgroundColor: entry.color }}
-                        />
-                        <span className="text-on-surface-variant">
-                            {entry.value}: {entry.payload?.count || 0}
-                        </span>
-                    </li>
-                ))}
-            </ul>
-        );
-    };
-
     return (
         <div className="max-w-container-max mx-auto px-margin-desktop py-12">
             {/* Header */}
@@ -299,19 +313,24 @@ const AdminDashboard = () => {
                 <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="font-headline-md text-headline-md">Reservas Mensuales</h3>
-                        <select
-                            value={selectedPeriod}
-                            onChange={(e) => setSelectedPeriod(parseInt(e.target.value))}
-                            className="bg-surface-container-low border border-outline-variant rounded-lg px-3 py-1.5 text-sm text-on-surface focus:border-primary focus:outline-none"
-                        >
-                            <option value={6}>6 meses</option>
-                            <option value={12}>12 meses</option>
-                            <option value={24}>24 meses</option>
-                        </select>
+                        <div className="flex items-center gap-2">
+                            <span className="text-body-xs text-on-surface-variant">
+                                {selectedPeriod} meses
+                            </span>
+                            <select
+                                value={selectedPeriod}
+                                onChange={handlePeriodChange}
+                                className="bg-surface-container-low border border-outline-variant rounded-lg px-3 py-1.5 text-sm text-on-surface focus:border-primary focus:outline-none"
+                            >
+                                <option value={3}>3 meses</option>
+                                <option value={6}>6 meses</option>
+                                <option value={12}>12 meses</option>
+                            </select>
+                        </div>
                     </div>
                     <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={monthlyReservations}>
+                            <BarChart data={monthlyReservationsData}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#ddc0ba" opacity={0.3} />
                                 <XAxis dataKey="month" stroke="#56423d" fontSize={12} tickLine={false} />
                                 <YAxis stroke="#56423d" fontSize={12} tickLine={false} axisLine={false} />
@@ -320,17 +339,26 @@ const AdminDashboard = () => {
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
+                    {monthlyReservationsData.length > 0 && (
+                        <div className="mt-2 text-center text-body-xs text-on-surface-variant">
+                            Total: {monthlyReservationsData.reduce((sum, item) => sum + item.count, 0)} reservas en {selectedPeriod} meses
+                        </div>
+                    )}
                 </div>
 
                 {/* Monthly Revenue */}
                 <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="font-headline-md text-headline-md">Ingresos Mensuales</h3>
-                        <span className="text-body-sm text-on-surface-variant">{formatCurrency(monthlyRevenue[monthlyRevenue.length - 1]?.amount || 0)} último mes</span>
+                        <span className="text-body-sm text-on-surface-variant">
+                            {monthlyRevenueData.length > 0
+                                ? formatCurrency(monthlyRevenueData[monthlyRevenueData.length - 1]?.amount || 0)
+                                : formatCurrency(0)} último mes
+                        </span>
                     </div>
                     <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={monthlyRevenue}>
+                            <LineChart data={monthlyRevenueData}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#ddc0ba" opacity={0.3} />
                                 <XAxis dataKey="month" stroke="#56423d" fontSize={12} tickLine={false} />
                                 <YAxis stroke="#56423d" fontSize={12} tickLine={false} axisLine={false} />
@@ -340,10 +368,15 @@ const AdminDashboard = () => {
                             </LineChart>
                         </ResponsiveContainer>
                     </div>
+                    {monthlyRevenueData.length > 0 && (
+                        <div className="mt-2 text-center text-body-xs text-on-surface-variant">
+                            Total: {formatCurrency(monthlyRevenueData.reduce((sum, item) => sum + item.amount, 0))} en {selectedPeriod} meses
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* ✅ Distribution Charts - CORREGIDOS con mejor leyenda */}
+            {/* ✅ Distribution Charts */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 {/* Space Status Distribution */}
                 <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant">
@@ -371,7 +404,6 @@ const AdminDashboard = () => {
                             </PieChart>
                         </ResponsiveContainer>
                     </div>
-                    {/* ✅ Leyenda personalizada en grid */}
                     <div className="mt-3 pt-3 border-t border-outline-variant">
                         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-body-xs">
                             {formatPieData(spaceStatus).map((item, index) => (
@@ -460,7 +492,6 @@ const AdminDashboard = () => {
                             </PieChart>
                         </ResponsiveContainer>
                     </div>
-                    {/* ✅ Leyenda en grid de 2 columnas para tipos de espacios */}
                     <div className="mt-3 pt-3 border-t border-outline-variant">
                         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-body-xs">
                             {formatPieData(spaceTypeDistribution).map((item, index) => (
