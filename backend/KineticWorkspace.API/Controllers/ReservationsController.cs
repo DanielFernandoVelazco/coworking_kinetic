@@ -1,3 +1,4 @@
+// backend/KineticWorkspace.API/Controllers/ReservationsController.cs
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using KineticWorkspace.API.Models.DTOs.Reservations;
@@ -19,7 +20,7 @@ namespace KineticWorkspace.API.Controllers
             _logger = logger;
         }
 
-        // VERIFICAR ÚLTIMA RESERVA
+        // ==================== VERIFICAR ÚLTIMA RESERVA ====================
 
         [HttpGet("latest")]
         [Authorize]
@@ -43,7 +44,8 @@ namespace KineticWorkspace.API.Controllers
             }
         }
 
-        // Endpoint con filtros y ordenamiento
+        // ==================== Endpoint con filtros y ordenamiento (usuario) ====================
+
         [HttpGet("user/filtered")]
         public async Task<IActionResult> GetUserReservationsFiltered(
             [FromQuery] int page = 1,
@@ -64,7 +66,8 @@ namespace KineticWorkspace.API.Controllers
             }
         }
 
-        // Endpoint original (se mantiene por compatibilidad)
+        // ==================== Endpoint original (se mantiene por compatibilidad) ====================
+
         [HttpGet("user")]
         public async Task<IActionResult> GetUserReservations()
         {
@@ -80,6 +83,8 @@ namespace KineticWorkspace.API.Controllers
                 return StatusCode(500, new { message = "Error interno del servidor" });
             }
         }
+
+        // ==================== Obtener reservas próximas ====================
 
         [HttpGet("user/upcoming")]
         public async Task<IActionResult> GetUpcomingReservations([FromQuery] int limit = 10)
@@ -97,6 +102,8 @@ namespace KineticWorkspace.API.Controllers
             }
         }
 
+        // ==================== Resumen de reservas ====================
+
         [HttpGet("user/summary")]
         public async Task<IActionResult> GetReservationSummary()
         {
@@ -113,6 +120,8 @@ namespace KineticWorkspace.API.Controllers
             }
         }
 
+        // ==================== Reservas por espacio ====================
+
         [HttpGet("space/{spaceId}")]
         public async Task<IActionResult> GetSpaceReservations(int spaceId)
         {
@@ -127,6 +136,8 @@ namespace KineticWorkspace.API.Controllers
                 return StatusCode(500, new { message = "Error interno del servidor" });
             }
         }
+
+        // ==================== Reservas activas (Admin) ====================
 
         [HttpGet("active")]
         [Authorize(Roles = "Admin")]
@@ -143,6 +154,8 @@ namespace KineticWorkspace.API.Controllers
                 return StatusCode(500, new { message = "Error interno del servidor" });
             }
         }
+
+        // ==================== Obtener reserva por ID ====================
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetReservationById(int id)
@@ -161,6 +174,8 @@ namespace KineticWorkspace.API.Controllers
                 return StatusCode(500, new { message = "Error interno del servidor" });
             }
         }
+
+        // ==================== Crear reserva ====================
 
         [HttpPost]
         public async Task<IActionResult> CreateReservation([FromBody] ReservationRequestDto request)
@@ -182,13 +197,17 @@ namespace KineticWorkspace.API.Controllers
             }
         }
 
+        // ==================== ✅ ACTUALIZAR RESERVA (CORREGIDO) ====================
+
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateReservation(int id, [FromBody] ReservationRequestDto request)
         {
             try
             {
                 var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
-                var reservation = await _reservationService.UpdateReservationAsync(id, request, userId);
+                var isAdmin = User.IsInRole("Admin");
+
+                var reservation = await _reservationService.UpdateReservationAsync(id, request, userId, isAdmin);
                 if (reservation == null)
                     return NotFound(new { message = $"Reservación con ID {id} no encontrada" });
 
@@ -208,6 +227,8 @@ namespace KineticWorkspace.API.Controllers
                 return StatusCode(500, new { message = "Error interno del servidor" });
             }
         }
+
+        // ==================== Cancelar reserva ====================
 
         [HttpPost("{id}/cancel")]
         public async Task<IActionResult> CancelReservation(int id, [FromBody] CancelReservationRequestDto request)
@@ -232,6 +253,8 @@ namespace KineticWorkspace.API.Controllers
             }
         }
 
+        // ==================== Confirmar reserva (Admin) ====================
+
         [HttpPost("{id}/confirm")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> ConfirmReservation(int id)
@@ -252,7 +275,7 @@ namespace KineticWorkspace.API.Controllers
             }
         }
 
-        /// Obtener TODAS las reservas con filtros (SOLO ADMIN)
+        // ==================== ✅ NUEVO: Obtener TODAS las reservas (Admin) ====================
 
         [HttpGet("admin/all")]
         [Authorize(Roles = "Admin")]
