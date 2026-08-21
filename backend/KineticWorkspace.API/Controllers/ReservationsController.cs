@@ -251,5 +251,31 @@ namespace KineticWorkspace.API.Controllers
                 return StatusCode(500, new { message = "Error interno del servidor" });
             }
         }
+
+        /// Obtener TODAS las reservas con filtros (SOLO ADMIN)
+
+        [HttpGet("admin/all")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetAllReservationsFiltered(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 15,
+            [FromQuery] string? sortBy = "date_desc",
+            [FromQuery] string? status = "all",
+            [FromQuery] string? search = null,
+            [FromQuery] int? userId = null,
+            [FromQuery] int? spaceId = null)
+        {
+            try
+            {
+                var result = await _reservationService.GetAllReservationsFilteredAsync(
+                    page, pageSize, sortBy, status, search, userId, spaceId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener todas las reservas (admin)");
+                return StatusCode(500, new { message = "Error interno del servidor" });
+            }
+        }
     }
 }
