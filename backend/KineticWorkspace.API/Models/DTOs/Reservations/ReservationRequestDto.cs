@@ -1,3 +1,4 @@
+// backend/KineticWorkspace.API/Models/DTOs/Reservations/ReservationRequestDto.cs
 using System.ComponentModel.DataAnnotations;
 
 namespace KineticWorkspace.API.Models.DTOs.Reservations
@@ -17,6 +18,9 @@ namespace KineticWorkspace.API.Models.DTOs.Reservations
         public string? Notes { get; set; }
 
         public int? NumberOfGuests { get; set; }
+
+        // ✅ NUEVO: Para que el admin pueda cambiar el usuario
+        public int? UserId { get; set; }
     }
 
     // solicitudes paginadas con ordenamiento
