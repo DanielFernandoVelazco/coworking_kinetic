@@ -24,5 +24,15 @@ namespace KineticWorkspace.API.Repositories.Interfaces
             int pageSize,
             string? sortBy,
             string? status);
+
+        // Obtener todas las reservas (para admin)
+        Task<(IEnumerable<Reservation> Items, int TotalCount)> GetAllReservationsFilteredAsync(
+            int page,
+            int pageSize,
+            string? sortBy,
+            string? status,
+            string? searchTerm,
+            int? userId,
+            int? spaceId);
     }
 }
