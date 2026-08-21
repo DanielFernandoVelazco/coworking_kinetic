@@ -197,7 +197,7 @@ namespace KineticWorkspace.API.Controllers
             }
         }
 
-        // ==================== ✅ ACTUALIZAR RESERVA (CORREGIDO) ====================
+        // ==================== ✅ ACTUALIZAR RESERVA ====================
 
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateReservation(int id, [FromBody] ReservationRequestDto request)
@@ -228,7 +228,7 @@ namespace KineticWorkspace.API.Controllers
             }
         }
 
-        // ==================== Cancelar reserva ====================
+        // ==================== ✅ CANCELAR RESERVA (CORREGIDO) ====================
 
         [HttpPost("{id}/cancel")]
         public async Task<IActionResult> CancelReservation(int id, [FromBody] CancelReservationRequestDto request)
@@ -236,7 +236,9 @@ namespace KineticWorkspace.API.Controllers
             try
             {
                 var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
-                var result = await _reservationService.CancelReservationAsync(id, userId, request.Reason);
+                var isAdmin = User.IsInRole("Admin");
+
+                var result = await _reservationService.CancelReservationAsync(id, userId, request.Reason, isAdmin);
                 if (!result)
                     return NotFound(new { message = $"Reservación con ID {id} no encontrada o no se puede cancelar" });
 
@@ -245,6 +247,10 @@ namespace KineticWorkspace.API.Controllers
             catch (UnauthorizedAccessException ex)
             {
                 return Unauthorized(new { message = ex.Message });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
             }
             catch (Exception ex)
             {
