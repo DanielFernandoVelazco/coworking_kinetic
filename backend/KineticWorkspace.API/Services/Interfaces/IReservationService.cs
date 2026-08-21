@@ -1,3 +1,4 @@
+// backend/KineticWorkspace.API/Services/Interfaces/IReservationService.cs
 using KineticWorkspace.API.Models.DTOs.Reservations;
 
 namespace KineticWorkspace.API.Services.Interfaces
@@ -8,14 +9,17 @@ namespace KineticWorkspace.API.Services.Interfaces
         Task<IEnumerable<ReservationResponseDto>> GetSpaceReservationsAsync(int spaceId);
         Task<ReservationResponseDto?> GetReservationByIdAsync(int id);
         Task<ReservationResponseDto> CreateReservationAsync(ReservationRequestDto request, int userId);
-        Task<ReservationResponseDto?> UpdateReservationAsync(int id, ReservationRequestDto request, int userId);
+
+        // ✅ FIRMA CORREGIDA: Incluye isAdmin como parámetro opcional
+        Task<ReservationResponseDto?> UpdateReservationAsync(int id, ReservationRequestDto request, int userId, bool isAdmin = false);
+
         Task<bool> CancelReservationAsync(int id, int userId, string reason);
         Task<bool> ConfirmReservationAsync(int id, int adminUserId);
         Task<IEnumerable<ReservationResponseDto>> GetUpcomingReservationsAsync(int userId, int limit = 10);
         Task<IEnumerable<ReservationResponseDto>> GetActiveReservationsAsync();
         Task<ReservationSummaryDto> GetReservationSummaryAsync(int userId);
 
-        // Método con filtros y ordenamiento
+        // Método con filtros y ordenamiento (para usuarios)
         Task<PaginatedReservationResponseDto> GetUserReservationsFilteredAsync(
             int userId,
             int page,
@@ -23,9 +27,7 @@ namespace KineticWorkspace.API.Services.Interfaces
             string? sortBy,
             string? status);
 
-
-        // Obtiene todas las reservas con filtros (solo para administradores)
-
+        // ✅ NUEVO: Método para administradores (todas las reservas)
         Task<PaginatedReservationResponseDto> GetAllReservationsFilteredAsync(
             int page,
             int pageSize,
