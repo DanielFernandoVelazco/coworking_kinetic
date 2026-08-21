@@ -155,6 +155,56 @@ const AdminDashboard = () => {
         return null;
     };
 
+    // ✅ Custom Tooltip para gráficos de pastel
+    const PieTooltip = ({ active, payload }) => {
+        if (active && payload && payload.length) {
+            const data = payload[0].payload;
+            return (
+                <div className="bg-surface-container-lowest p-3 rounded-lg border border-outline-variant shadow-lg">
+                    <p className="font-body-sm font-semibold text-on-surface">{data.name || data.Status || data.Type || data.status}</p>
+                    <p className="text-body-sm text-on-surface-variant">
+                        {data.count || data.value} items ({data.percentage || ((data.count / data.total) * 100).toFixed(1)}%)
+                    </p>
+                </div>
+            );
+        }
+        return null;
+    };
+
+    // ✅ Función para formatear datos de pastel con porcentaje
+    const formatPieData = (data) => {
+        if (!data || data.length === 0) return [];
+        const total = data.reduce((sum, item) => sum + (item.count || 0), 0);
+        return data.map(item => ({
+            ...item,
+            name: item.Status || item.status || item.Type || item.type || 'Unknown',
+            value: item.count || 0,
+            total: total,
+            percentage: total > 0 ? ((item.count / total) * 100).toFixed(1) : 0
+        }));
+    };
+
+    // ✅ Render personalizado para etiquetas de pastel
+    const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, index, name }) => {
+        const RADIAN = Math.PI / 180;
+        const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+        const x = cx + radius * Math.cos(-midAngle * RADIAN);
+        const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+        return (
+            <text
+                x={x}
+                y={y}
+                fill="#fff"
+                textAnchor={x > cx ? 'start' : 'end'}
+                dominantBaseline="central"
+                className="text-xs font-medium"
+            >
+                {`${(percent * 100).toFixed(0)}%`}
+            </text>
+        );
+    };
+
     return (
         <div className="max-w-container-max mx-auto px-margin-desktop py-12">
             {/* Header */}
@@ -273,83 +323,138 @@ const AdminDashboard = () => {
                 </div>
             </div>
 
-            {/* Distribution Charts */}
+            {/* ✅ Distribution Charts - CORREGIDOS */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                 {/* Space Status Distribution */}
                 <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant">
                     <h3 className="font-headline-md text-headline-md mb-4">Estado de Espacios</h3>
-                    <div className="h-48">
+                    <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Pie
-                                    data={spaceStatus}
+                                    data={formatPieData(spaceStatus)}
                                     cx="50%"
                                     cy="50%"
-                                    innerRadius={40}
-                                    outerRadius={60}
+                                    innerRadius={50}
+                                    outerRadius={80}
                                     paddingAngle={2}
-                                    dataKey="count"
+                                    dataKey="value"
+                                    nameKey="name"
+                                    label={renderCustomLabel}
+                                    labelLine={false}
                                 >
-                                    {spaceStatus.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                    {formatPieData(spaceStatus).map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
                                     ))}
                                 </Pie>
-                                <Tooltip />
-                                <Legend />
+                                <Tooltip content={<PieTooltip />} />
+                                <Legend
+                                    verticalAlign="bottom"
+                                    height={36}
+                                    formatter={(value, entry) => {
+                                        const data = entry.payload;
+                                        return `${value}: ${data.count || 0}`;
+                                    }}
+                                />
                             </PieChart>
                         </ResponsiveContainer>
+                    </div>
+                    {/* ✅ Resumen adicional debajo del gráfico */}
+                    <div className="mt-4 pt-4 border-t border-outline-variant flex flex-wrap justify-center gap-4 text-body-xs text-on-surface-variant">
+                        {formatPieData(spaceStatus).map((item, index) => (
+                            <span key={index} className="flex items-center gap-1">
+                                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color || COLORS[index % COLORS.length] }}></span>
+                                {item.name}: {item.count} ({item.percentage}%)
+                            </span>
+                        ))}
                     </div>
                 </div>
 
                 {/* Reservation Status Distribution */}
                 <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant">
                     <h3 className="font-headline-md text-headline-md mb-4">Estado de Reservas</h3>
-                    <div className="h-48">
+                    <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Pie
-                                    data={reservationStatusDistribution}
+                                    data={formatPieData(reservationStatusDistribution)}
                                     cx="50%"
                                     cy="50%"
-                                    innerRadius={40}
-                                    outerRadius={60}
+                                    innerRadius={50}
+                                    outerRadius={80}
                                     paddingAngle={2}
-                                    dataKey="count"
+                                    dataKey="value"
+                                    nameKey="name"
+                                    label={renderCustomLabel}
+                                    labelLine={false}
                                 >
-                                    {reservationStatusDistribution.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                    {formatPieData(reservationStatusDistribution).map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
                                     ))}
                                 </Pie>
-                                <Tooltip />
-                                <Legend />
+                                <Tooltip content={<PieTooltip />} />
+                                <Legend
+                                    verticalAlign="bottom"
+                                    height={36}
+                                    formatter={(value, entry) => {
+                                        const data = entry.payload;
+                                        return `${value}: ${data.count || 0}`;
+                                    }}
+                                />
                             </PieChart>
                         </ResponsiveContainer>
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-outline-variant flex flex-wrap justify-center gap-4 text-body-xs text-on-surface-variant">
+                        {formatPieData(reservationStatusDistribution).map((item, index) => (
+                            <span key={index} className="flex items-center gap-1">
+                                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color || COLORS[index % COLORS.length] }}></span>
+                                {item.name}: {item.count} ({item.percentage}%)
+                            </span>
+                        ))}
                     </div>
                 </div>
 
                 {/* Space Type Distribution */}
                 <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant">
                     <h3 className="font-headline-md text-headline-md mb-4">Tipos de Espacios</h3>
-                    <div className="h-48">
+                    <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                                 <Pie
-                                    data={spaceTypeDistribution}
+                                    data={formatPieData(spaceTypeDistribution)}
                                     cx="50%"
                                     cy="50%"
-                                    innerRadius={40}
-                                    outerRadius={60}
+                                    innerRadius={50}
+                                    outerRadius={80}
                                     paddingAngle={2}
-                                    dataKey="count"
+                                    dataKey="value"
+                                    nameKey="name"
+                                    label={renderCustomLabel}
+                                    labelLine={false}
                                 >
-                                    {spaceTypeDistribution.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    {formatPieData(spaceTypeDistribution).map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color || COLORS[index % COLORS.length]} />
                                     ))}
                                 </Pie>
-                                <Tooltip />
-                                <Legend />
+                                <Tooltip content={<PieTooltip />} />
+                                <Legend
+                                    verticalAlign="bottom"
+                                    height={36}
+                                    formatter={(value, entry) => {
+                                        const data = entry.payload;
+                                        return `${value}: ${data.count || 0}`;
+                                    }}
+                                />
                             </PieChart>
                         </ResponsiveContainer>
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-outline-variant flex flex-wrap justify-center gap-4 text-body-xs text-on-surface-variant">
+                        {formatPieData(spaceTypeDistribution).map((item, index) => (
+                            <span key={index} className="flex items-center gap-1">
+                                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color || COLORS[index % COLORS.length] }}></span>
+                                {item.name}: {item.count} ({item.percentage}%)
+                            </span>
+                        ))}
                     </div>
                 </div>
             </div>
