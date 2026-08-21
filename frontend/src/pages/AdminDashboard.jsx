@@ -549,7 +549,12 @@ const AdminDashboard = () => {
 
                 {/* Top Users */}
                 <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant">
-                    <h3 className="font-headline-md text-headline-md mb-4">Top Usuarios</h3>
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="font-headline-md text-headline-md">Top Usuarios</h3>
+                        <Link to="/admin/users" className="text-primary hover:underline text-sm">
+                            Ver todas →
+                        </Link>
+                    </div>
                     <div className="space-y-3 max-h-96 overflow-y-auto">
                         {topUsers.length === 0 ? (
                             <p className="text-body-sm text-on-surface-variant text-center py-8">No hay datos de usuarios</p>
