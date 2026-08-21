@@ -17,7 +17,8 @@ import Reservations from './pages/Reservations';
 import CartPage from './pages/CartPage';
 import Alerts from './pages/Alerts';
 import AdminDashboard from './pages/AdminDashboard';
-import AdminReservations from './pages/AdminReservations'; // ✅ NUEVO
+import AdminReservations from './pages/AdminReservations';
+import AdminUsers from './pages/AdminUsers'; // ✅ NUEVO
 import NotFound from './pages/NotFound';
 
 // Loading Component
@@ -100,21 +101,27 @@ const AppRoutes = () => {
                     </ProtectedRoute>
                 } />
 
-                {/* ✅ Admin Routes */}
+                {/* Admin Routes */}
                 <Route path="admin" element={
                     <AdminRoute>
                         <AdminDashboard />
                     </AdminRoute>
                 } />
 
-                {/* ✅ Nueva ruta para Admin Reservations */}
                 <Route path="admin/reservations" element={
                     <AdminRoute>
                         <AdminReservations />
                     </AdminRoute>
                 } />
 
-                {/* ✅ Redirigir /admin/reservas a /admin/reservations (por si acaso) */}
+                {/* Admin Users */}
+                <Route path="admin/users" element={
+                    <AdminRoute>
+                        <AdminUsers />
+                    </AdminRoute>
+                } />
+
+                {/* Redirecciones */}
                 <Route path="admin/reservas" element={
                     <Navigate to="/admin/reservations" replace />
                 } />
