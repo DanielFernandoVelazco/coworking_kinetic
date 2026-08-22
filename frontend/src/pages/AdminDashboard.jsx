@@ -593,7 +593,12 @@ const AdminDashboard = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Top Spaces */}
                 <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant">
-                    <h3 className="font-headline-md text-headline-md mb-4">Top Espacios</h3>
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="font-headline-md text-headline-md">Top Espacios</h3>
+                        <Link to="/admin/spaces" className="text-primary hover:underline text-sm">
+                            Ver todas →
+                        </Link>
+                    </div>
                     <div className="space-y-3 max-h-96 overflow-y-auto">
                         {topSpaces.length === 0 ? (
                             <p className="text-body-sm text-on-surface-variant text-center py-8">No hay datos de espacios</p>
