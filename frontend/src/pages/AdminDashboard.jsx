@@ -89,7 +89,10 @@ const AdminDashboard = () => {
         setSelectedPeriod(newPeriod);
     }, []);
 
+    const [exporting, setExporting] = useState(false);
+
     const handleExportReport = useCallback(async () => {
+        setExporting(true);
         try {
             const endDate = new Date();
             const startDate = new Date();
@@ -108,6 +111,8 @@ const AdminDashboard = () => {
         } catch (error) {
             console.error('Error exporting report:', error);
             toast.error('Error al exportar reporte');
+        } finally {
+            setExporting(false);
         }
     }, []);
 
@@ -265,10 +270,13 @@ const AdminDashboard = () => {
                     </button>
                     <button
                         onClick={handleExportReport}
+                        disabled={exporting}
                         className="px-4 py-2 bg-primary text-on-primary rounded-lg hover:bg-secondary transition-colors flex items-center gap-2"
                     >
-                        <span className="material-symbols-outlined text-sm">download</span>
-                        Export Report
+                        <span className={`material-symbols-outlined text-sm ${exporting ? 'animate-spin' : ''}`}>
+                            {exporting ? 'progress_activity' : 'download'}
+                        </span>
+                        {exporting ? 'Exportando...' : 'Export Report'}
                     </button>
                 </div>
             </div>
