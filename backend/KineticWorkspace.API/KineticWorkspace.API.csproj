@@ -9,6 +9,7 @@
   <ItemGroup>
     <!-- ✅ AutoMapper 13.0.1 -->
     <PackageReference Include="AutoMapper" Version="13.0.1" />
+    <PackageReference Include="EPPlus" Version="7.3.2" />
     
     <!-- ✅ EntityFramework Core 8.0.8 (actualizado para coincidir con HealthChecks) -->
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.8" />
