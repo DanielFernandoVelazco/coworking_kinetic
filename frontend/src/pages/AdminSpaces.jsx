@@ -20,6 +20,15 @@ const SORT_OPTIONS = [
     { value: 'rating_asc', label: '⭐ Rating (Menor a Mayor)' },
 ];
 
+// Tipos de espacios predefinidos
+const SPACE_TYPES = [
+    'Premium Office',
+    'Meeting Room',
+    'Dedicated Desk',
+    'Focus Pod',
+    'Creative Space'
+];
+
 const AdminSpaces = () => {
     const { user, isAuthenticated } = useAuth();
     const { isDark } = useTheme();
@@ -38,6 +47,26 @@ const AdminSpaces = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
+
+    // Modal de creación
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [creating, setCreating] = useState(false);
+    const [createFormData, setCreateFormData] = useState({
+        name: '',
+        description: '',
+        type: 'Premium Office',
+        capacity: 1,
+        pricePerHour: 0,
+        pricePerDay: null,
+        address: '',
+        city: '',
+        district: '',
+        postalCode: '',
+        country: 'Sweden',
+        isAvailable: true,
+        isFeatured: false,
+        imageUrls: []
+    });
 
     // Modal de edición
     const [editingSpace, setEditingSpace] = useState(null);
@@ -193,7 +222,94 @@ const AdminSpaces = () => {
         setCurrentPage(1);
     };
 
-    // Abrir modal de edición
+    // ========== CREAR ESPACIO ==========
+    const handleCreateClick = () => {
+        setCreateFormData({
+            name: '',
+            description: '',
+            type: 'Premium Office',
+            capacity: 1,
+            pricePerHour: 0,
+            pricePerDay: null,
+            address: '',
+            city: '',
+            district: '',
+            postalCode: '',
+            country: 'Sweden',
+            isAvailable: true,
+            isFeatured: false,
+            imageUrls: []
+        });
+        setShowCreateModal(true);
+    };
+
+    const handleCreateChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        setCreateFormData({
+            ...createFormData,
+            [name]: type === 'checkbox' ? checked : value
+        });
+    };
+
+    const handleCreateSubmit = async () => {
+        // Validaciones básicas
+        if (!createFormData.name.trim()) {
+            toast.error('El nombre es obligatorio');
+            return;
+        }
+        if (!createFormData.type) {
+            toast.error('El tipo es obligatorio');
+            return;
+        }
+        if (createFormData.capacity < 1) {
+            toast.error('La capacidad debe ser al menos 1');
+            return;
+        }
+        if (createFormData.pricePerHour <= 0) {
+            toast.error('El precio por hora debe ser mayor a 0');
+            return;
+        }
+        if (!createFormData.city.trim()) {
+            toast.error('La ciudad es obligatoria');
+            return;
+        }
+        if (!createFormData.address.trim()) {
+            toast.error('La dirección es obligatoria');
+            return;
+        }
+
+        setCreating(true);
+        try {
+            const newSpace = {
+                name: createFormData.name,
+                description: createFormData.description,
+                type: createFormData.type,
+                capacity: parseInt(createFormData.capacity),
+                pricePerHour: parseFloat(createFormData.pricePerHour),
+                pricePerDay: createFormData.pricePerDay ? parseFloat(createFormData.pricePerDay) : null,
+                address: createFormData.address,
+                city: createFormData.city,
+                district: createFormData.district,
+                postalCode: createFormData.postalCode,
+                country: createFormData.country,
+                isAvailable: createFormData.isAvailable,
+                isFeatured: createFormData.isFeatured,
+                imageUrls: createFormData.imageUrls.length > 0 ? createFormData.imageUrls : ['https://images.unsplash.com/photo-1497366216548-37526070297c?w=800']
+            };
+
+            await spacesService.create(newSpace);
+            toast.success('✅ Espacio creado exitosamente');
+            setShowCreateModal(false);
+            await loadSpaces();
+        } catch (error) {
+            console.error('Error creating space:', error);
+            toast.error(error.response?.data?.message || 'Error al crear el espacio');
+        } finally {
+            setCreating(false);
+        }
+    };
+
+    // ========== EDITAR ESPACIO ==========
     const handleEditClick = (space) => {
         setEditingSpace(space);
         setEditFormData({
@@ -215,7 +331,14 @@ const AdminSpaces = () => {
         setShowEditModal(true);
     };
 
-    // Guardar cambios
+    const handleEditChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        setEditFormData({
+            ...editFormData,
+            [name]: type === 'checkbox' ? checked : value
+        });
+    };
+
     const handleSaveEdit = async () => {
         if (!editingSpace) return;
 
@@ -238,7 +361,7 @@ const AdminSpaces = () => {
             };
 
             await spacesService.update(editingSpace.id, updateData);
-            toast.success('Espacio actualizado exitosamente');
+            toast.success('✅ Espacio actualizado exitosamente');
             setShowEditModal(false);
             setEditingSpace(null);
             await loadSpaces();
@@ -250,14 +373,14 @@ const AdminSpaces = () => {
         }
     };
 
-    // Eliminar espacio
+    // ========== ELIMINAR ESPACIO ==========
     const handleDeleteSpace = async () => {
         if (!showDeleteModal) return;
 
         setDeleting(true);
         try {
             await spacesService.delete(showDeleteModal);
-            toast.success('Espacio eliminado exitosamente');
+            toast.success('✅ Espacio eliminado exitosamente');
             setShowDeleteModal(null);
             await loadSpaces();
         } catch (error) {
@@ -331,13 +454,13 @@ const AdminSpaces = () => {
                         <span className="material-symbols-outlined text-sm">refresh</span>
                         Limpiar Filtros
                     </button>
-                    <Link
-                        to="/catalog"
+                    <button
+                        onClick={handleCreateClick}
                         className="px-4 py-2 bg-primary dark:bg-primary-dark text-on-primary rounded-lg hover:bg-secondary transition-colors flex items-center gap-2"
                     >
                         <span className="material-symbols-outlined text-sm">add</span>
                         Crear Espacio
-                    </Link>
+                    </button>
                 </div>
             </div>
 
@@ -487,6 +610,12 @@ const AdminSpaces = () => {
                             ? 'No hay espacios que coincidan con los filtros seleccionados'
                             : 'No hay espacios registrados en el sistema'}
                     </p>
+                    <button
+                        onClick={handleCreateClick}
+                        className="mt-4 px-6 py-2 bg-primary dark:bg-primary-dark text-on-primary rounded-lg hover:bg-secondary transition-colors"
+                    >
+                        Crear primer espacio
+                    </button>
                 </div>
             ) : (
                 <div className="overflow-x-auto">
@@ -663,7 +792,240 @@ const AdminSpaces = () => {
                 </div>
             )}
 
-            {/* Modal de Edición */}
+            {/* ========== MODAL DE CREACIÓN ========== */}
+            {showCreateModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowCreateModal(false)}>
+                    <div className="bg-surface-container-lowest dark:bg-surface-dark-container-lowest rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-xl transition-colors duration-300" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="font-headline-md text-headline-md text-on-surface dark:text-on-dark-surface flex items-center gap-2">
+                                <span className="material-symbols-outlined text-primary dark:text-primary-dark">add</span>
+                                Crear Nuevo Espacio                            </h3>
+                            <button
+                                onClick={() => setShowCreateModal(false)}
+                                className="p-2 hover:bg-surface-container-low dark:hover:bg-surface-dark-container-low rounded-lg transition-colors"
+                            >
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="font-label-caps text-label-caps text-on-surface-variant dark:text-on-dark-surface-variant block mb-1">
+                                        Nombre <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="name"
+                                        value={createFormData.name}
+                                        onChange={handleCreateChange}
+                                        placeholder="Ej: Skyline Premium Office"
+                                        className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-2 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="font-label-caps text-label-caps text-on-surface-variant dark:text-on-dark-surface-variant block mb-1">
+                                        Tipo <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        name="type"
+                                        value={createFormData.type}
+                                        onChange={handleCreateChange}
+                                        className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-2 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none"
+                                    >
+                                        {SPACE_TYPES.map(type => (
+                                            <option key={type} value={type}>{type}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="font-label-caps text-label-caps text-on-surface-variant dark:text-on-dark-surface-variant block mb-1">
+                                    Descripción
+                                </label>
+                                <textarea
+                                    name="description"
+                                    value={createFormData.description}
+                                    onChange={handleCreateChange}
+                                    rows="3"
+                                    placeholder="Describe el espacio..."
+                                    className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-2 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none resize-y"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="font-label-caps text-label-caps text-on-surface-variant dark:text-on-dark-surface-variant block mb-1">
+                                        Capacidad <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        name="capacity"
+                                        value={createFormData.capacity}
+                                        onChange={handleCreateChange}
+                                        min="1"
+                                        className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-2 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="font-label-caps text-label-caps text-on-surface-variant dark:text-on-dark-surface-variant block mb-1">
+                                        Precio por Hora ($) <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        name="pricePerHour"
+                                        value={createFormData.pricePerHour}
+                                        onChange={handleCreateChange}
+                                        min="0"
+                                        step="0.01"
+                                        className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-2 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="font-label-caps text-label-caps text-on-surface-variant dark:text-on-dark-surface-variant block mb-1">
+                                        Precio por Día ($)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        name="pricePerDay"
+                                        value={createFormData.pricePerDay || ''}
+                                        onChange={handleCreateChange}
+                                        min="0"
+                                        step="0.01"
+                                        placeholder="Opcional"
+                                        className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-2 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="font-label-caps text-label-caps text-on-surface-variant dark:text-on-dark-surface-variant block mb-1">
+                                        Ciudad <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="city"
+                                        value={createFormData.city}
+                                        onChange={handleCreateChange}
+                                        placeholder="Ej: Stockholm"
+                                        className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-2 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="font-label-caps text-label-caps text-on-surface-variant dark:text-on-dark-surface-variant block mb-1">
+                                    Dirección <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    name="address"
+                                    value={createFormData.address}
+                                    onChange={handleCreateChange}
+                                    placeholder="Ej: Sturegatan 22"
+                                    className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-2 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="font-label-caps text-label-caps text-on-surface-variant dark:text-on-dark-surface-variant block mb-1">
+                                        Distrito
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="district"
+                                        value={createFormData.district}
+                                        onChange={handleCreateChange}
+                                        placeholder="Ej: Östermalm"
+                                        className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-2 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="font-label-caps text-label-caps text-on-surface-variant dark:text-on-dark-surface-variant block mb-1">
+                                        Código Postal
+                                    </label>
+                                    <input
+                                        type="text"
+                                        name="postalCode"
+                                        value={createFormData.postalCode || ''}
+                                        onChange={handleCreateChange}
+                                        placeholder="Ej: 114 36"
+                                        className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-2 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="font-label-caps text-label-caps text-on-surface-variant dark:text-on-dark-surface-variant block mb-1">
+                                    País
+                                </label>
+                                <input
+                                    type="text"
+                                    name="country"
+                                    value={createFormData.country}
+                                    onChange={handleCreateChange}
+                                    placeholder="Sweden"
+                                    className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-2 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none"
+                                />
+                            </div>
+
+                            <div className="flex gap-6">
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        name="isAvailable"
+                                        checked={createFormData.isAvailable}
+                                        onChange={handleCreateChange}
+                                        className="w-4 h-4 accent-primary"
+                                    />
+                                    <label className="text-body-sm text-on-surface dark:text-on-dark-surface">Disponible</label>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        name="isFeatured"
+                                        checked={createFormData.isFeatured}
+                                        onChange={handleCreateChange}
+                                        className="w-4 h-4 accent-primary"
+                                    />
+                                    <label className="text-body-sm text-on-surface dark:text-on-dark-surface">Destacado</label>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3 pt-4 border-t border-outline-variant dark:border-outline-dark-variant">
+                                <button
+                                    onClick={() => setShowCreateModal(false)}
+                                    className="flex-1 px-4 py-2 border border-outline-variant dark:border-outline-dark-variant rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-dark-container-low transition-colors text-on-surface dark:text-on-dark-surface"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleCreateSubmit}
+                                    disabled={creating}
+                                    className="flex-1 px-4 py-2 bg-primary dark:bg-primary-dark text-on-primary rounded-lg hover:bg-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                >
+                                    {creating ? (
+                                        <>
+                                            <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+                                            Creando...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="material-symbols-outlined text-sm">add</span>
+                                            Crear Espacio
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ========== MODAL DE EDICIÓN ========== */}
             {showEditModal && editingSpace && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowEditModal(false)}>
                     <div className="bg-surface-container-lowest dark:bg-surface-dark-container-lowest rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-xl transition-colors duration-300" onClick={(e) => e.stopPropagation()}>
@@ -688,8 +1050,9 @@ const AdminSpaces = () => {
                                     </label>
                                     <input
                                         type="text"
+                                        name="name"
                                         value={editFormData.name}
-                                        onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                                        onChange={handleEditChange}
                                         className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-2 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none"
                                     />
                                 </div>
@@ -697,12 +1060,16 @@ const AdminSpaces = () => {
                                     <label className="font-label-caps text-label-caps text-on-surface-variant dark:text-on-dark-surface-variant block mb-1">
                                         Tipo *
                                     </label>
-                                    <input
-                                        type="text"
+                                    <select
+                                        name="type"
                                         value={editFormData.type}
-                                        onChange={(e) => setEditFormData({ ...editFormData, type: e.target.value })}
+                                        onChange={handleEditChange}
                                         className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-2 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none"
-                                    />
+                                    >
+                                        {SPACE_TYPES.map(type => (
+                                            <option key={type} value={type}>{type}</option>
+                                        ))}
+                                    </select>
                                 </div>
                             </div>
 
@@ -711,8 +1078,9 @@ const AdminSpaces = () => {
                                     Descripción
                                 </label>
                                 <textarea
+                                    name="description"
                                     value={editFormData.description}
-                                    onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                                    onChange={handleEditChange}
                                     rows="3"
                                     className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-2 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none resize-y"
                                 />
@@ -725,8 +1093,9 @@ const AdminSpaces = () => {
                                     </label>
                                     <input
                                         type="number"
+                                        name="capacity"
                                         value={editFormData.capacity}
-                                        onChange={(e) => setEditFormData({ ...editFormData, capacity: parseInt(e.target.value) || 1 })}
+                                        onChange={handleEditChange}
                                         min="1"
                                         className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-2 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none"
                                     />
@@ -737,8 +1106,9 @@ const AdminSpaces = () => {
                                     </label>
                                     <input
                                         type="number"
+                                        name="pricePerHour"
                                         value={editFormData.pricePerHour}
-                                        onChange={(e) => setEditFormData({ ...editFormData, pricePerHour: parseFloat(e.target.value) || 0 })}
+                                        onChange={handleEditChange}
                                         min="0"
                                         step="0.01"
                                         className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-2 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none"
@@ -753,12 +1123,13 @@ const AdminSpaces = () => {
                                     </label>
                                     <input
                                         type="number"
+                                        name="pricePerDay"
                                         value={editFormData.pricePerDay || ''}
-                                        onChange={(e) => setEditFormData({ ...editFormData, pricePerDay: e.target.value ? parseFloat(e.target.value) : null })}
+                                        onChange={handleEditChange}
                                         min="0"
                                         step="0.01"
-                                        className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-2 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none"
                                         placeholder="Opcional"
+                                        className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-2 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none"
                                     />
                                 </div>
                                 <div>
@@ -767,8 +1138,9 @@ const AdminSpaces = () => {
                                     </label>
                                     <input
                                         type="text"
+                                        name="city"
                                         value={editFormData.city}
-                                        onChange={(e) => setEditFormData({ ...editFormData, city: e.target.value })}
+                                        onChange={handleEditChange}
                                         className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-2 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none"
                                     />
                                 </div>
@@ -780,8 +1152,9 @@ const AdminSpaces = () => {
                                 </label>
                                 <input
                                     type="text"
+                                    name="address"
                                     value={editFormData.address}
-                                    onChange={(e) => setEditFormData({ ...editFormData, address: e.target.value })}
+                                    onChange={handleEditChange}
                                     className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-2 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none"
                                 />
                             </div>
@@ -793,8 +1166,9 @@ const AdminSpaces = () => {
                                     </label>
                                     <input
                                         type="text"
+                                        name="district"
                                         value={editFormData.district}
-                                        onChange={(e) => setEditFormData({ ...editFormData, district: e.target.value })}
+                                        onChange={handleEditChange}
                                         className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-2 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none"
                                     />
                                 </div>
@@ -804,44 +1178,47 @@ const AdminSpaces = () => {
                                     </label>
                                     <input
                                         type="text"
+                                        name="postalCode"
                                         value={editFormData.postalCode || ''}
-                                        onChange={(e) => setEditFormData({ ...editFormData, postalCode: e.target.value })}
+                                        onChange={handleEditChange}
                                         className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-2 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none"
                                     />
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="font-label-caps text-label-caps text-on-surface-variant dark:text-on-dark-surface-variant block mb-1">
-                                        País
-                                    </label>
+                            <div>
+                                <label className="font-label-caps text-label-caps text-on-surface-variant dark:text-on-dark-surface-variant block mb-1">
+                                    País
+                                </label>
+                                <input
+                                    type="text"
+                                    name="country"
+                                    value={editFormData.country}
+                                    onChange={handleEditChange}
+                                    className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-2 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none"
+                                />
+                            </div>
+
+                            <div className="flex gap-6">
+                                <div className="flex items-center gap-2">
                                     <input
-                                        type="text"
-                                        value={editFormData.country}
-                                        onChange={(e) => setEditFormData({ ...editFormData, country: e.target.value })}
-                                        className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-2 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none"
+                                        type="checkbox"
+                                        name="isAvailable"
+                                        checked={editFormData.isAvailable}
+                                        onChange={handleEditChange}
+                                        className="w-4 h-4 accent-primary"
                                     />
+                                    <label className="text-body-sm text-on-surface dark:text-on-dark-surface">Disponible</label>
                                 </div>
-                                <div className="flex items-end gap-4">
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            type="checkbox"
-                                            checked={editFormData.isAvailable}
-                                            onChange={(e) => setEditFormData({ ...editFormData, isAvailable: e.target.checked })}
-                                            className="w-4 h-4 accent-primary"
-                                        />
-                                        <label className="text-body-sm text-on-surface dark:text-on-dark-surface">Disponible</label>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            type="checkbox"
-                                            checked={editFormData.isFeatured}
-                                            onChange={(e) => setEditFormData({ ...editFormData, isFeatured: e.target.checked })}
-                                            className="w-4 h-4 accent-primary"
-                                        />
-                                        <label className="text-body-sm text-on-surface dark:text-on-dark-surface">Destacado</label>
-                                    </div>
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        name="isFeatured"
+                                        checked={editFormData.isFeatured}
+                                        onChange={handleEditChange}
+                                        className="w-4 h-4 accent-primary"
+                                    />
+                                    <label className="text-body-sm text-on-surface dark:text-on-dark-surface">Destacado</label>
                                 </div>
                             </div>
 
@@ -875,7 +1252,7 @@ const AdminSpaces = () => {
                 </div>
             )}
 
-            {/* Modal de Eliminación */}
+            {/* ========== MODAL DE ELIMINACIÓN ========== */}
             {showDeleteModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowDeleteModal(null)}>
                     <div className="bg-surface-container-lowest dark:bg-surface-dark-container-lowest rounded-xl max-w-md w-full p-6 shadow-xl transition-colors duration-300" onClick={(e) => e.stopPropagation()}>
