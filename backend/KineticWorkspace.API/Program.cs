@@ -14,6 +14,7 @@ using KineticWorkspace.API.Services.Implementations;
 using KineticWorkspace.API.Services.Interfaces;
 using Serilog;
 using AspNetCoreRateLimit;
+using OfficeOpenXml;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,6 +27,9 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 
 builder.Host.UseSerilog();
+
+// Configurar EPPlus para modo no comercial
+ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
 // Configurar Rate Limiting
 builder.Services.AddMemoryCache();
