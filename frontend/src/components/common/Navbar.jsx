@@ -31,16 +31,32 @@ const Navbar = () => {
                             <Link to="/" className="text-sm md:text-base text-on-surface-variant dark:text-on-dark-surface-variant hover:text-primary dark:hover:text-primary-dark transition-colors">
                                 Home
                             </Link>
-                            <Link to="/catalog" className="text-sm md:text-base text-on-surface-variant dark:text-on-dark-surface-variant hover:text-primary dark:hover:text-primary-dark transition-colors">
-                                Workspaces
-                            </Link>
-                            <Link to="/reservations" className="text-sm md:text-base text-on-surface-variant dark:text-on-dark-surface-variant hover:text-primary dark:hover:text-primary-dark transition-colors">
-                                My Reservations
-                            </Link>
+                            {user?.notAdmin && (
+                                <>
+                                    <Link to="/catalog" className="text-sm md:text-base text-on-surface-variant dark:text-on-dark-surface-variant hover:text-primary dark:hover:text-primary-dark transition-colors">
+                                        Workspaces
+                                    </Link>
+                                    <Link to="/reservations" className="text-sm md:text-base text-on-surface-variant dark:text-on-dark-surface-variant hover:text-primary dark:hover:text-primary-dark transition-colors">
+                                        My Reservations
+                                    </Link>
+                                </>
+                            )}
+
                             {user?.isAdmin && (
-                                <Link to="/admin" className="text-sm md:text-base text-on-surface-variant dark:text-on-dark-surface-variant hover:text-primary dark:hover:text-primary-dark transition-colors">
-                                    Admin
-                                </Link>
+                                <>
+                                    <Link to="/admin" className="text-sm md:text-base text-on-surface-variant dark:text-on-dark-surface-variant hover:text-primary dark:hover:text-primary-dark transition-colors">
+                                        Dashboard
+                                    </Link>
+                                    <Link to="/admin/reservations" className="text-sm md:text-base text-on-surface-variant dark:text-on-dark-surface-variant hover:text-primary dark:hover:text-primary-dark transition-colors">
+                                        Reservas
+                                    </Link>
+                                    <Link to="/admin/spaces" className="text-sm md:text-base text-on-surface-variant dark:text-on-dark-surface-variant hover:text-primary dark:hover:text-primary-dark transition-colors">
+                                        Espacios
+                                    </Link>
+                                    <Link to="/admin/users" className="text-sm md:text-base text-on-surface-variant dark:text-on-dark-surface-variant hover:text-primary dark:hover:text-primary-dark transition-colors">
+                                        Usuarios
+                                    </Link>
+                                </>
                             )}
                         </div>
                     )}
