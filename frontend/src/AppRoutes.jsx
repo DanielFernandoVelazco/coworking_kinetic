@@ -18,7 +18,8 @@ import CartPage from './pages/CartPage';
 import Alerts from './pages/Alerts';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminReservations from './pages/AdminReservations';
-import AdminUsers from './pages/AdminUsers'; // ✅ NUEVO
+import AdminUsers from './pages/AdminUsers';
+import AdminSpaces from './pages/AdminSpaces';
 import NotFound from './pages/NotFound';
 
 // Loading Component
@@ -114,10 +115,16 @@ const AppRoutes = () => {
                     </AdminRoute>
                 } />
 
-                {/* Admin Users */}
                 <Route path="admin/users" element={
                     <AdminRoute>
                         <AdminUsers />
+                    </AdminRoute>
+                } />
+
+                {/* Admin Spaces */}
+                <Route path="admin/spaces" element={
+                    <AdminRoute>
+                        <AdminSpaces />
                     </AdminRoute>
                 } />
 
