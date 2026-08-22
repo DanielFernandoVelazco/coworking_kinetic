@@ -65,7 +65,7 @@ const AdminSpaces = () => {
         country: 'Sweden',
         isAvailable: true,
         isFeatured: false,
-        imageUrls: []
+        imageUrls: ['']
     });
 
     // Modal de edición
@@ -85,7 +85,8 @@ const AdminSpaces = () => {
         country: 'Sweden',
         isAvailable: true,
         isFeatured: false,
-        amenities: []
+        amenities: [],
+        imageUrls: ['']
     });
     const [editing, setEditing] = useState(false);
 
@@ -222,6 +223,44 @@ const AdminSpaces = () => {
         setCurrentPage(1);
     };
 
+    // ========== MANEJO DE IMÁGENES ==========
+    const handleImageChange = (e, index, isEdit = false) => {
+        const value = e.target.value;
+        if (isEdit) {
+            const newImageUrls = [...editFormData.imageUrls];
+            newImageUrls[index] = value;
+            setEditFormData({ ...editFormData, imageUrls: newImageUrls });
+        } else {
+            const newImageUrls = [...createFormData.imageUrls];
+            newImageUrls[index] = value;
+            setCreateFormData({ ...createFormData, imageUrls: newImageUrls });
+        }
+    };
+
+    const addImageField = (isEdit = false) => {
+        if (isEdit) {
+            setEditFormData({
+                ...editFormData,
+                imageUrls: [...editFormData.imageUrls, '']
+            });
+        } else {
+            setCreateFormData({
+                ...createFormData,
+                imageUrls: [...createFormData.imageUrls, '']
+            });
+        }
+    };
+
+    const removeImageField = (index, isEdit = false) => {
+        if (isEdit) {
+            const newImageUrls = editFormData.imageUrls.filter((_, i) => i !== index);
+            setEditFormData({ ...editFormData, imageUrls: newImageUrls });
+        } else {
+            const newImageUrls = createFormData.imageUrls.filter((_, i) => i !== index);
+            setCreateFormData({ ...createFormData, imageUrls: newImageUrls });
+        }
+    };
+
     // ========== CREAR ESPACIO ==========
     const handleCreateClick = () => {
         setCreateFormData({
@@ -238,7 +277,7 @@ const AdminSpaces = () => {
             country: 'Sweden',
             isAvailable: true,
             isFeatured: false,
-            imageUrls: []
+            imageUrls: ['']
         });
         setShowCreateModal(true);
     };
@@ -278,6 +317,9 @@ const AdminSpaces = () => {
             return;
         }
 
+        // Filtrar URLs vacías
+        const imageUrls = createFormData.imageUrls.filter(url => url.trim() !== '');
+
         setCreating(true);
         try {
             const newSpace = {
@@ -294,7 +336,7 @@ const AdminSpaces = () => {
                 country: createFormData.country,
                 isAvailable: createFormData.isAvailable,
                 isFeatured: createFormData.isFeatured,
-                imageUrls: createFormData.imageUrls.length > 0 ? createFormData.imageUrls : ['https://images.unsplash.com/photo-1497366216548-37526070297c?w=800']
+                imageUrls: imageUrls.length > 0 ? imageUrls : ['https://images.unsplash.com/photo-1497366216548-37526070297c?w=800']
             };
 
             await spacesService.create(newSpace);
@@ -312,6 +354,11 @@ const AdminSpaces = () => {
     // ========== EDITAR ESPACIO ==========
     const handleEditClick = (space) => {
         setEditingSpace(space);
+        // Convertir imageUrls string a array, o usar [''] si no hay
+        const imageUrls = space.imageUrls && space.imageUrls.length > 0
+            ? space.imageUrls
+            : [''];
+
         setEditFormData({
             name: space.name || '',
             description: space.description || '',
@@ -326,7 +373,8 @@ const AdminSpaces = () => {
             country: space.country || 'Sweden',
             isAvailable: space.isAvailable !== undefined ? space.isAvailable : true,
             isFeatured: space.isFeatured || false,
-            amenities: space.amenities || []
+            amenities: space.amenities || [],
+            imageUrls: imageUrls
         });
         setShowEditModal(true);
     };
@@ -341,6 +389,9 @@ const AdminSpaces = () => {
 
     const handleSaveEdit = async () => {
         if (!editingSpace) return;
+
+        // Filtrar URLs vacías
+        const imageUrls = editFormData.imageUrls.filter(url => url.trim() !== '');
 
         setEditing(true);
         try {
@@ -357,7 +408,8 @@ const AdminSpaces = () => {
                 postalCode: editFormData.postalCode,
                 country: editFormData.country,
                 isAvailable: editFormData.isAvailable,
-                isFeatured: editFormData.isFeatured
+                isFeatured: editFormData.isFeatured,
+                imageUrls: imageUrls
             };
 
             await spacesService.update(editingSpace.id, updateData);
@@ -427,6 +479,75 @@ const AdminSpaces = () => {
         if (!space.isActive) return 'Inactivo';
         if (space.isAvailable) return 'Disponible';
         return 'No Disponible';
+    };
+
+    // ========== RENDERIZAR CAMPOS DE IMÁGENES ==========
+    const renderImageFields = (imageUrls, isEdit = false) => {
+        const urls = isEdit ? editFormData.imageUrls : createFormData.imageUrls;
+
+        return (
+            <div>
+                <label className="font-label-caps text-label-caps text-on-surface-variant dark:text-on-dark-surface-variant block mb-1">
+                    URLs de Imágenes
+                </label>
+                <p className="text-body-xs text-on-surface-variant dark:text-on-dark-surface-variant mb-2">
+                    Agrega URLs de imágenes para el espacio. La primera imagen será la principal.
+                </p>
+                <div className="space-y-2">
+                    {urls.map((url, index) => (
+                        <div key={index} className="flex gap-2 items-center">
+                            <div className="flex-1">
+                                <input
+                                    type="url"
+                                    value={url}
+                                    onChange={(e) => handleImageChange(e, index, isEdit)}
+                                    placeholder={`https://ejemplo.com/imagen-${index + 1}.jpg`}
+                                    className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-2 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none"
+                                />
+                            </div>
+                            {urls.length > 1 && (
+                                <button
+                                    type="button"
+                                    onClick={() => removeImageField(index, isEdit)}
+                                    className="p-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                                    title="Eliminar imagen"
+                                >
+                                    <span className="material-symbols-outlined text-sm">close</span>
+                                </button>
+                            )}
+                            {index === 0 && (
+                                <span className="text-body-xs text-primary dark:text-primary-dark font-medium whitespace-nowrap">
+                                    Principal
+                                </span>
+                            )}
+                        </div>
+                    ))}
+                    <button
+                        type="button"
+                        onClick={() => addImageField(isEdit)}
+                        className="text-body-sm text-primary dark:text-primary-dark hover:underline flex items-center gap-1 mt-2"
+                    >
+                        <span className="material-symbols-outlined text-sm">add</span>
+                        Agregar otra imagen
+                    </button>
+                </div>
+                {/* Previsualización de la primera imagen */}
+                {urls[0] && urls[0].trim() !== '' && (
+                    <div className="mt-3 p-3 bg-surface-container-low dark:bg-surface-dark-container-low rounded-lg border border-outline-variant dark:border-outline-dark-variant">
+                        <p className="text-body-xs text-on-surface-variant dark:text-on-dark-surface-variant mb-2">Previsualización:</p>
+                        <img
+                            src={urls[0]}
+                            alt="Preview"
+                            className="w-32 h-32 object-cover rounded-lg border border-outline-variant"
+                            onError={(e) => {
+                                e.target.src = 'https://via.placeholder.com/128x128?text=Error+al+cargar+imagen';
+                                e.target.alt = 'Error al cargar imagen';
+                            }}
+                        />
+                    </div>
+                )}
+            </div>
+        );
     };
 
     if (!user?.isAdmin) {
@@ -799,7 +920,8 @@ const AdminSpaces = () => {
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="font-headline-md text-headline-md text-on-surface dark:text-on-dark-surface flex items-center gap-2">
                                 <span className="material-symbols-outlined text-primary dark:text-primary-dark">add</span>
-                                Crear Nuevo Espacio                            </h3>
+                                Crear Nuevo Espacio
+                            </h3>
                             <button
                                 onClick={() => setShowCreateModal(false)}
                                 className="p-2 hover:bg-surface-container-low dark:hover:bg-surface-dark-container-low rounded-lg transition-colors"
@@ -971,6 +1093,9 @@ const AdminSpaces = () => {
                                     className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-2 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none"
                                 />
                             </div>
+
+                            {/* ✅ CAMPO DE IMÁGENES - CREACIÓN */}
+                            {renderImageFields(createFormData.imageUrls, false)}
 
                             <div className="flex gap-6">
                                 <div className="flex items-center gap-2">
@@ -1198,6 +1323,9 @@ const AdminSpaces = () => {
                                     className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-2 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none"
                                 />
                             </div>
+
+                            {/* ✅ CAMPO DE IMÁGENES - EDICIÓN */}
+                            {renderImageFields(editFormData.imageUrls, true)}
 
                             <div className="flex gap-6">
                                 <div className="flex items-center gap-2">
