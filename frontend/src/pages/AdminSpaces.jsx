@@ -123,10 +123,12 @@ const AdminSpaces = () => {
         try {
             const data = await spacesService.getAllUnpaginated();
             setAllSpaces(data || []);
+            setFilteredSpaces(data || []);
         } catch (error) {
             console.error('Error loading spaces:', error);
             toast.error('Error al cargar los espacios');
             setAllSpaces([]);
+            setFilteredSpaces([]);
         } finally {
             setLoading(false);
         }
@@ -138,6 +140,13 @@ const AdminSpaces = () => {
 
     // Aplicar filtros y ordenamiento
     useEffect(() => {
+        if (allSpaces.length === 0) {
+            setFilteredSpaces([]);
+            setTotalItems(0);
+            setTotalPages(1);
+            return;
+        }
+
         let filtered = [...allSpaces];
 
         // Búsqueda
@@ -200,11 +209,18 @@ const AdminSpaces = () => {
         setCurrentPage(1);
     }, [allSpaces, searchTerm, filterType, filterCity, filterStatus, sortBy]);
 
-    // Obtener espacios paginados
+    // ✅ Obtener espacios paginados con logs para depuración
     const paginatedSpaces = useMemo(() => {
+        console.log('🔄 Recalculando paginatedSpaces, filteredSpaces length:', filteredSpaces.length);
         const startIndex = (currentPage - 1) * PAGE_SIZE;
         const endIndex = startIndex + PAGE_SIZE;
-        return filteredSpaces.slice(startIndex, endIndex);
+        const result = filteredSpaces.slice(startIndex, endIndex);
+        console.log('📊 Resultado paginado:', result.length, 'espacios');
+        // ✅ Log del estado del primer espacio (para verificar disponibilidad)
+        if (result.length > 0) {
+            console.log('🔍 Primer espacio:', result[0].id, 'isAvailable:', result[0].isAvailable);
+        }
+        return result;
     }, [filteredSpaces, currentPage]);
 
     // Cambiar página
@@ -443,17 +459,19 @@ const AdminSpaces = () => {
         }
     };
 
-    // Toggle disponibilidad
+    // ========== ✅ TOGGLE AVAILABILITY ==========
     const handleToggleAvailability = async (spaceId, currentStatus) => {
+        console.log('🔄 Iniciando toggle availability:', { spaceId, currentStatus });
+
         try {
-            // ✅ Obtener el espacio completo
             const space = allSpaces.find(s => s.id === spaceId);
             if (!space) {
                 toast.error('Espacio no encontrado');
                 return;
             }
 
-            // ✅ Crear un objeto con todos los campos requeridos
+            const newStatus = !currentStatus;
+
             const updateData = {
                 name: space.name,
                 description: space.description || '',
@@ -466,17 +484,25 @@ const AdminSpaces = () => {
                 district: space.district || '',
                 postalCode: space.postalCode || '',
                 country: space.country || 'Sweden',
-                isAvailable: !currentStatus, // ← Solo cambiamos esto
+                isAvailable: newStatus,
                 isFeatured: space.isFeatured || false,
-                imageUrls: space.imageUrls || ['https://images.unsplash.com/photo-1497366216548-37526070297c?w=800']
+                imageUrls: space.imageUrls || []
             };
 
-            await spacesService.update(spaceId, updateData);
-            toast.success(`Espacio ${!currentStatus ? 'disponible' : 'no disponible'}`);
-            await loadSpaces();
+            const response = await spacesService.update(spaceId, updateData);
+            console.log('📥 Respuesta del servidor:', response);
+
+            // ✅ SOLO actualizar allSpaces - el useEffect se encarga del resto
+            setAllSpaces(prev => prev.map(s =>
+                s.id === spaceId
+                    ? { ...s, ...response, isAvailable: newStatus }
+                    : s
+            ));
+
+            toast.success(`Espacio ${newStatus ? 'disponible' : 'no disponible'}`);
+
         } catch (error) {
-            console.error('Error toggling availability:', error);
-            // ✅ Mostrar mensaje de error más detallado
+            console.error('❌ Error toggling availability:', error);
             const errorMessage = error.response?.data?.errors
                 ? Object.values(error.response.data.errors).flat().join(', ')
                 : error.response?.data?.message || 'Error al cambiar disponibilidad';
@@ -768,6 +794,7 @@ const AdminSpaces = () => {
                     </button>
                 </div>
             ) : (
+                // ✅ Agregar key para forzar re-render cuando filteredSpaces cambie
                 <div className="overflow-x-auto">
                     <table className="w-full border-collapse">
                         <thead>
@@ -786,7 +813,8 @@ const AdminSpaces = () => {
                         <tbody>
                             {paginatedSpaces.map((space, index) => (
                                 <tr
-                                    key={space.id}
+                                    // ✅ KEY DINÁMICA - fuerza a React a recrear toda la fila
+                                    key={`${space.id}-avail-${space.isAvailable}-${space.isActive}`}
                                     className={`border-b border-outline-variant dark:border-outline-dark-variant hover:bg-surface-container-low dark:hover:bg-surface-dark-container-low transition-colors ${index % 2 === 0 ? 'bg-surface-container-lowest dark:bg-surface-dark-container-lowest' : ''}`}
                                 >
                                     <td className="py-3 px-3">
@@ -846,14 +874,21 @@ const AdminSpaces = () => {
                                             <button
                                                 onClick={() => handleToggleAvailability(space.id, space.isAvailable)}
                                                 className={`p-1.5 rounded-lg transition-colors ${space.isAvailable && space.isActive
-                                                    ? 'text-amber-600 hover:bg-amber-100 dark:hover:bg-amber-900/30'
-                                                    : 'text-emerald-600 hover:bg-emerald-100 dark:hover:bg-emerald-900/30'
+                                                    ? 'text-emerald-600 hover:bg-emerald-100 dark:hover:bg-emerald-900/30'
+                                                    : 'text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30'
                                                     }`}
                                                 title={space.isAvailable ? 'Marcar como no disponible' : 'Marcar como disponible'}
                                             >
-                                                <span className="material-symbols-outlined text-sm">
-                                                    {space.isAvailable && space.isActive ? 'block' : 'check_circle'}
-                                                </span>
+                                                {/* ✅ Usar emoji o SVG en lugar de Material Symbols */}
+                                                {space.isAvailable && space.isActive ? (
+                                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                                    </svg>
+                                                ) : (
+                                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                                                    </svg>
+                                                )}
                                             </button>
                                             <button
                                                 onClick={() => handleEditClick(space)}
