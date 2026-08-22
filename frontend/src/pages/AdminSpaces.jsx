@@ -446,12 +446,41 @@ const AdminSpaces = () => {
     // Toggle disponibilidad
     const handleToggleAvailability = async (spaceId, currentStatus) => {
         try {
-            await spacesService.update(spaceId, { isAvailable: !currentStatus });
+            // ✅ Obtener el espacio completo
+            const space = allSpaces.find(s => s.id === spaceId);
+            if (!space) {
+                toast.error('Espacio no encontrado');
+                return;
+            }
+
+            // ✅ Crear un objeto con todos los campos requeridos
+            const updateData = {
+                name: space.name,
+                description: space.description || '',
+                type: space.type,
+                capacity: space.capacity,
+                pricePerHour: space.pricePerHour,
+                pricePerDay: space.pricePerDay || null,
+                address: space.address,
+                city: space.city,
+                district: space.district || '',
+                postalCode: space.postalCode || '',
+                country: space.country || 'Sweden',
+                isAvailable: !currentStatus, // ← Solo cambiamos esto
+                isFeatured: space.isFeatured || false,
+                imageUrls: space.imageUrls || ['https://images.unsplash.com/photo-1497366216548-37526070297c?w=800']
+            };
+
+            await spacesService.update(spaceId, updateData);
             toast.success(`Espacio ${!currentStatus ? 'disponible' : 'no disponible'}`);
             await loadSpaces();
         } catch (error) {
             console.error('Error toggling availability:', error);
-            toast.error('Error al cambiar disponibilidad');
+            // ✅ Mostrar mensaje de error más detallado
+            const errorMessage = error.response?.data?.errors
+                ? Object.values(error.response.data.errors).flat().join(', ')
+                : error.response?.data?.message || 'Error al cambiar disponibilidad';
+            toast.error(errorMessage);
         }
     };
 
