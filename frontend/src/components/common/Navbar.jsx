@@ -53,6 +53,9 @@ const Navbar = () => {
                                     <Link to="/admin/spaces" className="text-sm md:text-base text-on-surface-variant dark:text-on-dark-surface-variant hover:text-primary dark:hover:text-primary-dark transition-colors">
                                         Espacios
                                     </Link>
+                                    <Link to="/admin/amenities" className="text-sm md:text-base text-on-surface-variant dark:text-on-dark-surface-variant hover:text-primary dark:hover:text-primary-dark transition-colors">
+                                        Amenidades
+                                    </Link>
                                     <Link to="/admin/users" className="text-sm md:text-base text-on-surface-variant dark:text-on-dark-surface-variant hover:text-primary dark:hover:text-primary-dark transition-colors">
                                         Usuarios
                                     </Link>
