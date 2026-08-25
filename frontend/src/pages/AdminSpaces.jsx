@@ -209,18 +209,11 @@ const AdminSpaces = () => {
         setCurrentPage(1);
     }, [allSpaces, searchTerm, filterType, filterCity, filterStatus, sortBy]);
 
-    // ✅ Obtener espacios paginados con logs para depuración
+    // Obtener espacios paginados
     const paginatedSpaces = useMemo(() => {
-        console.log('🔄 Recalculando paginatedSpaces, filteredSpaces length:', filteredSpaces.length);
         const startIndex = (currentPage - 1) * PAGE_SIZE;
         const endIndex = startIndex + PAGE_SIZE;
-        const result = filteredSpaces.slice(startIndex, endIndex);
-        console.log('📊 Resultado paginado:', result.length, 'espacios');
-        // ✅ Log del estado del primer espacio (para verificar disponibilidad)
-        if (result.length > 0) {
-            console.log('🔍 Primer espacio:', result[0].id, 'isAvailable:', result[0].isAvailable);
-        }
-        return result;
+        return filteredSpaces.slice(startIndex, endIndex);
     }, [filteredSpaces, currentPage]);
 
     // Cambiar página
@@ -370,7 +363,6 @@ const AdminSpaces = () => {
     // ========== EDITAR ESPACIO ==========
     const handleEditClick = (space) => {
         setEditingSpace(space);
-        // Convertir imageUrls string a array, o usar [''] si no hay
         const imageUrls = space.imageUrls && space.imageUrls.length > 0
             ? space.imageUrls
             : [''];
@@ -406,7 +398,6 @@ const AdminSpaces = () => {
     const handleSaveEdit = async () => {
         if (!editingSpace) return;
 
-        // Filtrar URLs vacías
         const imageUrls = editFormData.imageUrls.filter(url => url.trim() !== '');
 
         setEditing(true);
@@ -428,11 +419,16 @@ const AdminSpaces = () => {
                 imageUrls: imageUrls
             };
 
-            await spacesService.update(editingSpace.id, updateData);
+            const updatedSpace = await spacesService.update(editingSpace.id, updateData);
+
+            // ✅ ACTUALIZAR allSpaces con el espacio actualizado
+            setAllSpaces(prev => prev.map(s =>
+                s.id === editingSpace.id ? { ...s, ...updatedSpace } : s
+            ));
+
             toast.success('✅ Espacio actualizado exitosamente');
             setShowEditModal(false);
             setEditingSpace(null);
-            await loadSpaces();
         } catch (error) {
             console.error('Error updating space:', error);
             toast.error(error.response?.data?.message || 'Error al actualizar el espacio');
@@ -448,9 +444,12 @@ const AdminSpaces = () => {
         setDeleting(true);
         try {
             await spacesService.delete(showDeleteModal);
+
+            // ✅ ACTUALIZAR allSpaces eliminando el espacio
+            setAllSpaces(prev => prev.filter(s => s.id !== showDeleteModal));
+
             toast.success('✅ Espacio eliminado exitosamente');
             setShowDeleteModal(null);
-            await loadSpaces();
         } catch (error) {
             console.error('Error deleting space:', error);
             toast.error(error.response?.data?.message || 'Error al eliminar el espacio');
@@ -459,10 +458,8 @@ const AdminSpaces = () => {
         }
     };
 
-    // ========== ✅ TOGGLE AVAILABILITY ==========
-    const handleToggleAvailability = async (spaceId, currentStatus) => {
-        console.log('🔄 Iniciando toggle availability:', { spaceId, currentStatus });
-
+    // ========== ✅ TOGGLE DESTACADO (funciona) ==========
+    const handleToggleFeatured = async (spaceId, currentFeatured) => {
         try {
             const space = allSpaces.find(s => s.id === spaceId);
             if (!space) {
@@ -470,7 +467,58 @@ const AdminSpaces = () => {
                 return;
             }
 
-            const newStatus = !currentStatus;
+            const newStatus = !currentFeatured;
+
+            const updateData = {
+                name: space.name,
+                description: space.description || '',
+                type: space.type,
+                capacity: space.capacity,
+                pricePerHour: space.pricePerHour,
+                pricePerDay: space.pricePerDay || null,
+                address: space.address,
+                city: space.city,
+                district: space.district || '',
+                postalCode: space.postalCode || '',
+                country: space.country || 'Sweden',
+                isAvailable: space.isAvailable,
+                isFeatured: newStatus,
+                imageUrls: space.imageUrls || []
+            };
+
+            const updatedSpace = await spacesService.update(spaceId, updateData);
+
+            // ✅ ACTUALIZAR allSpaces
+            setAllSpaces(prev => prev.map(s =>
+                s.id === spaceId
+                    ? { ...s, ...updatedSpace, isFeatured: newStatus }
+                    : s
+            ));
+
+            toast.success(`Espacio ${newStatus ? 'destacado' : 'no destacado'}`);
+
+        } catch (error) {
+            console.error('❌ Error toggling featured:', error);
+            toast.error(error.response?.data?.message || 'Error al cambiar destacado');
+        }
+    };
+
+    // ========== ✅ TOGGLE DISPONIBILIDAD (misma lógica que destacado) ==========
+    const handleToggleAvailability = async (spaceId, currentAvailable) => {
+        try {
+            const space = allSpaces.find(s => s.id === spaceId);
+            if (!space) {
+                toast.error('Espacio no encontrado');
+                return;
+            }
+
+            // Si el espacio está inactivo, no se puede cambiar disponibilidad
+            if (!space.isActive) {
+                toast.error('No se puede cambiar la disponibilidad de un espacio inactivo');
+                return;
+            }
+
+            const newStatus = !currentAvailable;
 
             const updateData = {
                 name: space.name,
@@ -489,13 +537,12 @@ const AdminSpaces = () => {
                 imageUrls: space.imageUrls || []
             };
 
-            const response = await spacesService.update(spaceId, updateData);
-            console.log('📥 Respuesta del servidor:', response);
+            const updatedSpace = await spacesService.update(spaceId, updateData);
 
-            // ✅ SOLO actualizar allSpaces - el useEffect se encarga del resto
+            // ✅ ACTUALIZAR allSpaces (misma lógica que destacado)
             setAllSpaces(prev => prev.map(s =>
                 s.id === spaceId
-                    ? { ...s, ...response, isAvailable: newStatus }
+                    ? { ...s, ...updatedSpace, isAvailable: newStatus }
                     : s
             ));
 
@@ -503,10 +550,58 @@ const AdminSpaces = () => {
 
         } catch (error) {
             console.error('❌ Error toggling availability:', error);
-            const errorMessage = error.response?.data?.errors
-                ? Object.values(error.response.data.errors).flat().join(', ')
-                : error.response?.data?.message || 'Error al cambiar disponibilidad';
-            toast.error(errorMessage);
+            toast.error(error.response?.data?.message || 'Error al cambiar disponibilidad');
+        }
+    };
+
+    // ========== ✅ TOGGLE ACTIVO (misma lógica que destacado) ==========
+    const handleToggleActive = async (spaceId, currentActive) => {
+        try {
+            const space = allSpaces.find(s => s.id === spaceId);
+            if (!space) {
+                toast.error('Espacio no encontrado');
+                return;
+            }
+
+            const newStatus = !currentActive;
+
+            // ✅ IMPORTANTE: Incluir isActive en el objeto de actualización
+            const updateData = {
+                name: space.name,
+                description: space.description || '',
+                type: space.type,
+                capacity: space.capacity,
+                pricePerHour: space.pricePerHour,
+                pricePerDay: space.pricePerDay || null,
+                address: space.address,
+                city: space.city,
+                district: space.district || '',
+                postalCode: space.postalCode || '',
+                country: space.country || 'Sweden',
+                isAvailable: newStatus ? space.isAvailable : false, // Si se inactiva, se marca como no disponible
+                isFeatured: space.isFeatured || false,
+                isActive: newStatus, // ✅ ENVIAR isActive EXPLÍCITAMENTE
+                imageUrls: space.imageUrls || []
+            };
+
+            console.log('📤 Enviando updateData:', updateData); // Debug
+
+            const updatedSpace = await spacesService.update(spaceId, updateData);
+
+            console.log('📥 Respuesta del servidor:', updatedSpace); // Debug
+
+            // ✅ ACTUALIZAR allSpaces con la respuesta del servidor
+            setAllSpaces(prev => prev.map(s =>
+                s.id === spaceId
+                    ? { ...s, ...updatedSpace, isActive: newStatus, isAvailable: newStatus ? s.isAvailable : false }
+                    : s
+            ));
+
+            toast.success(`Espacio ${newStatus ? 'activado' : 'desactivado'}`);
+
+        } catch (error) {
+            console.error('❌ Error toggling active:', error);
+            toast.error(error.response?.data?.message || 'Error al cambiar estado');
         }
     };
 
@@ -586,7 +681,6 @@ const AdminSpaces = () => {
                         Agregar otra imagen
                     </button>
                 </div>
-                {/* Previsualización de la primera imagen */}
                 {urls[0] && urls[0].trim() !== '' && (
                     <div className="mt-3 p-3 bg-surface-container-low dark:bg-surface-dark-container-low rounded-lg border border-outline-variant dark:border-outline-dark-variant">
                         <p className="text-body-xs text-on-surface-variant dark:text-on-dark-surface-variant mb-2">Previsualización:</p>
@@ -794,7 +888,6 @@ const AdminSpaces = () => {
                     </button>
                 </div>
             ) : (
-                // ✅ Agregar key para forzar re-render cuando filteredSpaces cambie
                 <div className="overflow-x-auto">
                     <table className="w-full border-collapse">
                         <thead>
@@ -806,15 +899,14 @@ const AdminSpaces = () => {
                                 <th className="text-left py-3 px-3 font-label-caps text-label-caps text-on-surface-variant dark:text-on-dark-surface-variant">Precio/h</th>
                                 <th className="text-left py-3 px-3 font-label-caps text-label-caps text-on-surface-variant dark:text-on-dark-surface-variant">Rating</th>
                                 <th className="text-left py-3 px-3 font-label-caps text-label-caps text-on-surface-variant dark:text-on-dark-surface-variant">Estado</th>
-                                <th className="text-left py-3 px-3 font-label-caps text-label-caps text-on-surface-variant dark:text-on-dark-surface-variant">Destacado</th>
+                                <th className="text-left py-3 px-3 font-label-caps text-label-caps text-on-surface-variant dark:text-on-dark-surface-variant text-center">Implementado</th>
                                 <th className="text-left py-3 px-3 font-label-caps text-label-caps text-on-surface-variant dark:text-on-dark-surface-variant">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             {paginatedSpaces.map((space, index) => (
                                 <tr
-                                    // ✅ KEY DINÁMICA - fuerza a React a recrear toda la fila
-                                    key={`${space.id}-avail-${space.isAvailable}-${space.isActive}`}
+                                    key={`${space.id}-${space.isAvailable}-${space.isActive}-${space.isFeatured}`}
                                     className={`border-b border-outline-variant dark:border-outline-dark-variant hover:bg-surface-container-low dark:hover:bg-surface-dark-container-low transition-colors ${index % 2 === 0 ? 'bg-surface-container-lowest dark:bg-surface-dark-container-lowest' : ''}`}
                                 >
                                     <td className="py-3 px-3">
@@ -860,36 +952,84 @@ const AdminSpaces = () => {
                                             {getStatusText(space)}
                                         </span>
                                     </td>
-                                    <td className="py-3 px-3 text-center">
-                                        {space.isFeatured ? (
-                                            <span className="text-primary dark:text-primary-dark">
-                                                <span className="material-symbols-outlined text-sm">star</span>
-                                            </span>
-                                        ) : (
-                                            <span className="text-on-surface-variant/30">-</span>
-                                        )}
+                                    {/* ✅ COLUMNA: Implementado con 3 iconos CLICKEABLES */}
+                                    <td className="py-3 px-3">
+                                        <div className="flex items-center justify-center gap-4">
+                                            {/* 1. Destacado (Featured) */}
+                                            <button
+                                                onClick={() => handleToggleFeatured(space.id, space.isFeatured)}
+                                                className="flex flex-col items-center group transition-transform hover:scale-110"
+                                                title={space.isFeatured ? 'Quitar destacado' : 'Marcar como destacado'}
+                                            >
+                                                {space.isFeatured ? (
+                                                    <span className="text-yellow-500 text-2xl">
+                                                        <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                                                            <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                                                        </svg>
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-gray-300 dark:text-gray-600 text-2xl">
+                                                        <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                                                            <path d="M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z" />
+                                                        </svg>
+                                                    </span>
+                                                )}
+                                                <span className="text-[10px] text-on-surface-variant/60 hidden group-hover:block">
+                                                    {space.isFeatured ? 'Destacado' : 'No destacado'}
+                                                </span>
+                                            </button>
+
+                                            {/* 2. Disponible (Available) */}
+                                            <button
+                                                onClick={() => handleToggleAvailability(space.id, space.isAvailable)}
+                                                className="flex flex-col items-center group transition-transform hover:scale-110"
+                                                title={space.isActive ? (space.isAvailable ? 'Marcar como no disponible' : 'Marcar como disponible') : 'Espacio inactivo'}
+                                            >
+                                                {space.isAvailable && space.isActive ? (
+                                                    <span className="text-emerald-500 text-2xl">
+                                                        <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                                                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+                                                        </svg>
+                                                    </span>
+                                                ) : (
+                                                    <span className={space.isActive ? 'text-red-400 text-2xl' : 'text-gray-300 dark:text-gray-600 text-2xl'}>
+                                                        <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                                                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z" />
+                                                        </svg>
+                                                    </span>
+                                                )}
+                                                <span className="text-[10px] text-on-surface-variant/60 hidden group-hover:block">
+                                                    {space.isAvailable && space.isActive ? 'Disponible' : space.isActive ? 'No disponible' : 'Inactivo'}
+                                                </span>
+                                            </button>
+
+                                            {/* 3. Activo (Active) */}
+                                            <button
+                                                onClick={() => handleToggleActive(space.id, space.isActive)}
+                                                className="flex flex-col items-center group transition-transform hover:scale-110"
+                                                title={space.isActive ? 'Desactivar espacio' : 'Activar espacio'}
+                                            >
+                                                {space.isActive ? (
+                                                    <span className="text-blue-500 text-2xl">
+                                                        <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                                                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+                                                        </svg>
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-gray-300 dark:text-gray-600 text-2xl">
+                                                        <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                                                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-14v8l5.25 3.15L17 12.2l-3.5-2.1V6h-3.5z" />
+                                                        </svg>
+                                                    </span>
+                                                )}
+                                                <span className="text-[10px] text-on-surface-variant/60 hidden group-hover:block">
+                                                    {space.isActive ? 'Activo' : 'Inactivo'}
+                                                </span>
+                                            </button>
+                                        </div>
                                     </td>
                                     <td className="py-3 px-3">
                                         <div className="flex flex-wrap gap-1">
-                                            <button
-                                                onClick={() => handleToggleAvailability(space.id, space.isAvailable)}
-                                                className={`p-1.5 rounded-lg transition-colors ${space.isAvailable && space.isActive
-                                                    ? 'text-emerald-600 hover:bg-emerald-100 dark:hover:bg-emerald-900/30'
-                                                    : 'text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30'
-                                                    }`}
-                                                title={space.isAvailable ? 'Marcar como no disponible' : 'Marcar como disponible'}
-                                            >
-                                                {/* ✅ Usar emoji o SVG en lugar de Material Symbols */}
-                                                {space.isAvailable && space.isActive ? (
-                                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                                    </svg>
-                                                ) : (
-                                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                                                    </svg>
-                                                )}
-                                            </button>
                                             <button
                                                 onClick={() => handleEditClick(space)}
                                                 className="p-1.5 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
@@ -1158,7 +1298,7 @@ const AdminSpaces = () => {
                                 />
                             </div>
 
-                            {/* ✅ CAMPO DE IMÁGENES - CREACIÓN */}
+                            {/* CAMPO DE IMÁGENES - CREACIÓN */}
                             {renderImageFields(createFormData.imageUrls, false)}
 
                             <div className="flex gap-6">
@@ -1388,7 +1528,7 @@ const AdminSpaces = () => {
                                 />
                             </div>
 
-                            {/* ✅ CAMPO DE IMÁGENES - EDICIÓN */}
+                            {/* CAMPO DE IMÁGENES - EDICIÓN */}
                             {renderImageFields(editFormData.imageUrls, true)}
 
                             <div className="flex gap-6">
