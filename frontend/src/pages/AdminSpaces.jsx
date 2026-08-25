@@ -85,6 +85,7 @@ const AdminSpaces = () => {
         country: 'Sweden',
         isAvailable: true,
         isFeatured: false,
+        isActive: true, // ✅ AGREGADO
         amenities: [],
         imageUrls: ['']
     });
@@ -360,7 +361,7 @@ const AdminSpaces = () => {
         }
     };
 
-    // ========== EDITAR ESPACIO ==========
+    // ========== EDITAR ESPACIO - CORREGIDO ==========
     const handleEditClick = (space) => {
         setEditingSpace(space);
         const imageUrls = space.imageUrls && space.imageUrls.length > 0
@@ -381,6 +382,7 @@ const AdminSpaces = () => {
             country: space.country || 'Sweden',
             isAvailable: space.isAvailable !== undefined ? space.isAvailable : true,
             isFeatured: space.isFeatured || false,
+            isActive: space.isActive !== undefined ? space.isActive : true, // ✅ AGREGADO
             amenities: space.amenities || [],
             imageUrls: imageUrls
         });
@@ -416,12 +418,17 @@ const AdminSpaces = () => {
                 country: editFormData.country,
                 isAvailable: editFormData.isAvailable,
                 isFeatured: editFormData.isFeatured,
+                isActive: editFormData.isActive, // ✅ AGREGADO
                 imageUrls: imageUrls
             };
 
+            console.log('📤 Editando espacio - updateData:', updateData);
+
             const updatedSpace = await spacesService.update(editingSpace.id, updateData);
 
-            // ✅ ACTUALIZAR allSpaces con el espacio actualizado
+            console.log('📥 Respuesta edición:', updatedSpace);
+
+            // ✅ ACTUALIZAR allSpaces con la respuesta
             setAllSpaces(prev => prev.map(s =>
                 s.id === editingSpace.id ? { ...s, ...updatedSpace } : s
             ));
@@ -429,6 +436,10 @@ const AdminSpaces = () => {
             toast.success('✅ Espacio actualizado exitosamente');
             setShowEditModal(false);
             setEditingSpace(null);
+
+            // ✅ RECARGAR espacios para asegurar consistencia
+            await loadSpaces();
+
         } catch (error) {
             console.error('Error updating space:', error);
             toast.error(error.response?.data?.message || 'Error al actualizar el espacio');
@@ -444,10 +455,7 @@ const AdminSpaces = () => {
         setDeleting(true);
         try {
             await spacesService.delete(showDeleteModal);
-
-            // ✅ ACTUALIZAR allSpaces eliminando el espacio
             setAllSpaces(prev => prev.filter(s => s.id !== showDeleteModal));
-
             toast.success('✅ Espacio eliminado exitosamente');
             setShowDeleteModal(null);
         } catch (error) {
@@ -458,12 +466,18 @@ const AdminSpaces = () => {
         }
     };
 
-    // ========== ✅ TOGGLE DESTACADO (funciona) ==========
+    // ========== ✅ TOGGLE DESTACADO - SOLO SI ESTÁ ACTIVO ==========
     const handleToggleFeatured = async (spaceId, currentFeatured) => {
         try {
             const space = allSpaces.find(s => s.id === spaceId);
             if (!space) {
                 toast.error('Espacio no encontrado');
+                return;
+            }
+
+            // ❌ NO PERMITIR si el espacio está inactivo
+            if (!space.isActive) {
+                toast.error('No se puede cambiar destacado de un espacio inactivo');
                 return;
             }
 
@@ -483,12 +497,12 @@ const AdminSpaces = () => {
                 country: space.country || 'Sweden',
                 isAvailable: space.isAvailable,
                 isFeatured: newStatus,
+                isActive: space.isActive,
                 imageUrls: space.imageUrls || []
             };
 
             const updatedSpace = await spacesService.update(spaceId, updateData);
 
-            // ✅ ACTUALIZAR allSpaces
             setAllSpaces(prev => prev.map(s =>
                 s.id === spaceId
                     ? { ...s, ...updatedSpace, isFeatured: newStatus }
@@ -503,7 +517,7 @@ const AdminSpaces = () => {
         }
     };
 
-    // ========== ✅ TOGGLE DISPONIBILIDAD (misma lógica que destacado) ==========
+    // ========== ✅ TOGGLE DISPONIBILIDAD - SOLO SI ESTÁ ACTIVO ==========
     const handleToggleAvailability = async (spaceId, currentAvailable) => {
         try {
             const space = allSpaces.find(s => s.id === spaceId);
@@ -512,7 +526,7 @@ const AdminSpaces = () => {
                 return;
             }
 
-            // Si el espacio está inactivo, no se puede cambiar disponibilidad
+            // ❌ NO PERMITIR si el espacio está inactivo
             if (!space.isActive) {
                 toast.error('No se puede cambiar la disponibilidad de un espacio inactivo');
                 return;
@@ -534,12 +548,12 @@ const AdminSpaces = () => {
                 country: space.country || 'Sweden',
                 isAvailable: newStatus,
                 isFeatured: space.isFeatured || false,
+                isActive: space.isActive,
                 imageUrls: space.imageUrls || []
             };
 
             const updatedSpace = await spacesService.update(spaceId, updateData);
 
-            // ✅ ACTUALIZAR allSpaces (misma lógica que destacado)
             setAllSpaces(prev => prev.map(s =>
                 s.id === spaceId
                     ? { ...s, ...updatedSpace, isAvailable: newStatus }
@@ -554,7 +568,7 @@ const AdminSpaces = () => {
         }
     };
 
-    // ========== ✅ TOGGLE ACTIVO (misma lógica que destacado) ==========
+    // ========== ✅ TOGGLE ACTIVO - AL DESACTIVAR, DESMARCAR DESTACADO Y DISPONIBLE ==========
     const handleToggleActive = async (spaceId, currentActive) => {
         try {
             const space = allSpaces.find(s => s.id === spaceId);
@@ -565,6 +579,8 @@ const AdminSpaces = () => {
 
             const newStatus = !currentActive;
 
+            // ✅ Si se DESACTIVA, forzar isFeatured = false y isAvailable = false
+            // ✅ Si se ACTIVA, solo cambiar isActive, mantener los otros valores
             const updateData = {
                 name: space.name,
                 description: space.description || '',
@@ -577,34 +593,32 @@ const AdminSpaces = () => {
                 district: space.district || '',
                 postalCode: space.postalCode || '',
                 country: space.country || 'Sweden',
-                isAvailable: newStatus ? space.isAvailable : false,
-                isFeatured: space.isFeatured || false,
+                isAvailable: newStatus ? space.isAvailable : false, // Si se desactiva → false
+                isFeatured: newStatus ? space.isFeatured : false, // Si se desactiva → false
                 isActive: newStatus,
                 imageUrls: space.imageUrls || []
             };
 
-            console.log('📤 Enviando updateData:', JSON.stringify(updateData, null, 2));
+            console.log('📤 Toggle Active - updateData:', updateData);
 
             const updatedSpace = await spacesService.update(spaceId, updateData);
 
-            console.log('📥 Respuesta del servidor (completa):', JSON.stringify(updatedSpace, null, 2));
-            console.log('📥 isActive recibido:', updatedSpace.isActive);
-            console.log('📥 isAvailable recibido:', updatedSpace.isAvailable);
+            console.log('📥 Respuesta servidor:', updatedSpace);
 
-            // ✅ ACTUALIZAR allSpaces con TODOS los datos de la respuesta
+            // ✅ ACTUALIZAR el estado local con los nuevos valores
             setAllSpaces(prev => prev.map(s =>
                 s.id === spaceId
                     ? {
                         ...s,
                         ...updatedSpace,
-                        // Asegurar que estos campos se actualicen con lo que devuelve el servidor
-                        isActive: updatedSpace.isActive !== undefined ? updatedSpace.isActive : newStatus,
-                        isAvailable: updatedSpace.isAvailable !== undefined ? updatedSpace.isAvailable : (newStatus ? s.isAvailable : false)
+                        isActive: newStatus,
+                        isAvailable: newStatus ? s.isAvailable : false,
+                        isFeatured: newStatus ? s.isFeatured : false
                     }
                     : s
             ));
 
-            toast.success(`Espacio ${newStatus ? 'activado' : 'desactivado'}`);
+            toast.success(`Espacio ${newStatus ? 'activado' : 'desactivado'}${!newStatus ? ' (destacado y disponible desmarcados)' : ''}`);
 
         } catch (error) {
             console.error('❌ Error toggling active:', error);
@@ -959,14 +973,15 @@ const AdminSpaces = () => {
                                             {getStatusText(space)}
                                         </span>
                                     </td>
-                                    {/* ✅ COLUMNA: Implementado con 3 iconos CLICKEABLES */}
+                                    {/* ✅ COLUMNA: Implementado con 3 iconos CLICKEABLES con lógica de restricción */}
                                     <td className="py-3 px-3">
                                         <div className="flex items-center justify-center gap-4">
-                                            {/* 1. Destacado (Featured) */}
+                                            {/* 1. DESTACADO - Solo si está activo */}
                                             <button
                                                 onClick={() => handleToggleFeatured(space.id, space.isFeatured)}
-                                                className="flex flex-col items-center group transition-transform hover:scale-110"
-                                                title={space.isFeatured ? 'Quitar destacado' : 'Marcar como destacado'}
+                                                className={`flex flex-col items-center group transition-transform hover:scale-110 ${!space.isActive ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                title={!space.isActive ? 'No se puede cambiar destacado de un espacio inactivo' : (space.isFeatured ? 'Quitar destacado' : 'Marcar como destacado')}
+                                                disabled={!space.isActive}
                                             >
                                                 {space.isFeatured ? (
                                                     <span className="text-yellow-500 text-2xl">
@@ -975,7 +990,7 @@ const AdminSpaces = () => {
                                                         </svg>
                                                     </span>
                                                 ) : (
-                                                    <span className="text-gray-300 dark:text-gray-600 text-2xl">
+                                                    <span className={space.isActive ? 'text-gray-300 dark:text-gray-600 text-2xl' : 'text-gray-400 dark:text-gray-700 text-2xl'}>
                                                         <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
                                                             <path d="M22 9.24l-7.19-.62L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.63-7.03L22 9.24zM12 15.4l-3.76 2.27 1-4.28-3.32-2.88 4.38-.38L12 6.1l1.71 4.04 4.38.38-3.32 2.88 1 4.28L12 15.4z" />
                                                         </svg>
@@ -983,14 +998,16 @@ const AdminSpaces = () => {
                                                 )}
                                                 <span className="text-[10px] text-on-surface-variant/60 hidden group-hover:block">
                                                     {space.isFeatured ? 'Destacado' : 'No destacado'}
+                                                    {!space.isActive && ' (inactivo)'}
                                                 </span>
                                             </button>
 
-                                            {/* 2. Disponible (Available) */}
+                                            {/* 2. DISPONIBLE - Solo si está activo */}
                                             <button
                                                 onClick={() => handleToggleAvailability(space.id, space.isAvailable)}
-                                                className="flex flex-col items-center group transition-transform hover:scale-110"
-                                                title={space.isActive ? (space.isAvailable ? 'Marcar como no disponible' : 'Marcar como disponible') : 'Espacio inactivo'}
+                                                className={`flex flex-col items-center group transition-transform hover:scale-110 ${!space.isActive ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                title={!space.isActive ? 'No se puede cambiar disponibilidad de un espacio inactivo' : (space.isAvailable ? 'Marcar como no disponible' : 'Marcar como disponible')}
+                                                disabled={!space.isActive}
                                             >
                                                 {space.isAvailable && space.isActive ? (
                                                     <span className="text-emerald-500 text-2xl">
@@ -999,7 +1016,7 @@ const AdminSpaces = () => {
                                                         </svg>
                                                     </span>
                                                 ) : (
-                                                    <span className={space.isActive ? 'text-red-400 text-2xl' : 'text-gray-300 dark:text-gray-600 text-2xl'}>
+                                                    <span className={space.isActive ? 'text-red-400 text-2xl' : 'text-gray-400 dark:text-gray-700 text-2xl'}>
                                                         <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
                                                             <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z" />
                                                         </svg>
@@ -1010,11 +1027,11 @@ const AdminSpaces = () => {
                                                 </span>
                                             </button>
 
-                                            {/* 3. Activo (Active) */}
+                                            {/* 3. ACTIVO - Siempre clickeable */}
                                             <button
                                                 onClick={() => handleToggleActive(space.id, space.isActive)}
                                                 className="flex flex-col items-center group transition-transform hover:scale-110"
-                                                title={space.isActive ? 'Desactivar espacio' : 'Activar espacio'}
+                                                title={space.isActive ? 'Desactivar espacio (desmarcará destacado y disponible)' : 'Activar espacio'}
                                             >
                                                 {space.isActive ? (
                                                     <span className="text-blue-500 text-2xl">
@@ -1023,7 +1040,7 @@ const AdminSpaces = () => {
                                                         </svg>
                                                     </span>
                                                 ) : (
-                                                    <span className="text-gray-300 dark:text-gray-600 text-2xl">
+                                                    <span className="text-gray-400 dark:text-gray-700 text-2xl">
                                                         <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
                                                             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-14v8l5.25 3.15L17 12.2l-3.5-2.1V6h-3.5z" />
                                                         </svg>
@@ -1538,28 +1555,75 @@ const AdminSpaces = () => {
                             {/* CAMPO DE IMÁGENES - EDICIÓN */}
                             {renderImageFields(editFormData.imageUrls, true)}
 
-                            <div className="flex gap-6">
-                                <div className="flex items-center gap-2">
+                            {/* ✅ CHECKBOXES: Disponible, Destacado y ACTIVO */}
+                            <div className="grid grid-cols-3 gap-4 pt-2">
+                                <div className="flex items-center gap-2 p-3 bg-surface-container-low rounded-lg border border-outline-variant">
                                     <input
                                         type="checkbox"
                                         name="isAvailable"
                                         checked={editFormData.isAvailable}
                                         onChange={handleEditChange}
-                                        className="w-4 h-4 accent-primary"
+                                        className="w-4 h-4 accent-emerald-600"
+                                        disabled={!editFormData.isActive}
                                     />
-                                    <label className="text-body-sm text-on-surface dark:text-on-dark-surface">Disponible</label>
+                                    <label className={`text-body-sm ${!editFormData.isActive ? 'text-on-surface-variant/50' : 'text-on-surface'}`}>
+                                        Disponible
+                                    </label>
+                                    {!editFormData.isActive && (
+                                        <span className="text-body-xs text-on-surface-variant/50">(inactivo)</span>
+                                    )}
                                 </div>
-                                <div className="flex items-center gap-2">
+
+                                <div className="flex items-center gap-2 p-3 bg-surface-container-low rounded-lg border border-outline-variant">
                                     <input
                                         type="checkbox"
                                         name="isFeatured"
                                         checked={editFormData.isFeatured}
                                         onChange={handleEditChange}
-                                        className="w-4 h-4 accent-primary"
+                                        className="w-4 h-4 accent-yellow-500"
+                                        disabled={!editFormData.isActive}
                                     />
-                                    <label className="text-body-sm text-on-surface dark:text-on-dark-surface">Destacado</label>
+                                    <label className={`text-body-sm ${!editFormData.isActive ? 'text-on-surface-variant/50' : 'text-on-surface'}`}>
+                                        Destacado
+                                    </label>
+                                    {!editFormData.isActive && (
+                                        <span className="text-body-xs text-on-surface-variant/50">(inactivo)</span>
+                                    )}
+                                </div>
+
+                                <div className="flex items-center gap-2 p-3 bg-surface-container-low rounded-lg border border-outline-variant">
+                                    <input
+                                        type="checkbox"
+                                        name="isActive"
+                                        checked={editFormData.isActive}
+                                        onChange={handleEditChange}
+                                        className="w-4 h-4 accent-blue-600"
+                                    />
+                                    <label className="text-body-sm text-on-surface">
+                                        Activo
+                                    </label>
                                 </div>
                             </div>
+
+                            {/* ✅ Mensaje informativo sobre la desactivación */}
+                            {editFormData.isActive === false && (
+                                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                                    <p className="text-body-sm text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                                        <span className="material-symbols-outlined text-sm">info</span>
+                                        El espacio está inactivo. Al activarlo, los campos "Disponible" y "Destacado" se mantendrán como están.
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* ✅ Mensaje informativo sobre activación */}
+                            {editFormData.isActive === true && editFormData.isAvailable === false && (
+                                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                                    <p className="text-body-sm text-blue-700 dark:text-blue-400 flex items-center gap-2">
+                                        <span className="material-symbols-outlined text-sm">info</span>
+                                        El espacio está activo pero no disponible. Puedes marcarlo como disponible en cualquier momento.
+                                    </p>
+                                </div>
+                            )}
 
                             <div className="flex gap-3 pt-4 border-t border-outline-variant dark:border-outline-dark-variant">
                                 <button
