@@ -53,16 +53,7 @@ namespace KineticWorkspace.API.Repositories.Implementations
 
         public virtual async Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate)
         {
-            try
-            {
-                return await _dbSet.AnyAsync(predicate);
-            }
-            catch (Exception ex)
-            {
-                // Log error
-                Console.WriteLine($"Error en ExistsAsync: {ex.Message}");
-                throw;
-            }
+            return await _dbSet.AnyAsync(predicate);
         }
 
         public virtual async Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null)
