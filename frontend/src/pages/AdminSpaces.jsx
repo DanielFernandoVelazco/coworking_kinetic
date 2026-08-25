@@ -565,7 +565,6 @@ const AdminSpaces = () => {
 
             const newStatus = !currentActive;
 
-            // ✅ IMPORTANTE: Incluir isActive en el objeto de actualización
             const updateData = {
                 name: space.name,
                 description: space.description || '',
@@ -578,22 +577,30 @@ const AdminSpaces = () => {
                 district: space.district || '',
                 postalCode: space.postalCode || '',
                 country: space.country || 'Sweden',
-                isAvailable: newStatus ? space.isAvailable : false, // Si se inactiva, se marca como no disponible
+                isAvailable: newStatus ? space.isAvailable : false,
                 isFeatured: space.isFeatured || false,
-                isActive: newStatus, // ✅ ENVIAR isActive EXPLÍCITAMENTE
+                isActive: newStatus,
                 imageUrls: space.imageUrls || []
             };
 
-            console.log('📤 Enviando updateData:', updateData); // Debug
+            console.log('📤 Enviando updateData:', JSON.stringify(updateData, null, 2));
 
             const updatedSpace = await spacesService.update(spaceId, updateData);
 
-            console.log('📥 Respuesta del servidor:', updatedSpace); // Debug
+            console.log('📥 Respuesta del servidor (completa):', JSON.stringify(updatedSpace, null, 2));
+            console.log('📥 isActive recibido:', updatedSpace.isActive);
+            console.log('📥 isAvailable recibido:', updatedSpace.isAvailable);
 
-            // ✅ ACTUALIZAR allSpaces con la respuesta del servidor
+            // ✅ ACTUALIZAR allSpaces con TODOS los datos de la respuesta
             setAllSpaces(prev => prev.map(s =>
                 s.id === spaceId
-                    ? { ...s, ...updatedSpace, isActive: newStatus, isAvailable: newStatus ? s.isAvailable : false }
+                    ? {
+                        ...s,
+                        ...updatedSpace,
+                        // Asegurar que estos campos se actualicen con lo que devuelve el servidor
+                        isActive: updatedSpace.isActive !== undefined ? updatedSpace.isActive : newStatus,
+                        isAvailable: updatedSpace.isAvailable !== undefined ? updatedSpace.isAvailable : (newStatus ? s.isAvailable : false)
+                    }
                     : s
             ));
 
