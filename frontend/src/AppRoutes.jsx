@@ -21,6 +21,7 @@ import AdminReservations from './pages/AdminReservations';
 import AdminUsers from './pages/AdminUsers';
 import AdminSpaces from './pages/AdminSpaces';
 import NotFound from './pages/NotFound';
+import AdminAmenities from './pages/AdminAmenities';
 
 // Loading Component
 const LoadingSpinner = () => (
@@ -131,6 +132,12 @@ const AppRoutes = () => {
                 {/* Redirecciones */}
                 <Route path="admin/reservas" element={
                     <Navigate to="/admin/reservations" replace />
+                } />
+
+                <Route path="admin/amenities" element={
+                    <AdminRoute>
+                        <AdminAmenities />
+                    </AdminRoute>
                 } />
             </Route>
 
