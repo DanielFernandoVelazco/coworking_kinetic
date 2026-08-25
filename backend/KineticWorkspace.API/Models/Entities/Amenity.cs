@@ -1,3 +1,4 @@
+// backend/KineticWorkspace.API/Models/Entities/Amenity.cs
 using System.ComponentModel.DataAnnotations;
 
 namespace KineticWorkspace.API.Models.Entities
@@ -18,6 +19,9 @@ namespace KineticWorkspace.API.Models.Entities
         public string? Icon { get; set; } // Material icon name
 
         public bool IsActive { get; set; } = true;
+
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime? UpdatedAt { get; set; }
 
         public virtual ICollection<Space> Spaces { get; set; } = new List<Space>();
     }
