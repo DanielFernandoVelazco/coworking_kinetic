@@ -34,7 +34,13 @@ namespace KineticWorkspace.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al obtener todas las amenidades");
-                return StatusCode(500, new { message = "Error interno del servidor" });
+                // ✅ Devolver error detallado en desarrollo
+                return StatusCode(500, new
+                {
+                    message = "Error interno del servidor",
+                    detail = ex.Message,
+                    stackTrace = ex.StackTrace
+                });
             }
         }
 
