@@ -1,5 +1,6 @@
 // backend/KineticWorkspace.API/Mappings/MappingProfile.cs
 using AutoMapper;
+using KineticWorkspace.API.Models.DTOs.Amenities;
 using KineticWorkspace.API.Models.DTOs.Auth;
 using KineticWorkspace.API.Models.DTOs.Reservations;
 using KineticWorkspace.API.Models.DTOs.Spaces;
@@ -26,6 +27,7 @@ namespace KineticWorkspace.API.Mappings
                 .ForMember(dest => dest.Amenities,
                     opt => opt.MapFrom(src => src.Amenities.Select(a => a.Name).ToList()))
                 .ForMember(dest => dest.ImageUrls, opt => opt.Ignore())
+                .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsActive))
                 .AfterMap((src, dest) =>
                 {
                     dest.ImageUrls = string.IsNullOrEmpty(src.ImageUrls)
@@ -34,14 +36,14 @@ namespace KineticWorkspace.API.Mappings
                 });
 
             CreateMap<SpaceRequestDto, Space>()
-    .ForMember(dest => dest.Amenities, opt => opt.Ignore())
-    .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsActive))
-    .AfterMap((src, dest) =>
-    {
-        dest.ImageUrls = src.ImageUrls != null && src.ImageUrls.Any()
-            ? string.Join(",", src.ImageUrls)
-            : null;
-    });
+                .ForMember(dest => dest.Amenities, opt => opt.Ignore())
+                .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsActive))
+                .AfterMap((src, dest) =>
+                {
+                    dest.ImageUrls = src.ImageUrls != null && src.ImageUrls.Any()
+                        ? string.Join(",", src.ImageUrls)
+                        : null;
+                });
 
             // ==================== RESERVATION MAPPINGS ====================
             CreateMap<Reservation, ReservationResponseDto>()
@@ -72,6 +74,12 @@ namespace KineticWorkspace.API.Mappings
             // ==================== USER MAPPINGS ====================
             CreateMap<UserUpdateDto, User>()
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+
+            // ==================== AMENITY MAPPINGS ====================
+            CreateMap<AmenityRequestDto, Amenity>()
+                .ForMember(dest => dest.Spaces, opt => opt.Ignore());
+
+            CreateMap<Amenity, AmenityResponseDto>();
         }
     }
 }
