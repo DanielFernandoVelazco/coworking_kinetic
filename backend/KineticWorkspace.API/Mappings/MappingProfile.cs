@@ -34,13 +34,14 @@ namespace KineticWorkspace.API.Mappings
                 });
 
             CreateMap<SpaceRequestDto, Space>()
-                .ForMember(dest => dest.Amenities, opt => opt.Ignore())
-                .AfterMap((src, dest) =>
-                {
-                    dest.ImageUrls = src.ImageUrls != null && src.ImageUrls.Any()
-                        ? string.Join(",", src.ImageUrls)
-                        : null;
-                });
+    .ForMember(dest => dest.Amenities, opt => opt.Ignore())
+    .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsActive))
+    .AfterMap((src, dest) =>
+    {
+        dest.ImageUrls = src.ImageUrls != null && src.ImageUrls.Any()
+            ? string.Join(",", src.ImageUrls)
+            : null;
+    });
 
             // ==================== RESERVATION MAPPINGS ====================
             CreateMap<Reservation, ReservationResponseDto>()
