@@ -14,7 +14,7 @@ namespace KineticWorkspace.API.Repositories.Implementations
 
         public async Task<IEnumerable<Amenity>> GetActiveAmenitiesAsync()
         {
-            return await _dbSet
+            return await _context.Amenities
                 .Where(a => a.IsActive)
                 .OrderBy(a => a.Name)
                 .ToListAsync();
@@ -22,14 +22,14 @@ namespace KineticWorkspace.API.Repositories.Implementations
 
         public async Task<Amenity?> GetAmenityWithSpacesAsync(int id)
         {
-            return await _dbSet
+            return await _context.Amenities
                 .Include(a => a.Spaces)
                 .FirstOrDefaultAsync(a => a.Id == id);
         }
 
         public async Task<bool> IsAmenityInUseAsync(int id)
         {
-            return await _dbSet
+            return await _context.Amenities
                 .Where(a => a.Id == id)
                 .SelectMany(a => a.Spaces)
                 .AnyAsync();
@@ -38,10 +38,10 @@ namespace KineticWorkspace.API.Repositories.Implementations
         public async Task<IEnumerable<Amenity>> SearchAmenitiesAsync(string searchTerm)
         {
             if (string.IsNullOrWhiteSpace(searchTerm))
-                return await _dbSet.OrderBy(a => a.Name).ToListAsync();
+                return await _context.Amenities.OrderBy(a => a.Name).ToListAsync();
 
             var searchLower = searchTerm.ToLower();
-            return await _dbSet
+            return await _context.Amenities
                 .Where(a => a.Name.ToLower().Contains(searchLower) ||
                            (a.Description != null && a.Description.ToLower().Contains(searchLower)))
                 .OrderBy(a => a.Name)
@@ -50,7 +50,7 @@ namespace KineticWorkspace.API.Repositories.Implementations
 
         public async Task<int> GetSpacesCountAsync(int amenityId)
         {
-            return await _dbSet
+            return await _context.Amenities
                 .Where(a => a.Id == amenityId)
                 .SelectMany(a => a.Spaces)
                 .CountAsync();
