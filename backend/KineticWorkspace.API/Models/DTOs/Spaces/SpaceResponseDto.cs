@@ -1,3 +1,5 @@
+// backend/KineticWorkspace.API/Models/DTOs/Spaces/SpaceResponseDto.cs
+
 namespace KineticWorkspace.API.Models.DTOs.Spaces
 {
     public class SpaceResponseDto
@@ -17,6 +19,7 @@ namespace KineticWorkspace.API.Models.DTOs.Spaces
         public List<string>? ImageUrls { get; set; }
         public bool IsAvailable { get; set; }
         public bool IsFeatured { get; set; }
+        public bool IsActive { get; set; }
         public double? Latitude { get; set; }
         public double? Longitude { get; set; }
         public double AverageRating { get; set; }
