@@ -1,3 +1,4 @@
+// backend/KineticWorkspace.API/Models/DTOs/Spaces/SpaceRequestDto.cs
 using System.ComponentModel.DataAnnotations;
 
 namespace KineticWorkspace.API.Models.DTOs.Spaces
@@ -48,6 +49,8 @@ namespace KineticWorkspace.API.Models.DTOs.Spaces
         public List<string>? ImageUrls { get; set; }
         public bool IsAvailable { get; set; } = true;
         public bool IsFeatured { get; set; } = false;
+        public bool IsActive { get; set; } = true;
+
         public double? Latitude { get; set; }
         public double? Longitude { get; set; }
         public List<int>? AmenityIds { get; set; }
