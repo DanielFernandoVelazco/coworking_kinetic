@@ -44,7 +44,7 @@ const AdminSpaces = () => {
     const [filterStatus, setFilterStatus] = useState('all');
     const [sortBy, setSortBy] = useState('name_asc');
 
-    // ✅ Amenidades disponibles
+    // Amenidades disponibles
     const [allAmenities, setAllAmenities] = useState([]);
 
     // Paginación
@@ -289,17 +289,19 @@ const AdminSpaces = () => {
 
     // ========== MANEJO DE AMENIDADES ==========
     const handleAmenityToggle = (amenityId, isEdit = false) => {
+        if (!amenityId) return;
+
         if (isEdit) {
             const currentAmenities = editFormData.amenities || [];
             if (currentAmenities.includes(amenityId)) {
                 setEditFormData({
                     ...editFormData,
-                    amenities: currentAmenities.filter(id => id !== amenityId)
+                    amenities: currentAmenities.filter(id => id !== amenityId && id !== null)
                 });
             } else {
                 setEditFormData({
                     ...editFormData,
-                    amenities: [...currentAmenities, amenityId]
+                    amenities: [...currentAmenities, amenityId].filter(id => id !== null)
                 });
             }
         } else {
@@ -307,12 +309,12 @@ const AdminSpaces = () => {
             if (currentAmenities.includes(amenityId)) {
                 setCreateFormData({
                     ...createFormData,
-                    amenities: currentAmenities.filter(id => id !== amenityId)
+                    amenities: currentAmenities.filter(id => id !== amenityId && id !== null)
                 });
             } else {
                 setCreateFormData({
                     ...createFormData,
-                    amenities: [...currentAmenities, amenityId]
+                    amenities: [...currentAmenities, amenityId].filter(id => id !== null)
                 });
             }
         }
@@ -350,7 +352,7 @@ const AdminSpaces = () => {
 
     const handleCreateSubmit = async () => {
         // Validaciones básicas
-        if (!createFormData.name.trim()) {
+        if (!createFormData.name?.trim()) {
             toast.error('El nombre es obligatorio');
             return;
         }
@@ -358,45 +360,52 @@ const AdminSpaces = () => {
             toast.error('El tipo es obligatorio');
             return;
         }
-        if (createFormData.capacity < 1) {
+        if (parseInt(createFormData.capacity) < 1) {
             toast.error('La capacidad debe ser al menos 1');
             return;
         }
-        if (createFormData.pricePerHour <= 0) {
+        if (parseFloat(createFormData.pricePerHour) <= 0) {
             toast.error('El precio por hora debe ser mayor a 0');
             return;
         }
-        if (!createFormData.city.trim()) {
+        if (!createFormData.city?.trim()) {
             toast.error('La ciudad es obligatoria');
             return;
         }
-        if (!createFormData.address.trim()) {
+        if (!createFormData.address?.trim()) {
             toast.error('La dirección es obligatoria');
             return;
         }
 
+        // Filtrar amenityIds (eliminar null, undefined y vacíos)
+        const amenityIds = (createFormData.amenities || [])
+            .filter(id => id !== null && id !== undefined && id !== '' && !isNaN(id))
+            .map(id => parseInt(id));
+
         // Filtrar URLs vacías
-        const imageUrls = createFormData.imageUrls.filter(url => url.trim() !== '');
+        const imageUrls = createFormData.imageUrls.filter(url => url?.trim() !== '');
 
         setCreating(true);
         try {
             const newSpace = {
-                name: createFormData.name,
-                description: createFormData.description,
-                type: createFormData.type,
-                capacity: parseInt(createFormData.capacity),
-                pricePerHour: parseFloat(createFormData.pricePerHour),
+                name: createFormData.name?.trim() || '',
+                description: createFormData.description?.trim() || '',
+                type: createFormData.type || 'Premium Office',
+                capacity: parseInt(createFormData.capacity) || 1,
+                pricePerHour: parseFloat(createFormData.pricePerHour) || 0,
                 pricePerDay: createFormData.pricePerDay ? parseFloat(createFormData.pricePerDay) : null,
-                address: createFormData.address,
-                city: createFormData.city,
-                district: createFormData.district,
-                postalCode: createFormData.postalCode,
-                country: createFormData.country,
-                isAvailable: createFormData.isAvailable,
-                isFeatured: createFormData.isFeatured,
-                amenityIds: createFormData.amenities || [],
+                address: createFormData.address?.trim() || '',
+                city: createFormData.city?.trim() || '',
+                district: createFormData.district?.trim() || '',
+                postalCode: createFormData.postalCode?.trim() || '',
+                country: createFormData.country?.trim() || 'Sweden',
+                isAvailable: createFormData.isAvailable !== undefined ? createFormData.isAvailable : true,
+                isFeatured: createFormData.isFeatured || false,
+                amenityIds: amenityIds,
                 imageUrls: imageUrls.length > 0 ? imageUrls : ['https://images.unsplash.com/photo-1497366216548-37526070297c?w=800']
             };
+
+            console.log('📤 Creando espacio:', JSON.stringify(newSpace, null, 2));
 
             await spacesService.create(newSpace);
             toast.success('✅ Espacio creado exitosamente');
@@ -404,7 +413,15 @@ const AdminSpaces = () => {
             await loadSpaces();
         } catch (error) {
             console.error('Error creating space:', error);
-            toast.error(error.response?.data?.message || 'Error al crear el espacio');
+            const errorData = error.response?.data;
+            if (errorData?.errors) {
+                const errorMessages = Object.entries(errorData.errors)
+                    .map(([field, messages]) => `${field}: ${messages.join(', ')}`)
+                    .join('\n');
+                toast.error(`Error de validación:\n${errorMessages}`);
+            } else {
+                toast.error(error.response?.data?.message || 'Error al crear el espacio');
+            }
         } finally {
             setCreating(false);
         }
@@ -452,39 +469,52 @@ const AdminSpaces = () => {
     const handleSaveEdit = async () => {
         if (!editingSpace) return;
 
-        const imageUrls = editFormData.imageUrls.filter(url => url.trim() !== '');
+        const imageUrls = editFormData.imageUrls.filter(url => url?.trim() !== '');
+
+        // Filtrar amenityIds (eliminar null, undefined y vacíos)
+        const amenityIds = (editFormData.amenities || [])
+            .filter(id => id !== null && id !== undefined && id !== '' && !isNaN(id))
+            .map(id => parseInt(id));
+
+        const updateData = {
+            name: editFormData.name?.trim() || editingSpace.name || '',
+            description: editFormData.description?.trim() || editingSpace.description || '',
+            type: editFormData.type || editingSpace.type || '',
+            capacity: parseInt(editFormData.capacity) || 1,
+            pricePerHour: parseFloat(editFormData.pricePerHour) || 0,
+            pricePerDay: editFormData.pricePerDay ? parseFloat(editFormData.pricePerDay) : null,
+            address: editFormData.address?.trim() || editingSpace.address || '',
+            city: editFormData.city?.trim() || editingSpace.city || '',
+            district: editFormData.district?.trim() || editingSpace.district || '',
+            postalCode: editFormData.postalCode?.trim() || editingSpace.postalCode || '',
+            country: editFormData.country?.trim() || editingSpace.country || 'Sweden',
+            isAvailable: editFormData.isAvailable !== undefined ? editFormData.isAvailable : true,
+            isFeatured: editFormData.isFeatured || false,
+            isActive: editFormData.isActive !== undefined ? editFormData.isActive : true,
+            amenityIds: amenityIds,
+            imageUrls: imageUrls.length > 0 ? imageUrls : (editingSpace.imageUrls || [])
+        };
+
+        console.log('📤 Actualizando espacio:', JSON.stringify(updateData, null, 2));
 
         setEditing(true);
         try {
-            const updateData = {
-                name: editFormData.name,
-                description: editFormData.description,
-                type: editFormData.type,
-                capacity: parseInt(editFormData.capacity),
-                pricePerHour: parseFloat(editFormData.pricePerHour),
-                pricePerDay: editFormData.pricePerDay ? parseFloat(editFormData.pricePerDay) : null,
-                address: editFormData.address,
-                city: editFormData.city,
-                district: editFormData.district,
-                postalCode: editFormData.postalCode,
-                country: editFormData.country,
-                isAvailable: editFormData.isAvailable,
-                isFeatured: editFormData.isFeatured,
-                isActive: editFormData.isActive,
-                amenityIds: editFormData.amenities || [],
-                imageUrls: imageUrls
-            };
-
             await spacesService.update(editingSpace.id, updateData);
-
             toast.success('✅ Espacio actualizado exitosamente');
             setShowEditModal(false);
             setEditingSpace(null);
             await loadSpaces();
-
         } catch (error) {
             console.error('Error updating space:', error);
-            toast.error(error.response?.data?.message || 'Error al actualizar el espacio');
+            const errorData = error.response?.data;
+            if (errorData?.errors) {
+                const errorMessages = Object.entries(errorData.errors)
+                    .map(([field, messages]) => `${field}: ${messages.join(', ')}`)
+                    .join('\n');
+                toast.error(`Error de validación:\n${errorMessages}`);
+            } else {
+                toast.error(error.response?.data?.message || 'Error al actualizar el espacio');
+            }
         } finally {
             setEditing(false);
         }
@@ -809,7 +839,7 @@ const AdminSpaces = () => {
                 </div>
                 <div className="flex justify-between mt-1">
                     <span className="text-body-xs text-on-surface-variant dark:text-on-dark-surface-variant">
-                        {selectedAmenities.length} amenidades seleccionadas
+                        {selectedAmenities.filter(id => id !== null && id !== undefined && !isNaN(id)).length} amenidades seleccionadas
                     </span>
                     <Link to="/admin/amenities" className="text-body-xs text-primary dark:text-primary-dark hover:underline">
                         Gestionar amenidades →
@@ -1417,10 +1447,10 @@ const AdminSpaces = () => {
                                 />
                             </div>
 
-                            {/* ✅ CAMPO DE AMENIDADES - CREACIÓN */}
+                            {/* CAMPO DE AMENIDADES - CREACIÓN */}
                             {renderAmenitySelector(false)}
 
-                            {/* ✅ CAMPO DE IMÁGENES - CREACIÓN */}
+                            {/* CAMPO DE IMÁGENES - CREACIÓN */}
                             {renderImageFields(createFormData.imageUrls, false)}
 
                             <div className="flex gap-6">
@@ -1650,13 +1680,13 @@ const AdminSpaces = () => {
                                 />
                             </div>
 
-                            {/* ✅ CAMPO DE AMENIDADES - EDICIÓN */}
+                            {/* CAMPO DE AMENIDADES - EDICIÓN */}
                             {renderAmenitySelector(true)}
 
-                            {/* ✅ CAMPO DE IMÁGENES - EDICIÓN */}
+                            {/* CAMPO DE IMÁGENES - EDICIÓN */}
                             {renderImageFields(editFormData.imageUrls, true)}
 
-                            {/* ✅ CHECKBOXES: Disponible, Destacado y ACTIVO */}
+                            {/* CHECKBOXES: Disponible, Destacado y ACTIVO */}
                             <div className="grid grid-cols-3 gap-4 pt-2">
                                 <div className="flex items-center gap-2 p-3 bg-surface-container-low rounded-lg border border-outline-variant">
                                     <input
@@ -1706,7 +1736,7 @@ const AdminSpaces = () => {
                                 </div>
                             </div>
 
-                            {/* ✅ Mensaje informativo sobre la desactivación */}
+                            {/* Mensaje informativo sobre la desactivación */}
                             {editFormData.isActive === false && (
                                 <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
                                     <p className="text-body-sm text-amber-700 dark:text-amber-400 flex items-center gap-2">
@@ -1716,7 +1746,7 @@ const AdminSpaces = () => {
                                 </div>
                             )}
 
-                            {/* ✅ Mensaje informativo sobre activación */}
+                            {/* Mensaje informativo sobre activación */}
                             {editFormData.isActive === true && editFormData.isAvailable === false && (
                                 <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                                     <p className="text-body-sm text-blue-700 dark:text-blue-400 flex items-center gap-2">
