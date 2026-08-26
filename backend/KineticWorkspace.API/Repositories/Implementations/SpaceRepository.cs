@@ -1,3 +1,4 @@
+// backend/KineticWorkspace.API/Repositories/Implementations/SpaceRepository.cs
 using Microsoft.EntityFrameworkCore;
 using KineticWorkspace.API.Data;
 using KineticWorkspace.API.Models.Entities;
@@ -11,11 +12,21 @@ namespace KineticWorkspace.API.Repositories.Implementations
         {
         }
 
+        // ✅ SOBRESCRIBIR GetAllAsync PARA INCLUIR AMENITIES
+        public override async Task<IEnumerable<Space>> GetAllAsync()
+        {
+            return await _dbSet
+                .Include(s => s.Amenities)
+                .Include(s => s.Reviews)
+                .Where(s => s.DeletedAt == null)
+                .ToListAsync();
+        }
+
         public async Task<IEnumerable<Space>> GetAvailableSpacesAsync(DateTime startTime, DateTime endTime)
         {
-            // ✅ OPTIMIZADO: Usar NOT EXISTS en SQL en lugar de traer todos los espacios
             var spaces = await _dbSet
                 .Include(s => s.Reviews)
+                .Include(s => s.Amenities)
                 .Where(s => s.IsActive && s.IsAvailable && s.DeletedAt == null)
                 .Where(s => !s.Reservations.Any(r =>
                     r.Status != "Cancelled" &&
@@ -23,7 +34,7 @@ namespace KineticWorkspace.API.Repositories.Implementations
                     ((startTime >= r.StartTime && startTime < r.EndTime) ||
                      (endTime > r.StartTime && endTime <= r.EndTime) ||
                      (startTime <= r.StartTime && endTime >= r.EndTime))))
-                .OrderByDescending(s => s.Reviews.Average(r => r.Rating)) // ✅ FIX: Calcular en SQL
+                .OrderByDescending(s => s.Reviews.Average(r => r.Rating))
                 .ToListAsync();
 
             return spaces;
@@ -33,8 +44,9 @@ namespace KineticWorkspace.API.Repositories.Implementations
         {
             return await _dbSet
                 .Include(s => s.Reviews)
+                .Include(s => s.Amenities)
                 .Where(s => s.Type == type && s.IsActive && s.DeletedAt == null)
-                .OrderByDescending(s => s.Reviews.Average(r => r.Rating)) // ✅ FIX
+                .OrderByDescending(s => s.Reviews.Average(r => r.Rating))
                 .ToListAsync();
         }
 
@@ -42,8 +54,9 @@ namespace KineticWorkspace.API.Repositories.Implementations
         {
             return await _dbSet
                 .Include(s => s.Reviews)
+                .Include(s => s.Amenities)
                 .Where(s => s.IsFeatured && s.IsActive && s.IsAvailable && s.DeletedAt == null)
-                .OrderByDescending(s => s.Reviews.Average(r => r.Rating)) // ✅ FIX
+                .OrderByDescending(s => s.Reviews.Average(r => r.Rating))
                 .Take(limit)
                 .ToListAsync();
         }
@@ -52,8 +65,9 @@ namespace KineticWorkspace.API.Repositories.Implementations
         {
             return await _dbSet
                 .Include(s => s.Reviews)
+                .Include(s => s.Amenities)
                 .Where(s => s.City == city && s.IsActive && s.DeletedAt == null)
-                .OrderByDescending(s => s.Reviews.Average(r => r.Rating)) // ✅ FIX
+                .OrderByDescending(s => s.Reviews.Average(r => r.Rating))
                 .ToListAsync();
         }
 
@@ -94,6 +108,7 @@ namespace KineticWorkspace.API.Repositories.Implementations
         {
             var query = _dbSet
                 .Include(s => s.Reviews)
+                .Include(s => s.Amenities)
                 .Where(s => s.IsActive && s.DeletedAt == null);
 
             if (!string.IsNullOrWhiteSpace(searchTerm))
@@ -116,7 +131,7 @@ namespace KineticWorkspace.API.Repositories.Implementations
             }
 
             return await query
-                .OrderByDescending(s => s.Reviews.Average(r => r.Rating)) // ✅ FIX
+                .OrderByDescending(s => s.Reviews.Average(r => r.Rating))
                 .ToListAsync();
         }
 
@@ -134,9 +149,10 @@ namespace KineticWorkspace.API.Repositories.Implementations
         {
             return await _dbSet
                 .Include(s => s.Reviews)
+                .Include(s => s.Amenities)
                 .Where(s => s.IsActive && s.DeletedAt == null)
                 .Where(s => s.Reviews.Any())
-                .OrderByDescending(s => s.Reviews.Average(r => r.Rating)) // ✅ FIX
+                .OrderByDescending(s => s.Reviews.Average(r => r.Rating))
                 .Take(limit)
                 .ToListAsync();
         }
