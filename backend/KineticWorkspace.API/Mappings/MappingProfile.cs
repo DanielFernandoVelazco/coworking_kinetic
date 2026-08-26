@@ -35,6 +35,7 @@ namespace KineticWorkspace.API.Mappings
                         : src.ImageUrls.Split(',').ToList();
                 });
 
+            // ✅ Mapeo de SpaceRequestDto a Space (ignoramos Amenities porque se asignan manualmente)
             CreateMap<SpaceRequestDto, Space>()
                 .ForMember(dest => dest.Amenities, opt => opt.Ignore())
                 .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsActive))
