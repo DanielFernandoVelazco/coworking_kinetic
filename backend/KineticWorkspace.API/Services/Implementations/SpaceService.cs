@@ -1,6 +1,6 @@
 // backend/KineticWorkspace.API/Services/Implementations/SpaceService.cs
-using KineticWorkspace.API.Data; // ✅ AGREGAR
 using AutoMapper;
+using KineticWorkspace.API.Data;
 using KineticWorkspace.API.Models.DTOs.Spaces;
 using KineticWorkspace.API.Models.Entities;
 using KineticWorkspace.API.Repositories.Interfaces;
@@ -14,18 +14,18 @@ namespace KineticWorkspace.API.Services.Implementations
         private readonly ISpaceRepository _spaceRepository;
         private readonly IMapper _mapper;
         private readonly ILogger<SpaceService> _logger;
-        private readonly ApplicationDbContext _context; // ✅ AGREGAR
+        private readonly ApplicationDbContext _context;
 
         public SpaceService(
             ISpaceRepository spaceRepository,
             IMapper mapper,
             ILogger<SpaceService> logger,
-            ApplicationDbContext context) // ✅ AGREGAR
+            ApplicationDbContext context)
         {
             _spaceRepository = spaceRepository;
             _mapper = mapper;
             _logger = logger;
-            _context = context; // ✅ AGREGAR
+            _context = context;
         }
 
         public async Task<IEnumerable<SpaceResponseDto>> GetAllSpacesAsync(int page = 1, int pageSize = 20)
@@ -55,7 +55,6 @@ namespace KineticWorkspace.API.Services.Implementations
             return space != null ? _mapper.Map<SpaceResponseDto>(space) : null;
         }
 
-        // ✅ CREAR ESPACIO CON AMENIDADES
         public async Task<SpaceResponseDto> CreateSpaceAsync(SpaceRequestDto request)
         {
             var space = _mapper.Map<Space>(request);
@@ -66,7 +65,7 @@ namespace KineticWorkspace.API.Services.Implementations
                 space.ImageUrls = string.Join(",", request.ImageUrls);
             }
 
-            // ✅ AGREGAR AMENIDADES
+            // Agregar Amenidades
             if (request.AmenityIds != null && request.AmenityIds.Any())
             {
                 var amenities = await _context.Amenities
@@ -82,7 +81,6 @@ namespace KineticWorkspace.API.Services.Implementations
             return _mapper.Map<SpaceResponseDto>(createdSpace);
         }
 
-        // ✅ ACTUALIZAR ESPACIO CON AMENIDADES
         public async Task<SpaceResponseDto?> UpdateSpaceAsync(int id, SpaceRequestDto request)
         {
             var existingSpace = await _spaceRepository.GetSpaceWithDetailsAsync(id);
@@ -96,7 +94,7 @@ namespace KineticWorkspace.API.Services.Implementations
                 existingSpace.ImageUrls = string.Join(",", request.ImageUrls);
             }
 
-            // ✅ ACTUALIZAR AMENIDADES
+            // Actualizar Amenidades
             if (request.AmenityIds != null)
             {
                 var amenities = await _context.Amenities
