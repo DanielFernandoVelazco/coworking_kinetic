@@ -9,7 +9,7 @@ import toast from 'react-hot-toast';
 const SpaceDetails = () => {
     const { id } = useParams();
     const { user, isAuthenticated } = useAuth();
-    const { addToCart } = useCart(); // ✅ Usar el carrito
+    const { addToCart } = useCart();
     const navigate = useNavigate();
 
     const [space, setSpace] = useState(null);
@@ -47,7 +47,6 @@ const SpaceDetails = () => {
         });
     };
 
-    // ✅ Cambiado de handleBooking a handleAddToCart
     const handleAddToCart = async (e) => {
         e.preventDefault();
 
@@ -75,7 +74,6 @@ const SpaceDetails = () => {
         try {
             const numberOfGuests = parseInt(bookingData.numberOfGuests) || 1;
 
-            // ✅ Agregar al carrito usando el contexto
             const result = await addToCart(
                 parseInt(id),
                 startTime.toISOString(),
@@ -86,14 +84,12 @@ const SpaceDetails = () => {
 
             if (result.success) {
                 setShowBooking(false);
-                // Resetear formulario
                 setBookingData({
                     startTime: '',
                     endTime: '',
                     notes: '',
                     numberOfGuests: 1
                 });
-                // ✅ Navegar al carrito
                 navigate('/cart');
             }
         } catch (error) {
@@ -105,9 +101,24 @@ const SpaceDetails = () => {
         }
     };
 
+    // Función para obtener el ícono de una amenidad
+    const getAmenityIcon = (amenity) => {
+        if (typeof amenity === 'object' && amenity.icon) {
+            return amenity.icon;
+        }
+        return 'check_circle';
+    };
+
+    const getAmenityName = (amenity) => {
+        if (typeof amenity === 'object') {
+            return amenity.name;
+        }
+        return amenity;
+    };
+
     if (loading) {
         return (
-            <div className="max-w-container-max mx-auto px-margin-desktop py-12">
+            <div className="max-w-container-max mx-auto px-4 md:px-10 py-12">
                 <div className="animate-pulse">
                     <div className="h-96 bg-surface-container-low rounded-xl mb-8"></div>
                     <div className="h-8 bg-surface-container-low w-1/3 rounded mb-4"></div>
@@ -124,7 +135,7 @@ const SpaceDetails = () => {
 
     if (!space) {
         return (
-            <div className="max-w-container-max mx-auto px-margin-desktop py-12 text-center">
+            <div className="max-w-container-max mx-auto px-4 md:px-10 py-12 text-center">
                 <h2 className="font-headline-lg text-headline-lg text-on-surface mb-4">Space not found</h2>
                 <Link to="/catalog" className="text-primary hover:underline">
                     Back to catalog
@@ -134,18 +145,18 @@ const SpaceDetails = () => {
     }
 
     return (
-        <div className="max-w-container-max mx-auto px-margin-desktop py-12">
+        <div className="max-w-container-max mx-auto px-4 md:px-10 py-12 transition-colors duration-300">
             {/* Breadcrumb */}
-            <div className="text-body-sm text-on-surface-variant mb-6">
-                <Link to="/" className="hover:text-primary">Home</Link>
+            <div className="text-body-sm text-on-surface-variant dark:text-on-dark-surface-variant mb-6">
+                <Link to="/" className="hover:text-primary dark:hover:text-primary-dark">Home</Link>
                 {' / '}
-                <Link to="/catalog" className="hover:text-primary">Catalog</Link>
+                <Link to="/catalog" className="hover:text-primary dark:hover:text-primary-dark">Catalog</Link>
                 {' / '}
-                <span className="text-primary">{space.name}</span>
+                <span className="text-primary dark:text-primary-dark">{space.name}</span>
             </div>
 
             {/* Imagen Principal */}
-            <div className="rounded-xl overflow-hidden border border-outline-variant mb-8 h-96 bg-surface-container-low">
+            <div className="rounded-xl overflow-hidden border border-outline-variant dark:border-outline-dark-variant mb-8 h-96 bg-surface-container-low dark:bg-surface-dark-container-low">
                 {space.imageUrls?.[0] ? (
                     <img
                         src={space.imageUrls[0]}
@@ -153,13 +164,18 @@ const SpaceDetails = () => {
                         className="w-full h-full object-cover"
                         onError={(e) => {
                             e.target.style.display = 'none';
-                            e.target.parentElement.innerHTML = '<div class="flex items-center justify-center h-full text-on-surface-variant"><span class="material-symbols-outlined text-6xl">meeting_room</span></div>';
+                            e.target.parentElement.innerHTML = '<div class="flex items-center justify-center h-full text-on-surface-variant dark:text-on-dark-surface-variant"><span class="material-symbols-outlined text-6xl">meeting_room</span></div>';
                         }}
                     />
                 ) : (
-                    <div className="flex items-center justify-center h-full text-on-surface-variant">
+                    <div className="flex items-center justify-center h-full text-on-surface-variant dark:text-on-dark-surface-variant">
                         <span className="material-symbols-outlined text-6xl">meeting_room</span>
                     </div>
+                )}
+                {space.isFeatured && (
+                    <span className="absolute top-4 left-4 bg-primary dark:bg-primary-dark text-on-primary px-3 py-1 font-label-caps text-label-caps rounded-full">
+                        Featured
+                    </span>
                 )}
             </div>
 
@@ -168,21 +184,21 @@ const SpaceDetails = () => {
                 <div className="lg:col-span-2">
                     <div className="flex justify-between items-start mb-4">
                         <div>
-                            <h1 className="font-headline-lg text-headline-lg text-on-surface mb-2">
+                            <h1 className="font-headline-lg text-headline-lg text-on-surface dark:text-on-dark-surface mb-2">
                                 {space.name}
                             </h1>
-                            <p className="text-body-md text-on-surface-variant flex items-center gap-2">
+                            <p className="text-body-md text-on-surface-variant dark:text-on-dark-surface-variant flex items-center gap-2">
                                 <span className="material-symbols-outlined text-sm">location_on</span>
                                 {space.address}, {space.city}, {space.country}
                             </p>
                         </div>
                         <div className="text-right">
-                            <span className="font-headline-xl text-primary">
+                            <span className="font-headline-xl text-primary dark:text-primary-dark">
                                 ${space.pricePerHour}
                             </span>
-                            <span className="text-body-sm text-on-surface-variant"> /hour</span>
+                            <span className="text-body-sm text-on-surface-variant dark:text-on-dark-surface-variant"> /hour</span>
                             {space.pricePerDay && (
-                                <div className="text-body-sm text-on-surface-variant">
+                                <div className="text-body-sm text-on-surface-variant dark:text-on-dark-surface-variant">
                                     ${space.pricePerDay} /day
                                 </div>
                             )}
@@ -190,56 +206,72 @@ const SpaceDetails = () => {
                     </div>
 
                     <div className="flex flex-wrap gap-2 mb-6">
-                        <span className="px-3 py-1 bg-surface-container-low rounded-full text-body-sm">
+                        <span className="px-3 py-1 bg-surface-container-low dark:bg-surface-dark-container-low rounded-full text-body-sm text-on-surface dark:text-on-dark-surface">
                             👥 {space.capacity} people
                         </span>
-                        <span className="px-3 py-1 bg-surface-container-low rounded-full text-body-sm">
+                        <span className="px-3 py-1 bg-surface-container-low dark:bg-surface-dark-container-low rounded-full text-body-sm text-on-surface dark:text-on-dark-surface">
                             ⭐ {space.averageRating?.toFixed(1) || 'No reviews'}
                         </span>
-                        <span className="px-3 py-1 bg-surface-container-low rounded-full text-body-sm">
+                        <span className="px-3 py-1 bg-surface-container-low dark:bg-surface-dark-container-low rounded-full text-body-sm text-on-surface dark:text-on-dark-surface">
                             {space.type}
                         </span>
                         {space.isFeatured && (
-                            <span className="px-3 py-1 bg-primary text-on-primary rounded-full text-body-sm">
+                            <span className="px-3 py-1 bg-primary dark:bg-primary-dark text-on-primary rounded-full text-body-sm">
                                 Featured
                             </span>
                         )}
                     </div>
 
                     <div className="mb-8">
-                        <h3 className="font-headline-md text-headline-md mb-3">Description</h3>
-                        <p className="text-body-md text-on-surface-variant leading-relaxed">
+                        <h3 className="font-headline-md text-headline-md text-on-surface dark:text-on-dark-surface mb-3">Description</h3>
+                        <p className="text-body-md text-on-surface-variant dark:text-on-dark-surface-variant leading-relaxed">
                             {space.description || 'No description available.'}
                         </p>
                     </div>
 
-                    {/* Amenidades */}
+                    {/* ✅ AMENIDADES - Mejoradas con íconos */}
                     {space.amenities?.length > 0 && (
                         <div className="mb-8">
-                            <h3 className="font-headline-md text-headline-md mb-3">Amenities</h3>
-                            <div className="flex flex-wrap gap-2">
-                                {space.amenities.map((amenity, index) => (
-                                    <span key={index} className="px-3 py-2 bg-surface-container-low rounded-lg text-body-sm border border-outline-variant">
-                                        {amenity}
-                                    </span>
-                                ))}
+                            <h3 className="font-headline-md text-headline-md text-on-surface dark:text-on-dark-surface mb-3 flex items-center gap-2">
+                                <span className="material-symbols-outlined text-primary dark:text-primary-dark">stars</span>
+                                Amenities
+                            </h3>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                {space.amenities.map((amenity, index) => {
+                                    const icon = getAmenityIcon(amenity);
+                                    const name = getAmenityName(amenity);
+                                    return (
+                                        <span
+                                            key={index}
+                                            className="px-3 py-2 bg-surface-container-low dark:bg-surface-dark-container-low rounded-lg text-body-sm border border-outline-variant dark:border-outline-dark-variant flex items-center gap-2 text-on-surface dark:text-on-dark-surface"
+                                        >
+                                            <span className="material-symbols-outlined text-primary dark:text-primary-dark text-sm">
+                                                {icon}
+                                            </span>
+                                            {name}
+                                        </span>
+                                    );
+                                })}
                             </div>
+                            <p className="text-body-xs text-on-surface-variant dark:text-on-dark-surface-variant mt-2">
+                                {space.amenities.length} amenities available
+                            </p>
                         </div>
                     )}
                 </div>
 
-                {/* Sidebar - Carrito */}
+                {/* Sidebar - Reserva */}
                 <div className="lg:col-span-1">
-                    <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant sticky top-24">
-                        <h3 className="font-headline-md text-headline-md mb-4 flex items-center gap-2">
-                            <span className="material-symbols-outlined text-primary">shopping_cart</span>
+                    <div className="bg-surface-container-lowest dark:bg-surface-dark-container-lowest p-6 rounded-xl border border-outline-variant dark:border-outline-dark-variant sticky top-24 transition-colors duration-300">
+                        <h3 className="font-headline-md text-headline-md text-on-surface dark:text-on-dark-surface mb-4 flex items-center gap-2">
+                            <span className="material-symbols-outlined text-primary dark:text-primary-dark">shopping_cart</span>
                             Reserve This Space
                         </h3>
 
                         {!showBooking ? (
                             <button
                                 onClick={() => setShowBooking(true)}
-                                className="w-full bg-primary text-on-primary py-3 rounded-lg font-semibold hover:bg-secondary transition-colors flex items-center justify-center gap-2"
+                                className="w-full bg-primary dark:bg-primary-dark text-on-primary py-3 rounded-lg font-semibold hover:bg-secondary transition-colors flex items-center justify-center gap-2"
                             >
                                 <span className="material-symbols-outlined">shopping_cart</span>
                                 Add to Cart
@@ -248,7 +280,7 @@ const SpaceDetails = () => {
                             <form onSubmit={handleAddToCart}>
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="font-label-caps text-label-caps text-on-surface-variant block mb-1">
+                                        <label className="font-label-caps text-label-caps text-on-surface-variant dark:text-on-dark-surface-variant block mb-1">
                                             START DATE & TIME
                                         </label>
                                         <input
@@ -257,11 +289,11 @@ const SpaceDetails = () => {
                                             value={bookingData.startTime}
                                             onChange={handleBookingChange}
                                             required
-                                            className="w-full bg-surface-container-low border-b border-outline-variant px-0 py-2 text-on-surface transition-all focus:border-primary focus:outline-none"
+                                            className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-2 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none"
                                         />
                                     </div>
                                     <div>
-                                        <label className="font-label-caps text-label-caps text-on-surface-variant block mb-1">
+                                        <label className="font-label-caps text-label-caps text-on-surface-variant dark:text-on-dark-surface-variant block mb-1">
                                             END DATE & TIME
                                         </label>
                                         <input
@@ -270,11 +302,11 @@ const SpaceDetails = () => {
                                             value={bookingData.endTime}
                                             onChange={handleBookingChange}
                                             required
-                                            className="w-full bg-surface-container-low border-b border-outline-variant px-0 py-2 text-on-surface transition-all focus:border-primary focus:outline-none"
+                                            className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-2 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none"
                                         />
                                     </div>
                                     <div>
-                                        <label className="font-label-caps text-label-caps text-on-surface-variant block mb-1">
+                                        <label className="font-label-caps text-label-caps text-on-surface-variant dark:text-on-dark-surface-variant block mb-1">
                                             NUMBER OF GUESTS
                                         </label>
                                         <input
@@ -284,14 +316,14 @@ const SpaceDetails = () => {
                                             onChange={handleBookingChange}
                                             min="1"
                                             max={space.capacity}
-                                            className="w-full bg-surface-container-low border-b border-outline-variant px-0 py-2 text-on-surface transition-all focus:border-primary focus:outline-none"
+                                            className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-2 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none"
                                         />
-                                        <span className="text-body-xs text-on-surface-variant">
+                                        <span className="text-body-xs text-on-surface-variant dark:text-on-dark-surface-variant">
                                             Max: {space.capacity} people
                                         </span>
                                     </div>
                                     <div>
-                                        <label className="font-label-caps text-label-caps text-on-surface-variant block mb-1">
+                                        <label className="font-label-caps text-label-caps text-on-surface-variant dark:text-on-dark-surface-variant block mb-1">
                                             NOTES (Optional)
                                         </label>
                                         <textarea
@@ -299,7 +331,7 @@ const SpaceDetails = () => {
                                             value={bookingData.notes}
                                             onChange={handleBookingChange}
                                             rows="2"
-                                            className="w-full bg-surface-container-low border-b border-outline-variant px-0 py-2 text-on-surface transition-all focus:border-primary focus:outline-none"
+                                            className="w-full bg-surface-container-low dark:bg-surface-dark-container-low border-b border-outline-variant dark:border-outline-dark-variant px-0 py-2 text-on-surface dark:text-on-dark-surface transition-all focus:border-primary dark:focus:border-primary-dark focus:outline-none"
                                             placeholder="Special requests..."
                                         />
                                     </div>
@@ -307,7 +339,7 @@ const SpaceDetails = () => {
                                         <button
                                             type="submit"
                                             disabled={bookingLoading}
-                                            className="flex-1 bg-primary text-on-primary py-2 rounded-lg font-semibold hover:bg-secondary transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                                            className="flex-1 bg-primary dark:bg-primary-dark text-on-primary py-2 rounded-lg font-semibold hover:bg-secondary transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                                         >
                                             {bookingLoading ? (
                                                 <>
@@ -324,7 +356,7 @@ const SpaceDetails = () => {
                                         <button
                                             type="button"
                                             onClick={() => setShowBooking(false)}
-                                            className="px-4 py-2 border border-outline-variant rounded-lg hover:bg-surface-container-low transition-colors"
+                                            className="px-4 py-2 border border-outline-variant dark:border-outline-dark-variant rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-dark-container-low transition-colors text-on-surface dark:text-on-dark-surface"
                                         >
                                             Cancel
                                         </button>
@@ -333,13 +365,12 @@ const SpaceDetails = () => {
                             </form>
                         )}
 
-                        <div className="mt-4 text-center text-body-sm text-on-surface-variant">
-                            <span className="material-symbols-outlined text-sm align-middle">security</span>
+                        <div className="mt-4 text-center text-body-sm text-on-surface-variant dark:text-on-dark-surface-variant">
+                            <span className="material-symbols-outlined text-sm align-middle mr-1">security</span>
                             Secure booking • Pay after confirmation
                         </div>
 
-                        {/* ✅ Info adicional del carrito */}
-                        <div className="mt-4 pt-4 border-t border-outline-variant text-center text-body-xs text-on-surface-variant">
+                        <div className="mt-4 pt-4 border-t border-outline-variant dark:border-outline-dark-variant text-center text-body-xs text-on-surface-variant dark:text-on-dark-surface-variant">
                             <p className="flex items-center justify-center gap-1">
                                 <span className="material-symbols-outlined text-sm">info</span>
                                 Your reservation will be held for 30 minutes
