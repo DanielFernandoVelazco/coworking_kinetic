@@ -53,6 +53,6 @@ namespace KineticWorkspace.API.Models.DTOs.Spaces
 
         public double? Latitude { get; set; }
         public double? Longitude { get; set; }
-        public List<int>? AmenityIds { get; set; }
+        public List<int>? AmenityIds { get; set; } // ✅ NUEVO: IDs de amenidades seleccionadas
     }
 }
