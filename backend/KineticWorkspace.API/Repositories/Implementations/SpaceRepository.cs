@@ -12,7 +12,7 @@ namespace KineticWorkspace.API.Repositories.Implementations
         {
         }
 
-        // ✅ SOBRESCRIBIR GetAllAsync PARA INCLUIR AMENITIES
+        // Sobrescribir GetAllAsync para incluir Amenities y Reviews
         public override async Task<IEnumerable<Space>> GetAllAsync()
         {
             return await _dbSet
