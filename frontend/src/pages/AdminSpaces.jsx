@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import spacesService from '../api/spaces.service';
+import amenitiesService from '../api/amenities.service';
 import toast from 'react-hot-toast';
 
 const PAGE_SIZE = 15;
@@ -43,6 +44,9 @@ const AdminSpaces = () => {
     const [filterStatus, setFilterStatus] = useState('all');
     const [sortBy, setSortBy] = useState('name_asc');
 
+    // ✅ Amenidades disponibles
+    const [allAmenities, setAllAmenities] = useState([]);
+
     // Paginación
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -65,6 +69,7 @@ const AdminSpaces = () => {
         country: 'Sweden',
         isAvailable: true,
         isFeatured: false,
+        amenities: [],
         imageUrls: ['']
     });
 
@@ -85,7 +90,7 @@ const AdminSpaces = () => {
         country: 'Sweden',
         isAvailable: true,
         isFeatured: false,
-        isActive: true, // ✅ AGREGADO
+        isActive: true,
         amenities: [],
         imageUrls: ['']
     });
@@ -118,6 +123,16 @@ const AdminSpaces = () => {
         }
     }, [isAuthenticated, user, navigate]);
 
+    // Cargar amenidades disponibles
+    const loadAmenities = useCallback(async () => {
+        try {
+            const data = await amenitiesService.getAll();
+            setAllAmenities(data || []);
+        } catch (error) {
+            console.error('Error loading amenities:', error);
+        }
+    }, []);
+
     // Cargar espacios
     const loadSpaces = useCallback(async () => {
         setLoading(true);
@@ -137,7 +152,8 @@ const AdminSpaces = () => {
 
     useEffect(() => {
         loadSpaces();
-    }, [loadSpaces]);
+        loadAmenities();
+    }, [loadSpaces, loadAmenities]);
 
     // Aplicar filtros y ordenamiento
     useEffect(() => {
@@ -271,6 +287,37 @@ const AdminSpaces = () => {
         }
     };
 
+    // ========== MANEJO DE AMENIDADES ==========
+    const handleAmenityToggle = (amenityId, isEdit = false) => {
+        if (isEdit) {
+            const currentAmenities = editFormData.amenities || [];
+            if (currentAmenities.includes(amenityId)) {
+                setEditFormData({
+                    ...editFormData,
+                    amenities: currentAmenities.filter(id => id !== amenityId)
+                });
+            } else {
+                setEditFormData({
+                    ...editFormData,
+                    amenities: [...currentAmenities, amenityId]
+                });
+            }
+        } else {
+            const currentAmenities = createFormData.amenities || [];
+            if (currentAmenities.includes(amenityId)) {
+                setCreateFormData({
+                    ...createFormData,
+                    amenities: currentAmenities.filter(id => id !== amenityId)
+                });
+            } else {
+                setCreateFormData({
+                    ...createFormData,
+                    amenities: [...currentAmenities, amenityId]
+                });
+            }
+        }
+    };
+
     // ========== CREAR ESPACIO ==========
     const handleCreateClick = () => {
         setCreateFormData({
@@ -287,6 +334,7 @@ const AdminSpaces = () => {
             country: 'Sweden',
             isAvailable: true,
             isFeatured: false,
+            amenities: [],
             imageUrls: ['']
         });
         setShowCreateModal(true);
@@ -346,6 +394,7 @@ const AdminSpaces = () => {
                 country: createFormData.country,
                 isAvailable: createFormData.isAvailable,
                 isFeatured: createFormData.isFeatured,
+                amenityIds: createFormData.amenities || [],
                 imageUrls: imageUrls.length > 0 ? imageUrls : ['https://images.unsplash.com/photo-1497366216548-37526070297c?w=800']
             };
 
@@ -361,12 +410,15 @@ const AdminSpaces = () => {
         }
     };
 
-    // ========== EDITAR ESPACIO - CORREGIDO ==========
+    // ========== EDITAR ESPACIO ==========
     const handleEditClick = (space) => {
         setEditingSpace(space);
         const imageUrls = space.imageUrls && space.imageUrls.length > 0
             ? space.imageUrls
             : [''];
+
+        // Extraer IDs de amenidades del espacio
+        const amenityIds = space.amenities?.map(a => a.id) || [];
 
         setEditFormData({
             name: space.name || '',
@@ -382,8 +434,8 @@ const AdminSpaces = () => {
             country: space.country || 'Sweden',
             isAvailable: space.isAvailable !== undefined ? space.isAvailable : true,
             isFeatured: space.isFeatured || false,
-            isActive: space.isActive !== undefined ? space.isActive : true, // ✅ AGREGADO
-            amenities: space.amenities || [],
+            isActive: space.isActive !== undefined ? space.isActive : true,
+            amenities: amenityIds,
             imageUrls: imageUrls
         });
         setShowEditModal(true);
@@ -418,26 +470,16 @@ const AdminSpaces = () => {
                 country: editFormData.country,
                 isAvailable: editFormData.isAvailable,
                 isFeatured: editFormData.isFeatured,
-                isActive: editFormData.isActive, // ✅ AGREGADO
+                isActive: editFormData.isActive,
+                amenityIds: editFormData.amenities || [],
                 imageUrls: imageUrls
             };
 
-            console.log('📤 Editando espacio - updateData:', updateData);
-
-            const updatedSpace = await spacesService.update(editingSpace.id, updateData);
-
-            console.log('📥 Respuesta edición:', updatedSpace);
-
-            // ✅ ACTUALIZAR allSpaces con la respuesta
-            setAllSpaces(prev => prev.map(s =>
-                s.id === editingSpace.id ? { ...s, ...updatedSpace } : s
-            ));
+            await spacesService.update(editingSpace.id, updateData);
 
             toast.success('✅ Espacio actualizado exitosamente');
             setShowEditModal(false);
             setEditingSpace(null);
-
-            // ✅ RECARGAR espacios para asegurar consistencia
             await loadSpaces();
 
         } catch (error) {
@@ -466,7 +508,7 @@ const AdminSpaces = () => {
         }
     };
 
-    // ========== ✅ TOGGLE DESTACADO - SOLO SI ESTÁ ACTIVO ==========
+    // ========== TOGGLE DESTACADO ==========
     const handleToggleFeatured = async (spaceId, currentFeatured) => {
         try {
             const space = allSpaces.find(s => s.id === spaceId);
@@ -475,7 +517,6 @@ const AdminSpaces = () => {
                 return;
             }
 
-            // ❌ NO PERMITIR si el espacio está inactivo
             if (!space.isActive) {
                 toast.error('No se puede cambiar destacado de un espacio inactivo');
                 return;
@@ -498,26 +539,27 @@ const AdminSpaces = () => {
                 isAvailable: space.isAvailable,
                 isFeatured: newStatus,
                 isActive: space.isActive,
+                amenityIds: space.amenities?.map(a => a.id) || [],
                 imageUrls: space.imageUrls || []
             };
 
-            const updatedSpace = await spacesService.update(spaceId, updateData);
+            await spacesService.update(spaceId, updateData);
 
             setAllSpaces(prev => prev.map(s =>
                 s.id === spaceId
-                    ? { ...s, ...updatedSpace, isFeatured: newStatus }
+                    ? { ...s, ...updateData, isFeatured: newStatus }
                     : s
             ));
 
             toast.success(`Espacio ${newStatus ? 'destacado' : 'no destacado'}`);
 
         } catch (error) {
-            console.error('❌ Error toggling featured:', error);
+            console.error('Error toggling featured:', error);
             toast.error(error.response?.data?.message || 'Error al cambiar destacado');
         }
     };
 
-    // ========== ✅ TOGGLE DISPONIBILIDAD - SOLO SI ESTÁ ACTIVO ==========
+    // ========== TOGGLE DISPONIBILIDAD ==========
     const handleToggleAvailability = async (spaceId, currentAvailable) => {
         try {
             const space = allSpaces.find(s => s.id === spaceId);
@@ -526,7 +568,6 @@ const AdminSpaces = () => {
                 return;
             }
 
-            // ❌ NO PERMITIR si el espacio está inactivo
             if (!space.isActive) {
                 toast.error('No se puede cambiar la disponibilidad de un espacio inactivo');
                 return;
@@ -549,26 +590,27 @@ const AdminSpaces = () => {
                 isAvailable: newStatus,
                 isFeatured: space.isFeatured || false,
                 isActive: space.isActive,
+                amenityIds: space.amenities?.map(a => a.id) || [],
                 imageUrls: space.imageUrls || []
             };
 
-            const updatedSpace = await spacesService.update(spaceId, updateData);
+            await spacesService.update(spaceId, updateData);
 
             setAllSpaces(prev => prev.map(s =>
                 s.id === spaceId
-                    ? { ...s, ...updatedSpace, isAvailable: newStatus }
+                    ? { ...s, ...updateData, isAvailable: newStatus }
                     : s
             ));
 
             toast.success(`Espacio ${newStatus ? 'disponible' : 'no disponible'}`);
 
         } catch (error) {
-            console.error('❌ Error toggling availability:', error);
+            console.error('Error toggling availability:', error);
             toast.error(error.response?.data?.message || 'Error al cambiar disponibilidad');
         }
     };
 
-    // ========== ✅ TOGGLE ACTIVO - AL DESACTIVAR, DESMARCAR DESTACADO Y DISPONIBLE ==========
+    // ========== TOGGLE ACTIVO ==========
     const handleToggleActive = async (spaceId, currentActive) => {
         try {
             const space = allSpaces.find(s => s.id === spaceId);
@@ -579,8 +621,6 @@ const AdminSpaces = () => {
 
             const newStatus = !currentActive;
 
-            // ✅ Si se DESACTIVA, forzar isFeatured = false y isAvailable = false
-            // ✅ Si se ACTIVA, solo cambiar isActive, mantener los otros valores
             const updateData = {
                 name: space.name,
                 description: space.description || '',
@@ -593,24 +633,20 @@ const AdminSpaces = () => {
                 district: space.district || '',
                 postalCode: space.postalCode || '',
                 country: space.country || 'Sweden',
-                isAvailable: newStatus ? space.isAvailable : false, // Si se desactiva → false
-                isFeatured: newStatus ? space.isFeatured : false, // Si se desactiva → false
+                isAvailable: newStatus ? space.isAvailable : false,
+                isFeatured: newStatus ? space.isFeatured : false,
                 isActive: newStatus,
+                amenityIds: space.amenities?.map(a => a.id) || [],
                 imageUrls: space.imageUrls || []
             };
 
-            console.log('📤 Toggle Active - updateData:', updateData);
+            await spacesService.update(spaceId, updateData);
 
-            const updatedSpace = await spacesService.update(spaceId, updateData);
-
-            console.log('📥 Respuesta servidor:', updatedSpace);
-
-            // ✅ ACTUALIZAR el estado local con los nuevos valores
             setAllSpaces(prev => prev.map(s =>
                 s.id === spaceId
                     ? {
                         ...s,
-                        ...updatedSpace,
+                        ...updateData,
                         isActive: newStatus,
                         isAvailable: newStatus ? s.isAvailable : false,
                         isFeatured: newStatus ? s.isFeatured : false
@@ -621,7 +657,7 @@ const AdminSpaces = () => {
             toast.success(`Espacio ${newStatus ? 'activado' : 'desactivado'}${!newStatus ? ' (destacado y disponible desmarcados)' : ''}`);
 
         } catch (error) {
-            console.error('❌ Error toggling active:', error);
+            console.error('Error toggling active:', error);
             toast.error(error.response?.data?.message || 'Error al cambiar estado');
         }
     };
@@ -716,6 +752,69 @@ const AdminSpaces = () => {
                         />
                     </div>
                 )}
+            </div>
+        );
+    };
+
+    // ========== RENDERIZAR SELECTOR DE AMENIDADES ==========
+    const renderAmenitySelector = (isEdit = false) => {
+        if (allAmenities.length === 0) {
+            return (
+                <div className="p-3 bg-surface-container-low dark:bg-surface-dark-container-low rounded-lg border border-outline-variant dark:border-outline-dark-variant text-center">
+                    <p className="text-body-sm text-on-surface-variant dark:text-on-dark-surface-variant">
+                        No hay amenidades disponibles.{' '}
+                        <Link to="/admin/amenities" className="text-primary dark:text-primary-dark hover:underline">
+                            Crear una amenidad
+                        </Link>
+                    </p>
+                </div>
+            );
+        }
+
+        const selectedAmenities = isEdit ? (editFormData.amenities || []) : (createFormData.amenities || []);
+
+        return (
+            <div>
+                <label className="font-label-caps text-label-caps text-on-surface-variant dark:text-on-dark-surface-variant block mb-2">
+                    Amenidades
+                    <span className="text-body-xs text-on-surface-variant dark:text-on-dark-surface-variant ml-2">
+                        (Selecciona las que ofrece este espacio)
+                    </span>
+                </label>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 p-3 bg-surface-container-low dark:bg-surface-dark-container-low rounded-lg border border-outline-variant dark:border-outline-dark-variant max-h-48 overflow-y-auto">
+                    {allAmenities.map(amenity => (
+                        <label
+                            key={amenity.id}
+                            className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all ${selectedAmenities.includes(amenity.id)
+                                ? 'bg-primary/10 dark:bg-primary-dark/10 border border-primary dark:border-primary-dark'
+                                : 'hover:bg-surface-container-high dark:hover:bg-surface-dark-container-high border border-transparent'
+                                }`}
+                        >
+                            <input
+                                type="checkbox"
+                                checked={selectedAmenities.includes(amenity.id)}
+                                onChange={() => handleAmenityToggle(amenity.id, isEdit)}
+                                className="w-4 h-4 accent-primary dark:accent-primary-dark"
+                            />
+                            {amenity.icon && (
+                                <span className="material-symbols-outlined text-sm text-primary dark:text-primary-dark">
+                                    {amenity.icon}
+                                </span>
+                            )}
+                            <span className="text-body-sm text-on-surface dark:text-on-dark-surface truncate">
+                                {amenity.name}
+                            </span>
+                        </label>
+                    ))}
+                </div>
+                <div className="flex justify-between mt-1">
+                    <span className="text-body-xs text-on-surface-variant dark:text-on-dark-surface-variant">
+                        {selectedAmenities.length} amenidades seleccionadas
+                    </span>
+                    <Link to="/admin/amenities" className="text-body-xs text-primary dark:text-primary-dark hover:underline">
+                        Gestionar amenidades →
+                    </Link>
+                </div>
             </div>
         );
     };
@@ -973,10 +1072,8 @@ const AdminSpaces = () => {
                                             {getStatusText(space)}
                                         </span>
                                     </td>
-                                    {/* ✅ COLUMNA: Implementado con 3 iconos CLICKEABLES con lógica de restricción */}
                                     <td className="py-3 px-3">
                                         <div className="flex items-center justify-center gap-4">
-                                            {/* 1. DESTACADO - Solo si está activo */}
                                             <button
                                                 onClick={() => handleToggleFeatured(space.id, space.isFeatured)}
                                                 className={`flex flex-col items-center group transition-transform hover:scale-110 ${!space.isActive ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -1002,7 +1099,6 @@ const AdminSpaces = () => {
                                                 </span>
                                             </button>
 
-                                            {/* 2. DISPONIBLE - Solo si está activo */}
                                             <button
                                                 onClick={() => handleToggleAvailability(space.id, space.isAvailable)}
                                                 className={`flex flex-col items-center group transition-transform hover:scale-110 ${!space.isActive ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -1027,7 +1123,6 @@ const AdminSpaces = () => {
                                                 </span>
                                             </button>
 
-                                            {/* 3. ACTIVO - Siempre clickeable */}
                                             <button
                                                 onClick={() => handleToggleActive(space.id, space.isActive)}
                                                 className="flex flex-col items-center group transition-transform hover:scale-110"
@@ -1322,7 +1417,10 @@ const AdminSpaces = () => {
                                 />
                             </div>
 
-                            {/* CAMPO DE IMÁGENES - CREACIÓN */}
+                            {/* ✅ CAMPO DE AMENIDADES - CREACIÓN */}
+                            {renderAmenitySelector(false)}
+
+                            {/* ✅ CAMPO DE IMÁGENES - CREACIÓN */}
                             {renderImageFields(createFormData.imageUrls, false)}
 
                             <div className="flex gap-6">
@@ -1552,7 +1650,10 @@ const AdminSpaces = () => {
                                 />
                             </div>
 
-                            {/* CAMPO DE IMÁGENES - EDICIÓN */}
+                            {/* ✅ CAMPO DE AMENIDADES - EDICIÓN */}
+                            {renderAmenitySelector(true)}
+
+                            {/* ✅ CAMPO DE IMÁGENES - EDICIÓN */}
                             {renderImageFields(editFormData.imageUrls, true)}
 
                             {/* ✅ CHECKBOXES: Disponible, Destacado y ACTIVO */}
