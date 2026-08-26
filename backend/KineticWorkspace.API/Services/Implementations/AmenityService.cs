@@ -79,14 +79,7 @@ namespace KineticWorkspace.API.Services.Implementations
             var amenity = await _amenityRepository.GetByIdAsync(id);
             if (amenity == null) return null;
 
-            // Verificar si ya existe otra amenidad con el mismo nombre
-            var existing = await _amenityRepository.FindAsync(a =>
-                a.Name.ToLower() == request.Name.ToLower() && a.Id != id);
-            if (existing.Any())
-            {
-                throw new InvalidOperationException($"Ya existe una amenidad con el nombre '{request.Name}'");
-            }
-
+            // ACTUALIZAR SIN VALIDAR DUPLICADOS POR NOMBRE
             amenity.Name = request.Name;
             amenity.Description = request.Description;
             amenity.Icon = request.Icon;
