@@ -166,6 +166,7 @@ namespace KineticWorkspace.API.Services.Implementations
 
         public async Task<IEnumerable<SpaceResponseDto>> GetAllSpacesUnpaginatedAsync()
         {
+            // ✅ Usar el método que ya existe y ahora incluye Amenities
             var spaces = await _spaceRepository.GetAllAsync();
             return _mapper.Map<IEnumerable<SpaceResponseDto>>(spaces);
         }
