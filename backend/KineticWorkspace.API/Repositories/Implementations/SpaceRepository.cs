@@ -12,7 +12,7 @@ namespace KineticWorkspace.API.Repositories.Implementations
         {
         }
 
-        // Sobrescribir GetAllAsync para incluir Amenities y Reviews
+        // ✅ ÚNICO GetAllAsync - Con override e incluyendo Amenities
         public override async Task<IEnumerable<Space>> GetAllAsync()
         {
             return await _dbSet
@@ -21,6 +21,20 @@ namespace KineticWorkspace.API.Repositories.Implementations
                 .Where(s => s.DeletedAt == null)
                 .ToListAsync();
         }
+
+        // ✅ NUEVO: Método para obtener todos sin paginación (ya existe en el código original)
+        // Este método NO debe llamarse GetAllAsync, debe tener un nombre diferente
+        public async Task<IEnumerable<Space>> GetAllUnpaginatedWithAmenitiesAsync()
+        {
+            return await _dbSet
+                .Include(s => s.Amenities)
+                .Include(s => s.Reviews)
+                .Where(s => s.DeletedAt == null)
+                .OrderByDescending(s => s.CreatedAt)
+                .ToListAsync();
+        }
+
+        // ========== RESTO DE MÉTODOS EXISTENTES ==========
 
         public async Task<IEnumerable<Space>> GetAvailableSpacesAsync(DateTime startTime, DateTime endTime)
         {
