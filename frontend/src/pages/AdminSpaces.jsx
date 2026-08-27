@@ -1,4 +1,6 @@
 // frontend/src/pages/AdminSpaces.jsx
+// ✅ VERSIÓN CORREGIDA - Manejo de amenidades en edición
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -46,6 +48,7 @@ const AdminSpaces = () => {
 
     // Amenidades disponibles
     const [allAmenities, setAllAmenities] = useState([]);
+    const [loadingAmenities, setLoadingAmenities] = useState(false);
 
     // Paginación
     const [currentPage, setCurrentPage] = useState(1);
@@ -123,13 +126,18 @@ const AdminSpaces = () => {
         }
     }, [isAuthenticated, user, navigate]);
 
-    // Cargar amenidades disponibles
+    // ✅ Cargar amenidades disponibles (para el selector)
     const loadAmenities = useCallback(async () => {
+        setLoadingAmenities(true);
         try {
             const data = await amenitiesService.getAll();
             setAllAmenities(data || []);
+            console.log('✅ Amenidades cargadas:', data?.length || 0);
         } catch (error) {
             console.error('Error loading amenities:', error);
+            toast.error('Error al cargar las amenidades');
+        } finally {
+            setLoadingAmenities(false);
         }
     }, []);
 
@@ -152,7 +160,7 @@ const AdminSpaces = () => {
 
     useEffect(() => {
         loadSpaces();
-        loadAmenities();
+        loadAmenities(); // ✅ Cargar amenidades al montar el componente
     }, [loadSpaces, loadAmenities]);
 
     // Aplicar filtros y ordenamiento
@@ -427,16 +435,44 @@ const AdminSpaces = () => {
         }
     };
 
-    // ========== EDITAR ESPACIO ==========
-    const handleEditClick = (space) => {
-        setEditingSpace(space);
+    // ========== ✅ EDITAR ESPACIO - CORREGIDO ==========
+    const handleEditClick = async (space) => {
+        // ✅ PRIMERO: Asegurar que tenemos las amenidades cargadas
+        if (allAmenities.length === 0) {
+            await loadAmenities();
+        }
+
+        // ✅ SEGUNDO: Preparar las URLs de imágenes
         const imageUrls = space.imageUrls && space.imageUrls.length > 0
             ? space.imageUrls
             : [''];
 
-        // Extraer IDs de amenidades del espacio
-        const amenityIds = space.amenities?.map(a => a.id) || [];
+        // ✅ TERCERO: Extraer IDs de amenidades - USAR AmenityIds
+        // ✅ Si el backend envía AmenityIds, usarlo
+        // ✅ Si no, intentar mapear desde amenities
+        let amenityIds = [];
 
+        if (space.amenityIds && space.amenityIds.length > 0) {
+            // ✅ USAR AmenityIds del backend
+            amenityIds = space.amenityIds;
+            console.log('✅ Usando AmenityIds del backend:', amenityIds);
+        } else if (space.amenities && space.amenities.length > 0) {
+            // ⚠️ Fallback: mapear desde amenities (objetos con id)
+            amenityIds = space.amenities
+                .filter(a => a && a.id !== undefined)
+                .map(a => a.id)
+                .filter(id => id !== undefined && id !== null);
+            console.log('⚠️ Mapeando desde amenities (fallback):', amenityIds);
+        } else {
+            console.warn('⚠️ No se encontraron amenidades para el espacio:', space.id);
+        }
+
+        console.log('📝 Editando espacio:', space.name);
+        console.log('📋 Amenidades del espacio (IDs):', amenityIds);
+        console.log('📋 Amenidades disponibles:', allAmenities.map(a => ({ id: a.id, name: a.name })));
+
+        // ✅ CUARTO: Establecer el estado con los datos correctos
+        setEditingSpace(space);
         setEditFormData({
             name: space.name || '',
             description: space.description || '',
@@ -452,9 +488,11 @@ const AdminSpaces = () => {
             isAvailable: space.isAvailable !== undefined ? space.isAvailable : true,
             isFeatured: space.isFeatured || false,
             isActive: space.isActive !== undefined ? space.isActive : true,
-            amenities: amenityIds,
+            amenities: amenityIds, // ✅ IDs de las amenidades del espacio
             imageUrls: imageUrls
         });
+
+        // ✅ QUINTO: Abrir el modal
         setShowEditModal(true);
     };
 
@@ -786,8 +824,22 @@ const AdminSpaces = () => {
         );
     };
 
-    // ========== RENDERIZAR SELECTOR DE AMENIDADES ==========
+    // ========== ✅ RENDERIZAR SELECTOR DE AMENIDADES - CORREGIDO ==========
     const renderAmenitySelector = (isEdit = false) => {
+        // ✅ Asegurar que tenemos amenidades disponibles
+        if (allAmenities.length === 0 && !loadingAmenities) {
+            // Intentar recargar si no hay amenidades
+            loadAmenities();
+            return (
+                <div className="p-3 bg-surface-container-low dark:bg-surface-dark-container-low rounded-lg border border-outline-variant dark:border-outline-dark-variant text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary dark:border-primary-dark mx-auto mb-2"></div>
+                    <p className="text-body-sm text-on-surface-variant dark:text-on-dark-surface-variant">
+                        Cargando amenidades...
+                    </p>
+                </div>
+            );
+        }
+
         if (allAmenities.length === 0) {
             return (
                 <div className="p-3 bg-surface-container-low dark:bg-surface-dark-container-low rounded-lg border border-outline-variant dark:border-outline-dark-variant text-center">
@@ -801,7 +853,14 @@ const AdminSpaces = () => {
             );
         }
 
+        // ✅ Obtener las amenidades seleccionadas según el modo
         const selectedAmenities = isEdit ? (editFormData.amenities || []) : (createFormData.amenities || []);
+
+        // ✅ Log para depuración
+        if (isEdit) {
+            console.log('🎯 Amenidades seleccionadas en edición:', selectedAmenities);
+            console.log('🎯 Todas las amenidades:', allAmenities.map(a => ({ id: a.id, name: a.name })));
+        }
 
         return (
             <div>
@@ -812,30 +871,34 @@ const AdminSpaces = () => {
                     </span>
                 </label>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2 p-3 bg-surface-container-low dark:bg-surface-dark-container-low rounded-lg border border-outline-variant dark:border-outline-dark-variant max-h-48 overflow-y-auto">
-                    {allAmenities.map(amenity => (
-                        <label
-                            key={amenity.id}
-                            className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all ${selectedAmenities.includes(amenity.id)
-                                ? 'bg-primary/10 dark:bg-primary-dark/10 border border-primary dark:border-primary-dark'
-                                : 'hover:bg-surface-container-high dark:hover:bg-surface-dark-container-high border border-transparent'
-                                }`}
-                        >
-                            <input
-                                type="checkbox"
-                                checked={selectedAmenities.includes(amenity.id)}
-                                onChange={() => handleAmenityToggle(amenity.id, isEdit)}
-                                className="w-4 h-4 accent-primary dark:accent-primary-dark"
-                            />
-                            {amenity.icon && (
-                                <span className="material-symbols-outlined text-sm text-primary dark:text-primary-dark">
-                                    {amenity.icon}
+                    {allAmenities.map(amenity => {
+                        // ✅ Verificar si esta amenidad está seleccionada
+                        const isSelected = selectedAmenities.includes(amenity.id);
+                        return (
+                            <label
+                                key={amenity.id}
+                                className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all ${isSelected
+                                    ? 'bg-primary/10 dark:bg-primary-dark/10 border border-primary dark:border-primary-dark'
+                                    : 'hover:bg-surface-container-high dark:hover:bg-surface-dark-container-high border border-transparent'
+                                    }`}
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={isSelected}
+                                    onChange={() => handleAmenityToggle(amenity.id, isEdit)}
+                                    className="w-4 h-4 accent-primary dark:accent-primary-dark"
+                                />
+                                {amenity.icon && (
+                                    <span className="material-symbols-outlined text-sm text-primary dark:text-primary-dark">
+                                        {amenity.icon}
+                                    </span>
+                                )}
+                                <span className="text-body-sm text-on-surface dark:text-on-dark-surface truncate">
+                                    {amenity.name}
                                 </span>
-                            )}
-                            <span className="text-body-sm text-on-surface dark:text-on-dark-surface truncate">
-                                {amenity.name}
-                            </span>
-                        </label>
-                    ))}
+                            </label>
+                        );
+                    })}
                 </div>
                 <div className="flex justify-between mt-1">
                     <span className="text-body-xs text-on-surface-variant dark:text-on-dark-surface-variant">
@@ -1506,7 +1569,7 @@ const AdminSpaces = () => {
                 </div>
             )}
 
-            {/* ========== MODAL DE EDICIÓN ========== */}
+            {/* ========== ✅ MODAL DE EDICIÓN - CORREGIDO ========== */}
             {showEditModal && editingSpace && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowEditModal(false)}>
                     <div className="bg-surface-container-lowest dark:bg-surface-dark-container-lowest rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-xl transition-colors duration-300" onClick={(e) => e.stopPropagation()}>
@@ -1680,7 +1743,7 @@ const AdminSpaces = () => {
                                 />
                             </div>
 
-                            {/* CAMPO DE AMENIDADES - EDICIÓN */}
+                            {/* ✅ CAMPO DE AMENIDADES - EDICIÓN CORREGIDO */}
                             {renderAmenitySelector(true)}
 
                             {/* CAMPO DE IMÁGENES - EDICIÓN */}
