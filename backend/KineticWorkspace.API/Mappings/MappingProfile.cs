@@ -24,16 +24,19 @@ namespace KineticWorkspace.API.Mappings
 
             // ==================== SPACE MAPPINGS ====================
             CreateMap<Space, SpaceResponseDto>()
-                .ForMember(dest => dest.Amenities,
-                    opt => opt.MapFrom(src => src.Amenities.Select(a => a.Name).ToList()))
-                .ForMember(dest => dest.ImageUrls, opt => opt.Ignore())
-                .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsActive))
-                .AfterMap((src, dest) =>
-                {
-                    dest.ImageUrls = string.IsNullOrEmpty(src.ImageUrls)
-                        ? new List<string>()
-                        : src.ImageUrls.Split(',').ToList();
-                });
+     .ForMember(dest => dest.Amenities,
+         opt => opt.MapFrom(src => src.Amenities.Select(a => a.Name).ToList()))
+     .ForMember(dest => dest.ImageUrls, opt => opt.Ignore())
+     .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsActive))
+     // ✅ AGREGAR: Mapeo de IDs de amenidades para el frontend
+     .ForMember(dest => dest.AmenityIds,
+         opt => opt.MapFrom(src => src.Amenities.Select(a => a.Id).ToList()))
+     .AfterMap((src, dest) =>
+     {
+         dest.ImageUrls = string.IsNullOrEmpty(src.ImageUrls)
+             ? new List<string>()
+             : src.ImageUrls.Split(',').ToList();
+     });
 
             // ✅ Mapeo de SpaceRequestDto a Space (ignoramos Amenities porque se asignan manualmente)
             CreateMap<SpaceRequestDto, Space>()
