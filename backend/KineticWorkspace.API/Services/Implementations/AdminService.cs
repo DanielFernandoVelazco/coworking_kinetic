@@ -2,6 +2,8 @@
 using Microsoft.EntityFrameworkCore;
 using KineticWorkspace.API.Data;
 using KineticWorkspace.API.Models.DTOs.Admin;
+using KineticWorkspace.API.Models.DTOs.Alerts;
+using KineticWorkspace.API.Models.Entities;
 using KineticWorkspace.API.Services.Interfaces;
 using OfficeOpenXml;
 
@@ -11,12 +13,19 @@ namespace KineticWorkspace.API.Services.Implementations
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<AdminService> _logger;
+        private readonly IAlertService _alertService;
 
-        public AdminService(ApplicationDbContext context, ILogger<AdminService> logger)
+        public AdminService(
+            ApplicationDbContext context,
+            ILogger<AdminService> logger,
+            IAlertService alertService)
         {
             _context = context;
             _logger = logger;
+            _alertService = alertService;
         }
+
+        // ========== MÉTODOS DEL DASHBOARD ==========
 
         public async Task<AdminDashboardDto> GetDashboardDataAsync()
         {
@@ -75,7 +84,6 @@ namespace KineticWorkspace.API.Services.Implementations
                 var cancelledReservations = await _context.Reservations
                     .CountAsync(r => r.Status == "Cancelled");
 
-                // ✅ CORREGIDO: Usar DefaultIfEmpty() para evitar el error del operador ?? con decimal
                 var totalRevenue = await _context.Payments
                     .Where(p => p.Status == "Completed")
                     .SumAsync(p => (decimal?)p.Amount) ?? 0m;
@@ -88,7 +96,7 @@ namespace KineticWorkspace.API.Services.Implementations
                     ? totalRevenue / totalReservations
                     : 0m;
 
-                // Tasa de ocupación (espacios ocupados / espacios totales)
+                // Tasa de ocupación
                 var occupiedSpaces = await _context.Reservations
                     .Where(r => r.Status == "Confirmed" && r.StartTime <= now && r.EndTime >= now)
                     .Select(r => r.SpaceId)
@@ -160,7 +168,6 @@ namespace KineticWorkspace.API.Services.Implementations
                 var startOfMonth = new DateTime(date.Year, date.Month, 1);
                 var endOfMonth = startOfMonth.AddMonths(1);
 
-                // ✅ CORREGIDO: Usar nullable decimal
                 var revenue = await _context.Payments
                     .Where(p => p.Status == "Completed" && p.CreatedAt >= startOfMonth && p.CreatedAt < endOfMonth)
                     .SumAsync(p => (decimal?)p.Amount) ?? 0m;
@@ -295,6 +302,7 @@ namespace KineticWorkspace.API.Services.Implementations
         public async Task<List<SpaceStatusDto>> GetSpaceStatusAsync()
         {
             var statuses = new List<SpaceStatusDto>();
+            var now = DateTime.UtcNow;
 
             // Disponibles
             var available = await _context.Spaces
@@ -307,7 +315,6 @@ namespace KineticWorkspace.API.Services.Implementations
             });
 
             // Ocupados
-            var now = DateTime.UtcNow;
             var occupied = await _context.Spaces
                 .Where(s => s.IsActive && s.DeletedAt == null)
                 .CountAsync(s => _context.Reservations
@@ -319,7 +326,7 @@ namespace KineticWorkspace.API.Services.Implementations
                 Color = "#ef4444"
             });
 
-            // Mantenimiento (no disponibles)
+            // Mantenimiento
             var maintenance = await _context.Spaces
                 .CountAsync(s => !s.IsAvailable && s.IsActive && s.DeletedAt == null);
             statuses.Add(new SpaceStatusDto
@@ -418,7 +425,6 @@ namespace KineticWorkspace.API.Services.Implementations
         {
             try
             {
-                // Verificar conexión a la base de datos
                 var dbOk = await _context.Database.CanConnectAsync();
 
                 return new SystemHealthDto
@@ -446,13 +452,10 @@ namespace KineticWorkspace.API.Services.Implementations
             }
         }
 
-        // método ExportReportAsync
-
         public async Task<byte[]> ExportReportAsync(DateTime startDate, DateTime endDate)
         {
             _logger.LogInformation("Exportando reporte de {StartDate} a {EndDate}", startDate, endDate);
 
-            // 1. Obtener datos para el reporte
             var reservations = await _context.Reservations
                 .Include(r => r.User)
                 .Include(r => r.Space)
@@ -469,11 +472,10 @@ namespace KineticWorkspace.API.Services.Implementations
                 .Where(s => s.CreatedAt >= startDate && s.CreatedAt <= endDate && s.DeletedAt == null)
                 .ToListAsync();
 
-            // 2. Crear el archivo Excel
             using var package = new OfficeOpenXml.ExcelPackage();
             var workbook = package.Workbook;
 
-            // ========== HOJA 1: RESUMEN ==========
+            // Hoja de Resumen
             var summarySheet = workbook.Worksheets.Add("Resumen");
             summarySheet.Cells["A1"].Value = "KINETIC WORKSPACE - REPORTE DE ACTIVIDAD";
             summarySheet.Cells["A1"].Style.Font.Size = 16;
@@ -485,7 +487,6 @@ namespace KineticWorkspace.API.Services.Implementations
             summarySheet.Cells["A4"].Value = "Fecha de generación:";
             summarySheet.Cells["B4"].Value = DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss");
 
-            // Métricas
             int row = 6;
             summarySheet.Cells[$"A{row}"].Value = "MÉTRICAS GENERALES";
             summarySheet.Cells[$"A{row}:C{row}"].Merge = true;
@@ -503,15 +504,15 @@ namespace KineticWorkspace.API.Services.Implementations
 
             var metrics = new[]
             {
-        new { Label = "Total Reservas", Value = totalReservations.ToString() },
-        new { Label = "Activas", Value = activeReservations.ToString() },
-        new { Label = "Pendientes", Value = pendingReservations.ToString() },
-        new { Label = "Completadas", Value = completedReservations.ToString() },
-        new { Label = "Canceladas", Value = cancelledReservations.ToString() },
-        new { Label = "Ingresos Totales", Value = $"${totalRevenue:N2}" },
-        new { Label = "Nuevos Usuarios", Value = newUsers.ToString() },
-        new { Label = "Nuevos Espacios", Value = newSpaces.ToString() },
-    };
+                new { Label = "Total Reservas", Value = totalReservations.ToString() },
+                new { Label = "Activas", Value = activeReservations.ToString() },
+                new { Label = "Pendientes", Value = pendingReservations.ToString() },
+                new { Label = "Completadas", Value = completedReservations.ToString() },
+                new { Label = "Canceladas", Value = cancelledReservations.ToString() },
+                new { Label = "Ingresos Totales", Value = $"${totalRevenue:N2}" },
+                new { Label = "Nuevos Usuarios", Value = newUsers.ToString() },
+                new { Label = "Nuevos Espacios", Value = newSpaces.ToString() },
+            };
 
             foreach (var metric in metrics)
             {
@@ -521,14 +522,11 @@ namespace KineticWorkspace.API.Services.Implementations
                 row++;
             }
 
-            // Dar formato a la hoja de resumen
             summarySheet.Column(1).Width = 25;
             summarySheet.Column(2).Width = 20;
 
-            // ========== HOJA 2: RESERVAS ==========
+            // Hoja de Reservas
             var reservationsSheet = workbook.Worksheets.Add("Reservas");
-
-            // Headers
             var headers = new[] { "ID", "Usuario", "Email", "Espacio", "Tipo", "Inicio", "Fin", "Invitados", "Total", "Estado", "Creación" };
             for (int i = 0; i < headers.Length; i++)
             {
@@ -538,7 +536,6 @@ namespace KineticWorkspace.API.Services.Implementations
                 reservationsSheet.Cells[1, i + 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.LightGray);
             }
 
-            // Datos
             int dataRow = 2;
             foreach (var r in reservations)
             {
@@ -557,12 +554,10 @@ namespace KineticWorkspace.API.Services.Implementations
                 dataRow++;
             }
 
-            // Autoajustar columnas
             reservationsSheet.Cells[1, 1, dataRow - 1, 11].AutoFitColumns();
 
-            // ========== HOJA 3: RESERVAS MENSUALES ==========
+            // Hoja de Reservas Mensuales
             var monthlySheet = workbook.Worksheets.Add("Reservas Mensuales");
-
             var monthlyHeaders = new[] { "Mes", "Reservas", "Ingresos", "Promedio" };
             for (int i = 0; i < monthlyHeaders.Length; i++)
             {
@@ -600,7 +595,7 @@ namespace KineticWorkspace.API.Services.Implementations
 
             monthlySheet.Cells[1, 1, monthlyRow - 1, 4].AutoFitColumns();
 
-            // ========== HOJA 4: USUARIOS ==========
+            // Hoja de Usuarios
             if (users.Any())
             {
                 var usersSheet = workbook.Worksheets.Add("Usuarios");
@@ -628,7 +623,7 @@ namespace KineticWorkspace.API.Services.Implementations
                 usersSheet.Cells[1, 1, userRow - 1, 6].AutoFitColumns();
             }
 
-            // ========== HOJA 5: ESPACIOS ==========
+            // Hoja de Espacios
             if (spaces.Any())
             {
                 var spacesSheet = workbook.Worksheets.Add("Espacios");
@@ -660,8 +655,170 @@ namespace KineticWorkspace.API.Services.Implementations
                 spacesSheet.Cells[1, 1, spaceRow - 1, 8].AutoFitColumns();
             }
 
-            // 3. Retornar el archivo como byte array
             return await Task.FromResult(package.GetAsByteArray());
+        }
+
+        // ========== ✅ NUEVOS MÉTODOS DE ALERTAS ==========
+
+        public async Task<IEnumerable<AlertResponseDto>> GetAllAlertsAsync(bool? isRead = null, int limit = 100)
+        {
+            var query = _context.Alerts
+                .Include(a => a.User)
+                .OrderByDescending(a => a.CreatedAt)
+                .AsQueryable();
+
+            if (isRead.HasValue)
+            {
+                query = query.Where(a => a.IsRead == isRead.Value);
+            }
+
+            var alerts = await query.Take(limit).ToListAsync();
+
+            return alerts.Select(a => new AlertResponseDto
+            {
+                Id = a.Id,
+                UserId = a.UserId,
+                Title = a.Title,
+                Message = a.Message,
+                Type = a.Type,
+                Category = a.Category,
+                IsRead = a.IsRead,
+                ActionUrl = a.ActionUrl,
+                ActionLabel = a.ActionLabel,
+                CreatedAt = a.CreatedAt,
+                ReadAt = a.ReadAt,
+                UserName = a.User != null ? $"{a.User.FirstName} {a.User.LastName}" : "Unknown",
+                UserEmail = a.User?.Email ?? "unknown@email.com",
+                TimeAgo = GetTimeAgo(a.CreatedAt)
+            });
+        }
+
+        public async Task<AlertStatsDto> GetAlertStatsAsync()
+        {
+            var total = await _context.Alerts.CountAsync();
+            var unread = await _context.Alerts.CountAsync(a => !a.IsRead);
+            var read = await _context.Alerts.CountAsync(a => a.IsRead);
+
+            var byType = await _context.Alerts
+                .GroupBy(a => a.Type)
+                .Select(g => new { Type = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(g => g.Type, g => g.Count);
+
+            var byCategory = await _context.Alerts
+                .GroupBy(a => a.Category)
+                .Select(g => new { Category = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(g => g.Category, g => g.Count);
+
+            var last7Days = await _context.Alerts
+                .Where(a => a.CreatedAt >= DateTime.UtcNow.AddDays(-7))
+                .CountAsync();
+
+            var dailyTrend = new List<DailyAlertCount>();
+            for (int i = 6; i >= 0; i--)
+            {
+                var date = DateTime.UtcNow.AddDays(-i).Date;
+                var count = await _context.Alerts
+                    .Where(a => a.CreatedAt.Date == date)
+                    .CountAsync();
+                dailyTrend.Add(new DailyAlertCount
+                {
+                    Date = date,
+                    Count = count
+                });
+            }
+
+            return new AlertStatsDto
+            {
+                Total = total,
+                Unread = unread,
+                Read = read,
+                ByType = byType,
+                ByCategory = byCategory,
+                Last7Days = last7Days,
+                DailyTrend = dailyTrend
+            };
+        }
+
+        public async Task<int> BroadcastAlertAsync(AlertRequestDto request)
+        {
+            var users = await _context.Users
+                .Where(u => u.IsActive && u.DeletedAt == null)
+                .ToListAsync();
+
+            var alerts = new List<Alert>();
+            foreach (var user in users)
+            {
+                alerts.Add(new Alert
+                {
+                    UserId = user.Id,
+                    Title = request.Title,
+                    Message = request.Message,
+                    Type = request.Type,
+                    Category = request.Category,
+                    ActionUrl = request.ActionUrl,
+                    ActionLabel = request.ActionLabel,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            await _context.Alerts.AddRangeAsync(alerts);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation($"Alerta masiva enviada a {users.Count} usuarios: {request.Title}");
+
+            return users.Count;
+        }
+
+        public async Task<AlertResponseDto?> GetAlertByIdAsync(int id)
+        {
+            var alert = await _context.Alerts
+                .Include(a => a.User)
+                .FirstOrDefaultAsync(a => a.Id == id);
+
+            if (alert == null) return null;
+
+            return new AlertResponseDto
+            {
+                Id = alert.Id,
+                UserId = alert.UserId,
+                Title = alert.Title,
+                Message = alert.Message,
+                Type = alert.Type,
+                Category = alert.Category,
+                IsRead = alert.IsRead,
+                ActionUrl = alert.ActionUrl,
+                ActionLabel = alert.ActionLabel,
+                CreatedAt = alert.CreatedAt,
+                ReadAt = alert.ReadAt,
+                UserName = alert.User != null ? $"{alert.User.FirstName} {alert.User.LastName}" : "Unknown",
+                UserEmail = alert.User?.Email ?? "unknown@email.com",
+                TimeAgo = GetTimeAgo(alert.CreatedAt)
+            };
+        }
+
+        public async Task<bool> DeleteAlertAsync(int id)
+        {
+            var alert = await _context.Alerts.FindAsync(id);
+            if (alert == null) return false;
+
+            _context.Alerts.Remove(alert);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        // ========== MÉTODOS AUXILIARES ==========
+
+        private string GetTimeAgo(DateTime dateTime)
+        {
+            var diff = DateTime.UtcNow - dateTime;
+
+            if (diff.TotalMinutes < 1) return "Just now";
+            if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes}m ago";
+            if (diff.TotalHours < 24) return $"{(int)diff.TotalHours}h ago";
+            if (diff.TotalDays < 7) return $"{(int)diff.TotalDays}d ago";
+            if (diff.TotalDays < 30) return $"{(int)(diff.TotalDays / 7)}w ago";
+            if (diff.TotalDays < 365) return $"{(int)(diff.TotalDays / 30)}mo ago";
+            return $"{(int)(diff.TotalDays / 365)}y ago";
         }
     }
 }
