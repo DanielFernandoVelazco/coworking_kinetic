@@ -25,6 +25,10 @@ namespace KineticWorkspace.API.Models.DTOs.Spaces
         public double AverageRating { get; set; }
         public int TotalReviews { get; set; }
         public List<string> Amenities { get; set; } = new();
+
+        // ✅ NUEVO: IDs de amenidades para el frontend
+        public List<int> AmenityIds { get; set; } = new();
+
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
     }
