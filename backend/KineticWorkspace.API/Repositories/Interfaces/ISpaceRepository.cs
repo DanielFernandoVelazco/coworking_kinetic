@@ -13,5 +13,7 @@ namespace KineticWorkspace.API.Repositories.Interfaces
         Task<IEnumerable<Space>> SearchSpacesAsync(string searchTerm, string? city = null, string? type = null);
         Task<bool> UpdateAvailabilityAsync(int spaceId, bool isAvailable);
         Task<IEnumerable<Space>> GetSpacesWithHighRatingAsync(int minRating = 4, int limit = 10);
+        Task<IEnumerable<Space>> GetAllUnpaginatedWithAmenitiesAsync();
+
     }
 }
