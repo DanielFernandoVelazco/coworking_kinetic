@@ -1,4 +1,5 @@
 // backend/KineticWorkspace.API/Models/DTOs/Alerts/AlertResponseDto.cs
+
 namespace KineticWorkspace.API.Models.DTOs.Alerts
 {
     public class AlertResponseDto
@@ -15,6 +16,10 @@ namespace KineticWorkspace.API.Models.DTOs.Alerts
         public DateTime CreatedAt { get; set; }
         public DateTime? ReadAt { get; set; }
         public string TimeAgo { get; set; } = string.Empty;
+
+        // ✅ CAMPOS PARA ADMIN
+        public string UserName { get; set; } = string.Empty;
+        public string UserEmail { get; set; } = string.Empty;
     }
 
     public class AlertSummaryDto
