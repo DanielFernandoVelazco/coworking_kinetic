@@ -22,6 +22,7 @@ namespace KineticWorkspace.API.Repositories.Implementations
             return await _dbSet.FindAsync(id);
         }
 
+        // ✅ AGREGAR 'virtual' para permitir override
         public virtual async Task<IEnumerable<T>> GetAllAsync()
         {
             return await _dbSet.ToListAsync();
