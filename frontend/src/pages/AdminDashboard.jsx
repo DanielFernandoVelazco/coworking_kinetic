@@ -1,6 +1,4 @@
 // frontend/src/pages/AdminDashboard.jsx
-// ✅ AGREGAR AL FINAL DEL ARCHIVO, DESPUÉS DE LA SECCIÓN DE SYSTEM HEALTH
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -35,20 +33,10 @@ const AdminDashboard = () => {
     const [monthlyReservationsData, setMonthlyReservationsData] = useState([]);
     const [monthlyRevenueData, setMonthlyRevenueData] = useState([]);
 
-    // ✅ ESTADOS PARA ALERTAS
+    // ✅ ESTADOS PARA ALERTAS (solo para el resumen)
     const [alertStats, setAlertStats] = useState(null);
-    const [allAlerts, setAllAlerts] = useState([]);
+    const [recentAlerts, setRecentAlerts] = useState([]);
     const [loadingAlerts, setLoadingAlerts] = useState(false);
-    const [showBroadcastModal, setShowBroadcastModal] = useState(false);
-    const [broadcastData, setBroadcastData] = useState({
-        title: '',
-        message: '',
-        type: 'info',
-        category: 'general',
-        actionUrl: '',
-        actionLabel: ''
-    });
-    const [sendingBroadcast, setSendingBroadcast] = useState(false);
 
     // ========== MÉTODOS EXISTENTES ==========
     const loadDashboard = useCallback(async () => {
@@ -57,7 +45,7 @@ const AdminDashboard = () => {
             const data = await adminService.getDashboard();
             setDashboardData(data);
             await loadMonthlyData(selectedPeriod);
-            await loadAlertData(); // ✅ Cargar datos de alertas
+            await loadAlertSummary();
         } catch (error) {
             console.error('Error loading dashboard:', error);
             toast.error('Error al cargar el dashboard');
@@ -78,18 +66,39 @@ const AdminDashboard = () => {
         }
     }, []);
 
-    // ✅ Cargar datos de alertas
-    const loadAlertData = useCallback(async () => {
+    // ✅ Cargar resumen de alertas y agrupar por fecha
+    const loadAlertSummary = useCallback(async () => {
         setLoadingAlerts(true);
         try {
             const [stats, alerts] = await Promise.all([
                 adminService.getAlertStats(),
-                adminService.getAllAlerts(null, 50)
+                adminService.getAllAlerts(null, 50) // Traer más para agrupar
             ]);
+
             setAlertStats(stats);
-            setAllAlerts(alerts || []);
+
+            // ✅ AGRUPAR ALERTAS POR FECHA (solo la más reciente de cada día)
+            const alertsByDate = new Map();
+
+            (alerts || []).forEach(alert => {
+                const dateKey = new Date(alert.createdAt).toDateString();
+
+                // Si no existe una alerta para esta fecha, o la actual es más reciente
+                if (!alertsByDate.has(dateKey) ||
+                    new Date(alert.createdAt) > new Date(alertsByDate.get(dateKey).createdAt)) {
+                    alertsByDate.set(dateKey, alert);
+                }
+            });
+
+            // Convertir a array y ordenar por fecha (más reciente primero)
+            const groupedAlerts = Array.from(alertsByDate.values())
+                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                .slice(0, 5); // Solo últimas 5 fechas
+
+            setRecentAlerts(groupedAlerts);
+
         } catch (error) {
-            console.error('Error loading alert data:', error);
+            console.error('Error loading alert summary:', error);
         } finally {
             setLoadingAlerts(false);
         }
@@ -144,369 +153,6 @@ const AdminDashboard = () => {
         }
     }, []);
 
-    // ✅ Manejar envío de broadcast
-    const handleBroadcastSubmit = useCallback(async (e) => {
-        e.preventDefault();
-
-        if (!broadcastData.title.trim() || !broadcastData.message.trim()) {
-            toast.error('El título y mensaje son obligatorios');
-            return;
-        }
-
-        setSendingBroadcast(true);
-        try {
-            const result = await adminService.broadcastAlert(broadcastData);
-            toast.success(`✅ Alerta enviada a ${result.count} usuarios`);
-            setShowBroadcastModal(false);
-            setBroadcastData({
-                title: '',
-                message: '',
-                type: 'info',
-                category: 'general',
-                actionUrl: '',
-                actionLabel: ''
-            });
-            await loadAlertData();
-        } catch (error) {
-            console.error('Error sending broadcast:', error);
-            toast.error(error.response?.data?.message || 'Error al enviar alerta masiva');
-        } finally {
-            setSendingBroadcast(false);
-        }
-    }, [broadcastData, loadAlertData]);
-
-    // ✅ Manejar eliminación de alerta
-    const handleDeleteAlert = useCallback(async (id) => {
-        if (!window.confirm('¿Estás seguro de que quieres eliminar esta alerta?')) return;
-
-        try {
-            await adminService.deleteAlert(id);
-            toast.success('Alerta eliminada');
-            await loadAlertData();
-        } catch (error) {
-            console.error('Error deleting alert:', error);
-            toast.error('Error al eliminar alerta');
-        }
-    }, [loadAlertData]);
-
-    // ✅ Renderizar sección de alertas
-    const renderAlertSection = () => {
-        if (loadingAlerts || !alertStats) {
-            return (
-                <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                    <p className="text-body-sm text-on-surface-variant mt-2">Cargando alertas...</p>
-                </div>
-            );
-        }
-
-        const COLORS = ['#8b5cf6', '#3b82f6', '#22c55e', '#f59e0b', '#ef4444'];
-
-        // Datos para gráfico de tipo
-        const typeData = Object.entries(alertStats.byType || {}).map(([key, value]) => ({
-            name: key.charAt(0).toUpperCase() + key.slice(1),
-            value: value
-        }));
-
-        // Datos para gráfico de categoría
-        const categoryData = Object.entries(alertStats.byCategory || {}).map(([key, value]) => ({
-            name: key.charAt(0).toUpperCase() + key.slice(1),
-            value: value
-        }));
-
-        // Datos para tendencia diaria
-        const trendData = alertStats.dailyTrend?.map(d => ({
-            date: new Date(d.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-            count: d.count
-        })) || [];
-
-        const getTypeColor = (type) => {
-            const colors = {
-                'info': 'text-blue-600 bg-blue-100',
-                'success': 'text-emerald-600 bg-emerald-100',
-                'warning': 'text-amber-600 bg-amber-100',
-                'error': 'text-red-600 bg-red-100'
-            };
-            return colors[type] || 'text-gray-600 bg-gray-100';
-        };
-
-        const getCategoryLabel = (category) => {
-            const labels = {
-                'booking': '📅 Booking',
-                'payment': '💳 Payment',
-                'system': '⚙️ System',
-                'promotion': '🎉 Promotion',
-                'general': '📌 General'
-            };
-            return labels[category] || category;
-        };
-
-        const formatDate = (dateString) => {
-            if (!dateString) return '';
-            const date = new Date(dateString);
-            return date.toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        };
-
-        return (
-            <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant">
-                {/* Header */}
-                <div className="flex justify-between items-center mb-6">
-                    <div className="flex items-center gap-3">
-                        <span className="material-symbols-outlined text-primary text-3xl">notifications</span>
-                        <div>
-                            <h3 className="font-headline-md text-headline-md text-on-surface">Alertas del Sistema</h3>
-                            <p className="text-body-sm text-on-surface-variant">
-                                Gestiona las notificaciones del sistema
-                            </p>
-                        </div>
-                    </div>
-                    <div className="flex gap-2">
-                        <button
-                            onClick={() => setShowBroadcastModal(true)}
-                            className="px-4 py-2 bg-primary text-on-primary rounded-lg hover:bg-secondary transition-colors flex items-center gap-2 text-sm"
-                        >
-                            <span className="material-symbols-outlined text-sm">campaign</span>
-                            Enviar Alerta Masiva
-                        </button>
-                        <button
-                            onClick={loadAlertData}
-                            className="p-2 border border-outline-variant rounded-lg hover:bg-surface-container-low transition-colors"
-                            title="Refrescar alertas"
-                        >
-                            <span className="material-symbols-outlined text-sm">refresh</span>
-                        </button>
-                    </div>
-                </div>
-
-                {/* Estadísticas rápidas */}
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-                    <div className="p-3 bg-surface-container-low rounded-lg text-center border border-outline-variant">
-                        <div className="font-headline-md text-primary">{alertStats.total}</div>
-                        <div className="text-body-xs text-on-surface-variant">Total</div>
-                    </div>
-                    <div className="p-3 bg-surface-container-low rounded-lg text-center border border-outline-variant">
-                        <div className="font-headline-md text-red-600">{alertStats.unread}</div>
-                        <div className="text-body-xs text-on-surface-variant">No leídas</div>
-                    </div>
-                    <div className="p-3 bg-surface-container-low rounded-lg text-center border border-outline-variant">
-                        <div className="font-headline-md text-emerald-600">{alertStats.read}</div>
-                        <div className="text-body-xs text-on-surface-variant">Leídas</div>
-                    </div>
-                    <div className="p-3 bg-surface-container-low rounded-lg text-center border border-outline-variant">
-                        <div className="font-headline-md text-amber-600">{alertStats.last7Days}</div>
-                        <div className="text-body-xs text-on-surface-variant">Últimos 7 días</div>
-                    </div>
-                    <div className="p-3 bg-surface-container-low rounded-lg text-center border border-outline-variant">
-                        <div className="font-headline-md text-blue-600">
-                            {alertStats.total > 0 ? Math.round((alertStats.unread / alertStats.total) * 100) : 0}%
-                        </div>
-                        <div className="text-body-xs text-on-surface-variant">% No leídas</div>
-                    </div>
-                </div>
-
-                {/* Gráficos de alertas */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                    {/* Tendencia diaria */}
-                    <div className="bg-surface-container-low p-4 rounded-lg border border-outline-variant">
-                        <h4 className="font-body-sm font-semibold text-on-surface mb-3 text-center">Tendencia (Últimos 7 días)</h4>
-                        <div className="h-40">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={trendData}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#ddc0ba" opacity={0.3} />
-                                    <XAxis dataKey="date" fontSize={10} tickLine={false} />
-                                    <YAxis fontSize={10} tickLine={false} axisLine={false} />
-                                    <Tooltip content={({ active, payload, label }) => {
-                                        if (active && payload && payload.length) {
-                                            return (
-                                                <div className="bg-surface-container-lowest p-2 rounded-lg border border-outline-variant shadow-lg">
-                                                    <p className="text-body-xs font-semibold text-on-surface">{label}</p>
-                                                    <p className="text-body-xs text-on-surface-variant">{payload[0].value} alertas</p>
-                                                </div>
-                                            );
-                                        }
-                                        return null;
-                                    }} />
-                                    <Bar dataKey="count" fill="#a03f28" radius={[4, 4, 0, 0]} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-
-                    {/* Por tipo */}
-                    <div className="bg-surface-container-low p-4 rounded-lg border border-outline-variant">
-                        <h4 className="font-body-sm font-semibold text-on-surface mb-2 text-center">Por Tipo</h4>
-                        <div className="h-40">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={typeData}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={30}
-                                        outerRadius={50}
-                                        paddingAngle={2}
-                                        dataKey="value"
-                                        nameKey="name"
-                                    >
-                                        {typeData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip content={({ active, payload }) => {
-                                        if (active && payload && payload.length) {
-                                            return (
-                                                <div className="bg-surface-container-lowest p-2 rounded-lg border border-outline-variant shadow-lg">
-                                                    <p className="text-body-xs font-semibold text-on-surface">{payload[0].name}</p>
-                                                    <p className="text-body-xs text-on-surface-variant">{payload[0].value} alertas</p>
-                                                </div>
-                                            );
-                                        }
-                                        return null;
-                                    }} />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
-                        <div className="flex flex-wrap justify-center gap-2 mt-2">
-                            {typeData.map((item, index) => (
-                                <span key={index} className="text-[10px] text-on-surface-variant flex items-center gap-1">
-                                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
-                                    {item.name}: {item.value}
-                                </span>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Por categoría */}
-                    <div className="bg-surface-container-low p-4 rounded-lg border border-outline-variant">
-                        <h4 className="font-body-sm font-semibold text-on-surface mb-2 text-center">Por Categoría</h4>
-                        <div className="h-40">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={categoryData}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={30}
-                                        outerRadius={50}
-                                        paddingAngle={2}
-                                        dataKey="value"
-                                        nameKey="name"
-                                    >
-                                        {categoryData.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[(index + 2) % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip content={({ active, payload }) => {
-                                        if (active && payload && payload.length) {
-                                            return (
-                                                <div className="bg-surface-container-lowest p-2 rounded-lg border border-outline-variant shadow-lg">
-                                                    <p className="text-body-xs font-semibold text-on-surface">{payload[0].name}</p>
-                                                    <p className="text-body-xs text-on-surface-variant">{payload[0].value} alertas</p>
-                                                </div>
-                                            );
-                                        }
-                                        return null;
-                                    }} />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
-                        <div className="flex flex-wrap justify-center gap-2 mt-2">
-                            {categoryData.map((item, index) => (
-                                <span key={index} className="text-[10px] text-on-surface-variant flex items-center gap-1">
-                                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[(index + 2) % COLORS.length] }} />
-                                    {getCategoryLabel(item.name)}: {item.value}
-                                </span>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Lista de alertas recientes */}
-                <div>
-                    <h4 className="font-body-md font-semibold text-on-surface mb-3">Alertas Recientes</h4>
-                    {allAlerts.length === 0 ? (
-                        <div className="text-center py-8 text-on-surface-variant">
-                            <span className="material-symbols-outlined text-4xl block mb-2">notifications_off</span>
-                            <p className="text-body-sm">No hay alertas en el sistema</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-2 max-h-80 overflow-y-auto">
-                            {allAlerts.slice(0, 20).map((alert) => (
-                                <div
-                                    key={alert.id}
-                                    className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${alert.isRead
-                                        ? 'bg-surface-container-low border-outline-variant opacity-75'
-                                        : 'bg-primary/5 border-primary/30'
-                                        }`}
-                                >
-                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${getTypeColor(alert.type)}`}>
-                                        <span className="material-symbols-outlined text-sm">
-                                            {alert.type === 'info' ? 'info' :
-                                                alert.type === 'success' ? 'check_circle' :
-                                                    alert.type === 'warning' ? 'warning' : 'error'}
-                                        </span>
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-start justify-between gap-2">
-                                            <div>
-                                                <p className="text-body-sm font-semibold text-on-surface">
-                                                    {alert.title}
-                                                    {!alert.isRead && (
-                                                        <span className="w-2 h-2 bg-primary rounded-full inline-block ml-2"></span>
-                                                    )}
-                                                </p>
-                                                <p className="text-body-xs text-on-surface-variant line-clamp-2">
-                                                    {alert.message}
-                                                </p>
-                                            </div>
-                                            <button
-                                                onClick={() => handleDeleteAlert(alert.id)}
-                                                className="p-1 text-red-600 hover:bg-red-100 rounded-lg transition-colors flex-shrink-0"
-                                                title="Eliminar alerta"
-                                            >
-                                                <span className="material-symbols-outlined text-sm">delete</span>
-                                            </button>
-                                        </div>
-                                        <div className="flex flex-wrap items-center gap-2 mt-1">
-                                            <span className={`text-[10px] px-2 py-0.5 rounded-full ${getTypeColor(alert.type)}`}>
-                                                {alert.type}
-                                            </span>
-                                            <span className="text-[10px] text-on-surface-variant">
-                                                {getCategoryLabel(alert.category)}
-                                            </span>
-                                            <span className="text-[10px] text-on-surface-variant">
-                                                {formatDate(alert.createdAt)}
-                                            </span>
-                                            <span className="text-[10px] text-on-surface-variant truncate max-w-[120px]">
-                                                Para: {alert.userName || `User #${alert.userId}`}
-                                            </span>
-                                            {alert.isRead && (
-                                                <span className="text-[10px] text-emerald-600">✓ Leída</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                    {allAlerts.length > 20 && (
-                        <div className="text-center mt-3">
-                            <Link to="/alerts" className="text-body-sm text-primary hover:underline">
-                                Ver todas las alertas ({allAlerts.length}) →
-                            </Link>
-                        </div>
-                    )}
-                </div>
-            </div>
-        );
-    };
-
     // ========== RENDER PRINCIPAL ==========
     if (loading) {
         return (
@@ -560,6 +206,26 @@ const AdminDashboard = () => {
         });
     };
 
+    const formatDateShort = (dateString) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
+    // ✅ Formatear fecha para mostrar solo día/mes/año (sin hora)
+    const formatDateOnly = (dateString) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric'
+        });
+    };
+
     const getStatusColor = (status) => {
         const colors = {
             'Confirmed': 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400',
@@ -568,6 +234,26 @@ const AdminDashboard = () => {
             'Cancelled': 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400'
         };
         return colors[status] || 'text-gray-600 bg-gray-100';
+    };
+
+    const getTypeColor = (type) => {
+        const colors = {
+            'info': 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400',
+            'success': 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400',
+            'warning': 'text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400',
+            'error': 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400'
+        };
+        return colors[type] || 'text-gray-600 bg-gray-100';
+    };
+
+    const getTypeIcon = (type) => {
+        const icons = {
+            'info': 'info',
+            'success': 'check_circle',
+            'warning': 'warning',
+            'error': 'error'
+        };
+        return icons[type] || 'notifications';
     };
 
     const CustomTooltip = ({ active, payload, label }) => {
@@ -1053,155 +739,77 @@ const AdminDashboard = () => {
                 </div>
             </div>
 
-            {/* ✅ SECCIÓN DE ALERTAS - AGREGADA AL FINAL */}
-            <div className="mt-8">
-                {renderAlertSection()}
-            </div>
-
-            {/* ✅ MODAL DE BROADCAST */}
-            {showBroadcastModal && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowBroadcastModal(false)}>
-                    <div className="bg-surface-container-lowest rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="font-headline-md text-headline-md text-on-surface flex items-center gap-2">
-                                <span className="material-symbols-outlined text-primary text-2xl">campaign</span>
-                                Enviar Alerta Masiva
-                            </h3>
-                            <button
-                                onClick={() => setShowBroadcastModal(false)}
-                                className="p-2 hover:bg-surface-container-low rounded-lg transition-colors"
-                            >
-                                <span className="material-symbols-outlined">close</span>
-                            </button>
+            {/* ✅ TABLA RESUMEN DE ALERTAS - AGRUPADAS POR FECHA */}
+            <div className="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant mt-8">
+                <div className="flex justify-between items-center mb-4">
+                    <div className="flex items-center gap-3">
+                        <div>
+                            <h3 className="font-headline-md text-headline-md text-on-surface">Alertas del Sistema</h3>
                         </div>
-
-                        <form onSubmit={handleBroadcastSubmit} className="space-y-4">
-                            <div>
-                                <label className="font-label-caps text-label-caps text-on-surface-variant block mb-1">
-                                    Título <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    value={broadcastData.title}
-                                    onChange={(e) => setBroadcastData({ ...broadcastData, title: e.target.value })}
-                                    placeholder="Ej: Nuevo espacio disponible"
-                                    className="w-full bg-surface-container-low border-b border-outline-variant px-0 py-2 text-on-surface focus:border-primary focus:outline-none transition-all"
-                                    required
-                                />
-                            </div>
-
-                            <div>
-                                <label className="font-label-caps text-label-caps text-on-surface-variant block mb-1">
-                                    Mensaje <span className="text-red-500">*</span>
-                                </label>
-                                <textarea
-                                    value={broadcastData.message}
-                                    onChange={(e) => setBroadcastData({ ...broadcastData, message: e.target.value })}
-                                    rows="4"
-                                    placeholder="Escribe el mensaje de la alerta..."
-                                    className="w-full bg-surface-container-low border-b border-outline-variant px-0 py-2 text-on-surface focus:border-primary focus:outline-none transition-all resize-y"
-                                    required
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="font-label-caps text-label-caps text-on-surface-variant block mb-1">
-                                        Tipo
-                                    </label>
-                                    <select
-                                        value={broadcastData.type}
-                                        onChange={(e) => setBroadcastData({ ...broadcastData, type: e.target.value })}
-                                        className="w-full bg-surface-container-low border-b border-outline-variant px-0 py-2 text-on-surface focus:border-primary focus:outline-none transition-all"
-                                    >
-                                        <option value="info">ℹ️ Info</option>
-                                        <option value="success">✅ Success</option>
-                                        <option value="warning">⚠️ Warning</option>
-                                        <option value="error">❌ Error</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="font-label-caps text-label-caps text-on-surface-variant block mb-1">
-                                        Categoría
-                                    </label>
-                                    <select
-                                        value={broadcastData.category}
-                                        onChange={(e) => setBroadcastData({ ...broadcastData, category: e.target.value })}
-                                        className="w-full bg-surface-container-low border-b border-outline-variant px-0 py-2 text-on-surface focus:border-primary focus:outline-none transition-all"
-                                    >
-                                        <option value="general">📌 General</option>
-                                        <option value="booking">📅 Booking</option>
-                                        <option value="payment">💳 Payment</option>
-                                        <option value="system">⚙️ System</option>
-                                        <option value="promotion">🎉 Promotion</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="font-label-caps text-label-caps text-on-surface-variant block mb-1">
-                                        URL de Acción
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={broadcastData.actionUrl}
-                                        onChange={(e) => setBroadcastData({ ...broadcastData, actionUrl: e.target.value })}
-                                        placeholder="/catalog"
-                                        className="w-full bg-surface-container-low border-b border-outline-variant px-0 py-2 text-on-surface focus:border-primary focus:outline-none transition-all"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="font-label-caps text-label-caps text-on-surface-variant block mb-1">
-                                        Texto del Botón
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={broadcastData.actionLabel}
-                                        onChange={(e) => setBroadcastData({ ...broadcastData, actionLabel: e.target.value })}
-                                        placeholder="Ver más"
-                                        className="w-full bg-surface-container-low border-b border-outline-variant px-0 py-2 text-on-surface focus:border-primary focus:outline-none transition-all"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                                <p className="text-body-sm text-blue-700 dark:text-blue-400 flex items-center gap-2">
-                                    <span className="material-symbols-outlined text-sm">info</span>
-                                    Esta alerta será enviada a <strong>todos los usuarios activos</strong> del sistema.
-                                </p>
-                            </div>
-
-                            <div className="flex gap-3 pt-4 border-t border-outline-variant">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowBroadcastModal(false)}
-                                    className="flex-1 px-4 py-2 border border-outline-variant rounded-lg hover:bg-surface-container-low transition-colors"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={sendingBroadcast}
-                                    className="flex-1 px-4 py-2 bg-primary text-on-primary rounded-lg hover:bg-secondary transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                                >
-                                    {sendingBroadcast ? (
-                                        <>
-                                            <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
-                                            Enviando...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <span className="material-symbols-outlined text-sm">send</span>
-                                            Enviar Alerta
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                        </form>
                     </div>
+                    <Link to="/admin/alerts" className="text-primary hover:underline text-sm flex items-center gap-1">
+                        Gestionar alertas →
+                    </Link>
                 </div>
-            )}
+
+                {/* Tabla de últimas 5 alertas agrupadas por fecha */}
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {loadingAlerts ? (
+                        <div className="text-center py-8">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                            <p className="text-body-sm text-on-surface-variant mt-2">Cargando alertas...</p>
+                        </div>
+                    ) : recentAlerts.length === 0 ? (
+                        <div className="text-center py-8 text-on-surface-variant">
+                            <span className="material-symbols-outlined text-4xl block mb-2">notifications_off</span>
+                            <p className="text-body-sm">No hay alertas recientes</p>
+                        </div>
+                    ) : (
+                        recentAlerts.map((alert) => (
+                            <div
+                                key={alert.id}
+                                className={`flex items-center justify-between p-3 rounded-lg border transition-all ${alert.isRead
+                                    ? 'bg-surface-container-low border-outline-variant opacity-75'
+                                    : 'bg-primary/5 border-primary/30'
+                                    }`}
+                            >
+                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                    {/* Icono de tipo */}
+                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${getTypeColor(alert.type)}`}>
+                                        <span className="material-symbols-outlined text-lg">
+                                            {getTypeIcon(alert.type)}
+                                        </span>
+                                    </div>
+
+                                    {/* Contenido de la alerta - SIN DESTINATARIO */}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="font-body-sm font-semibold text-on-surface truncate">
+                                                {alert.title}
+                                            </span>
+                                            {!alert.isRead && (
+                                                <span className="w-2 h-2 bg-primary rounded-full flex-shrink-0"></span>
+                                            )}
+                                            <span className={`text-body-xs px-2 py-0.5 rounded-full ${getTypeColor(alert.type)} flex-shrink-0`}>
+                                                {alert.type}
+                                            </span>
+                                        </div>
+                                        <p className="text-body-xs text-on-surface-variant truncate max-w-md">
+                                            {alert.message}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Fecha de emisión (sin hora) */}
+                                <div className="text-body-xs text-on-surface-variant flex-shrink-0 ml-4 text-right">
+                                    <span className="material-symbols-outlined text-sm align-middle mr-1">calendar_today</span>
+                                    {formatDateOnly(alert.createdAt)}
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+            </div>
         </div>
     );
 };
