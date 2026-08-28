@@ -22,6 +22,7 @@ import AdminUsers from './pages/AdminUsers';
 import AdminSpaces from './pages/AdminSpaces';
 import NotFound from './pages/NotFound';
 import AdminAmenities from './pages/AdminAmenities';
+import AdminAlerts from './pages/AdminAlerts';
 
 // Loading Component
 const LoadingSpinner = () => (
@@ -126,6 +127,13 @@ const AppRoutes = () => {
                 <Route path="admin/spaces" element={
                     <AdminRoute>
                         <AdminSpaces />
+                    </AdminRoute>
+                } />
+
+                {/* ALERTAS */}
+                <Route path="admin/alerts" element={
+                    <AdminRoute>
+                        <AdminAlerts />
                     </AdminRoute>
                 } />
 
