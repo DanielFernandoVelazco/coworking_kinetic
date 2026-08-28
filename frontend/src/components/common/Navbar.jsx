@@ -59,6 +59,9 @@ const Navbar = () => {
                                     <Link to="/admin/users" className="text-sm md:text-base text-on-surface-variant dark:text-on-dark-surface-variant hover:text-primary dark:hover:text-primary-dark transition-colors">
                                         Usuarios
                                     </Link>
+                                    <Link to="/admin/alerts" className="text-sm md:text-base text-on-surface-variant dark:text-on-dark-surface-variant hover:text-primary dark:hover:text-primary-dark transition-colors">
+                                        Alertas
+                                    </Link>
                                 </>
                             )}
                         </div>
