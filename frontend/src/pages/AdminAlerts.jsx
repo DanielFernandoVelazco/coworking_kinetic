@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import adminService from '../api/admin.service';
+import usersService from '../api/users.service';
 import toast from 'react-hot-toast';
 
 const PAGE_SIZE = 20;
@@ -42,6 +43,13 @@ const AdminAlerts = () => {
     });
     const [sendingBroadcast, setSendingBroadcast] = useState(false);
 
+    // ✅ NUEVOS ESTADOS PARA DESTINATARIOS
+    const [recipientType, setRecipientType] = useState('active'); // 'active', 'inactive', 'custom'
+    const [allUsers, setAllUsers] = useState([]);
+    const [selectedUsers, setSelectedUsers] = useState([]);
+    const [loadingUsers, setLoadingUsers] = useState(false);
+    const [searchUsers, setSearchUsers] = useState('');
+
     // Modal de confirmación de eliminación
     const [showDeleteModal, setShowDeleteModal] = useState(null);
     const [deleting, setDeleting] = useState(false);
@@ -79,9 +87,30 @@ const AdminAlerts = () => {
         }
     }, []);
 
+    // ✅ Cargar usuarios para la checklist
+    const loadUsers = useCallback(async () => {
+        setLoadingUsers(true);
+        try {
+            const data = await usersService.getAll();
+            setAllUsers(data || []);
+        } catch (error) {
+            console.error('Error loading users:', error);
+            toast.error('Error al cargar los usuarios');
+        } finally {
+            setLoadingUsers(false);
+        }
+    }, []);
+
     useEffect(() => {
         loadAlerts();
     }, [loadAlerts]);
+
+    // Cargar usuarios cuando se abre el modal y se selecciona 'custom'
+    useEffect(() => {
+        if (showBroadcastModal && recipientType === 'custom' && allUsers.length === 0) {
+            loadUsers();
+        }
+    }, [showBroadcastModal, recipientType, allUsers.length, loadUsers]);
 
     // Aplicar filtros
     useEffect(() => {
@@ -129,7 +158,64 @@ const AdminAlerts = () => {
         setCurrentPage(1);
     }, [alerts, searchTerm, filterType, filterCategory, filterStatus]);
 
-    // Obtener alertas paginadas
+    // ✅ Filtrar usuarios para la checklist
+    const filteredUsers = useMemo(() => {
+        if (!searchUsers.trim()) return allUsers;
+        const searchLower = searchUsers.toLowerCase();
+        return allUsers.filter(u =>
+            u.firstName?.toLowerCase().includes(searchLower) ||
+            u.lastName?.toLowerCase().includes(searchLower) ||
+            u.email?.toLowerCase().includes(searchLower)
+        );
+    }, [allUsers, searchUsers]);
+
+    // ✅ Manejar selección de todos los usuarios
+    const handleSelectAllUsers = useCallback(() => {
+        if (selectedUsers.length === filteredUsers.length) {
+            setSelectedUsers([]);
+        } else {
+            setSelectedUsers(filteredUsers.map(u => u.id));
+        }
+    }, [filteredUsers, selectedUsers]);
+
+    // ✅ Manejar selección individual
+    const handleToggleUser = useCallback((userId) => {
+        setSelectedUsers(prev =>
+            prev.includes(userId)
+                ? prev.filter(id => id !== userId)
+                : [...prev, userId]
+        );
+    }, []);
+
+    // ✅ Obtener el número de destinatarios según el tipo seleccionado
+    const getRecipientCount = useCallback(() => {
+        switch (recipientType) {
+            case 'active':
+                return allUsers.filter(u => u.isActive).length;
+            case 'inactive':
+                return allUsers.filter(u => !u.isActive).length;
+            case 'custom':
+                return selectedUsers.length;
+            default:
+                return 0;
+        }
+    }, [recipientType, allUsers, selectedUsers]);
+
+    // ✅ Obtener la lista de IDs de destinatarios
+    const getRecipientIds = useCallback(() => {
+        switch (recipientType) {
+            case 'active':
+                return allUsers.filter(u => u.isActive).map(u => u.id);
+            case 'inactive':
+                return allUsers.filter(u => !u.isActive).map(u => u.id);
+            case 'custom':
+                return selectedUsers;
+            default:
+                return [];
+        }
+    }, [recipientType, allUsers, selectedUsers]);
+
+    // Obtener usuarios paginados
     const paginatedAlerts = useMemo(() => {
         const startIndex = (currentPage - 1) * PAGE_SIZE;
         const endIndex = startIndex + PAGE_SIZE;
@@ -169,7 +255,7 @@ const AdminAlerts = () => {
         }
     };
 
-    // Enviar broadcast
+    // ✅ Enviar broadcast con destinatarios seleccionados
     const handleBroadcastSubmit = async (e) => {
         e.preventDefault();
 
@@ -178,10 +264,23 @@ const AdminAlerts = () => {
             return;
         }
 
+        const recipientIds = getRecipientIds();
+        if (recipientIds.length === 0) {
+            toast.error('No hay usuarios seleccionados para enviar la alerta');
+            return;
+        }
+
         setSendingBroadcast(true);
         try {
-            const result = await adminService.broadcastAlert(broadcastData);
-            toast.success(`✅ Alerta enviada a ${result.count} usuarios`);
+            // Enviar alerta a cada usuario seleccionado
+            const promises = recipientIds.map(userId =>
+                adminService.createAlertForUser(userId, broadcastData)
+            );
+
+            const results = await Promise.all(promises);
+            const successCount = results.filter(r => r).length;
+
+            toast.success(`✅ Alerta enviada a ${successCount} usuarios`);
             setShowBroadcastModal(false);
             setBroadcastData({
                 title: '',
@@ -191,6 +290,8 @@ const AdminAlerts = () => {
                 actionUrl: '',
                 actionLabel: ''
             });
+            setSelectedUsers([]);
+            setRecipientType('active');
             await loadAlerts();
         } catch (error) {
             console.error('Error sending broadcast:', error);
@@ -248,6 +349,97 @@ const AdminAlerts = () => {
         return isRead
             ? 'bg-surface-container-low text-on-surface-variant'
             : 'bg-primary/10 text-primary dark:bg-primary-dark/20 dark:text-primary-dark';
+    };
+
+    // ✅ Renderizar checklist de usuarios
+    const renderUserChecklist = () => {
+        if (loadingUsers) {
+            return (
+                <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                    <p className="text-body-sm text-on-surface-variant mt-2">Cargando usuarios...</p>
+                </div>
+            );
+        }
+
+        if (allUsers.length === 0) {
+            return (
+                <div className="text-center py-8 text-on-surface-variant">
+                    <p className="text-body-sm">No hay usuarios registrados en el sistema</p>
+                </div>
+            );
+        }
+
+        const filtered = filteredUsers;
+        const allSelected = filtered.length > 0 && filtered.every(u => selectedUsers.includes(u.id));
+
+        return (
+            <div>
+                <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={handleSelectAllUsers}
+                            className="text-body-sm text-primary hover:underline flex items-center gap-1"
+                        >
+                            {allSelected ? (
+                                <>Deseleccionar todos</>
+                            ) : (
+                                <>Seleccionar todos ({filtered.length})</>
+                            )}
+                        </button>
+                        <span className="text-body-xs text-on-surface-variant">
+                            {selectedUsers.length} seleccionados
+                        </span>
+                    </div>
+                    <input
+                        type="text"
+                        value={searchUsers}
+                        onChange={(e) => setSearchUsers(e.target.value)}
+                        placeholder="Buscar usuario..."
+                        className="text-body-sm bg-surface-container-low border-b border-outline-variant px-0 py-1 text-on-surface focus:border-primary focus:outline-none transition-all w-48"
+                    />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-60 overflow-y-auto p-2 bg-surface-container-low rounded-lg border border-outline-variant">
+                    {filtered.length === 0 ? (
+                        <div className="col-span-2 text-center py-4 text-on-surface-variant">
+                            No se encontraron usuarios
+                        </div>
+                    ) : (
+                        filtered.map((u) => (
+                            <label
+                                key={u.id}
+                                className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all ${selectedUsers.includes(u.id)
+                                    ? 'bg-primary/10 border border-primary'
+                                    : 'hover:bg-surface-container-high border border-transparent'
+                                    }`}
+                            >
+                                <input
+                                    type="checkbox"
+                                    checked={selectedUsers.includes(u.id)}
+                                    onChange={() => handleToggleUser(u.id)}
+                                    className="w-4 h-4 accent-primary"
+                                />
+                                <div className="flex-1 min-w-0">
+                                    <span className="text-body-sm text-on-surface truncate block">
+                                        {u.firstName} {u.lastName}
+                                    </span>
+                                    <span className="text-body-xs text-on-surface-variant truncate block">
+                                        {u.email}
+                                    </span>
+                                </div>
+                                <span className={`text-xs px-2 py-0.5 rounded-full ${u.isActive
+                                    ? 'bg-emerald-100 text-emerald-700'
+                                    : 'bg-red-100 text-red-700'
+                                    }`}>
+                                    {u.isActive ? 'Activo' : 'Inactivo'}
+                                </span>
+                            </label>
+                        ))
+                    )}
+                </div>
+            </div>
+        );
     };
 
     if (!user?.isAdmin) {
@@ -581,10 +773,10 @@ const AdminAlerts = () => {
                 </div>
             )}
 
-            {/* ========== MODAL DE BROADCAST ========== */}
+            {/* ========== MODAL DE BROADCAST MODIFICADO ========== */}
             {showBroadcastModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowBroadcastModal(false)}>
-                    <div className="bg-surface-container-lowest dark:bg-surface-dark-container-lowest rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl transition-colors duration-300" onClick={(e) => e.stopPropagation()}>
+                    <div className="bg-surface-container-lowest dark:bg-surface-dark-container-lowest rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl transition-colors duration-300" onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="font-headline-md text-headline-md text-on-surface dark:text-on-dark-surface flex items-center gap-2">
                                 <span className="material-symbols-outlined text-primary dark:text-primary-dark text-2xl">campaign</span>
@@ -688,24 +880,96 @@ const AdminAlerts = () => {
                                 </div>
                             </div>
 
-                            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                                <p className="text-body-sm text-blue-700 dark:text-blue-400 flex items-center gap-2">
-                                    <span className="material-symbols-outlined text-sm">info</span>
-                                    Esta alerta será enviada a <strong>todos los usuarios activos</strong> del sistema.
-                                </p>
+                            {/* ✅ NUEVA SECCIÓN: SELECCIÓN DE DESTINATARIOS */}
+                            <div className="p-4 bg-surface-container-low dark:bg-surface-dark-container-low rounded-lg border border-outline-variant dark:border-outline-dark-variant">
+                                <label className="font-label-caps text-label-caps text-on-surface-variant dark:text-on-dark-surface-variant block mb-2">
+                                    Destinatarios
+                                </label>
+
+                                {/* Selector de tipo de destinatario */}
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setRecipientType('active');
+                                            setSelectedUsers([]);
+                                        }}
+                                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${recipientType === 'active'
+                                            ? 'bg-primary text-white shadow-md'
+                                            : 'border border-outline-variant hover:bg-surface-container-high text-on-surface-variant'
+                                            }`}
+                                    >
+                                        Usuarios Activos
+                                        <span className="ml-1 text-xs opacity-70">
+                                            ({allUsers.filter(u => u.isActive).length})
+                                        </span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setRecipientType('inactive');
+                                            setSelectedUsers([]);
+                                        }}
+                                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${recipientType === 'inactive'
+                                            ? 'bg-primary text-white shadow-md'
+                                            : 'border border-outline-variant hover:bg-surface-container-high text-on-surface-variant'
+                                            }`}
+                                    >
+                                        Usuarios Inactivos
+                                        <span className="ml-1 text-xs opacity-70">
+                                            ({allUsers.filter(u => !u.isActive).length})
+                                        </span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setRecipientType('custom');
+                                            if (allUsers.length === 0) loadUsers();
+                                        }}
+                                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${recipientType === 'custom'
+                                            ? 'bg-primary text-white shadow-md'
+                                            : 'border border-outline-variant hover:bg-surface-container-high text-on-surface-variant'
+                                            }`}
+                                    >
+                                        Personalizado
+                                        <span className="ml-1 text-xs opacity-70">
+                                            ({selectedUsers.length} seleccionados)
+                                        </span>
+                                    </button>
+                                </div>
+
+                                {/* Indicador de cantidad de destinatarios */}
+                                <div className="text-body-sm text-on-surface-variant mb-2">
+                                    {recipientType === 'active' && (
+                                        <span>🔵 Enviando a <strong>{allUsers.filter(u => u.isActive).length}</strong> usuarios activos</span>
+                                    )}
+                                    {recipientType === 'inactive' && (
+                                        <span>🔴 Enviando a <strong>{allUsers.filter(u => !u.isActive).length}</strong> usuarios inactivos</span>
+                                    )}
+                                    {recipientType === 'custom' && (
+                                        <span>🟣 Enviando a <strong>{selectedUsers.length}</strong> usuarios seleccionados</span>
+                                    )}
+                                </div>
+
+                                {/* Checklist de usuarios (solo para personalizado) */}
+                                {recipientType === 'custom' && renderUserChecklist()}
                             </div>
 
                             <div className="flex gap-3 pt-4 border-t border-outline-variant dark:border-outline-dark-variant">
                                 <button
                                     type="button"
-                                    onClick={() => setShowBroadcastModal(false)}
+                                    onClick={() => {
+                                        setShowBroadcastModal(false);
+                                        setSelectedUsers([]);
+                                        setRecipientType('active');
+                                    }}
                                     className="flex-1 px-4 py-2 border border-outline-variant dark:border-outline-dark-variant rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-dark-container-low transition-colors text-on-surface dark:text-on-dark-surface"
                                 >
                                     Cancelar
                                 </button>
                                 <button
                                     type="submit"
-                                    disabled={sendingBroadcast}
+                                    disabled={sendingBroadcast || (recipientType === 'custom' && selectedUsers.length === 0)}
                                     className="flex-1 px-4 py-2 bg-primary dark:bg-primary-dark text-on-primary rounded-lg hover:bg-secondary transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                                 >
                                     {sendingBroadcast ? (
@@ -717,6 +981,18 @@ const AdminAlerts = () => {
                                         <>
                                             <span className="material-symbols-outlined text-sm">send</span>
                                             Enviar Alerta
+                                            {recipientType !== 'custom' && (
+                                                <span className="text-xs opacity-70">
+                                                    ({recipientType === 'active'
+                                                        ? allUsers.filter(u => u.isActive).length
+                                                        : allUsers.filter(u => !u.isActive).length} usuarios)
+                                                </span>
+                                            )}
+                                            {recipientType === 'custom' && (
+                                                <span className="text-xs opacity-70">
+                                                    ({selectedUsers.length} usuarios)
+                                                </span>
+                                            )}
                                         </>
                                     )}
                                 </button>
