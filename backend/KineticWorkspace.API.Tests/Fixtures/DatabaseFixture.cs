@@ -1,5 +1,4 @@
 using KineticWorkspace.API.Data;
-using KineticWorkspace.API.Models.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace KineticWorkspace.API.Tests.Fixtures;
@@ -22,9 +21,9 @@ public class DatabaseFixture : IDisposable
 
     private void SeedDatabase()
     {
-        // Agregar datos de prueba
-        Context.Users.AddRange(TestDataFactory.CreateTestUser());
-        Context.Spaces.AddRange(TestDataFactory.CreateTestSpace());
+        // Agregar datos de prueba usando TestDataFactory
+        Context.Users.Add(TestDataFactory.CreateTestUser());
+        Context.Spaces.Add(TestDataFactory.CreateTestSpace());
         Context.SaveChanges();
     }
 
