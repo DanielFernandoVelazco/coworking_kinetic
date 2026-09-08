@@ -1,5 +1,4 @@
 using KineticWorkspace.API.Models.Entities;
-using KineticWorkspace.API.Helpers;
 
 namespace KineticWorkspace.API.Tests.Fixtures;
 
