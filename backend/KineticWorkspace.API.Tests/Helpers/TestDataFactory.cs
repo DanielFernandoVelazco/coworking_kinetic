@@ -19,7 +19,12 @@ public static class TestDataFactory
             JobTitle = "Software Engineer",
             IsActive = true,
             IsAdmin = isAdmin,
-            CreatedAt = DateTime.UtcNow.AddDays(-30)
+            CreatedAt = DateTime.UtcNow.AddDays(-30),
+            Reservations = new List<Reservation>(),
+            Payments = new List<Payment>(),
+            Reviews = new List<Review>(),
+            RefreshTokens = new List<RefreshToken>(),
+            AuditLogs = new List<AuditLog>()
         };
     }
 
@@ -43,7 +48,9 @@ public static class TestDataFactory
             IsFeatured = false,
             IsActive = true,
             CreatedAt = DateTime.UtcNow.AddDays(-10),
-            Amenities = new List<Amenity>()
+            Amenities = new List<Amenity>(),
+            Reservations = new List<Reservation>(),
+            Reviews = new List<Review>()
         };
     }
 
