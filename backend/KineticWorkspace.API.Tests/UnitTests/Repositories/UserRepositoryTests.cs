@@ -2,6 +2,7 @@ using KineticWorkspace.API.Data;
 using KineticWorkspace.API.Models.Entities;
 using KineticWorkspace.API.Repositories.Implementations;
 using Microsoft.EntityFrameworkCore;
+using KineticWorkspace.API.Tests.Helpers;
 
 namespace KineticWorkspace.API.Tests.UnitTests.Repositories;
 
