@@ -1,4 +1,5 @@
 using KineticWorkspace.API.Models.Entities;
+using KineticWorkspace.API.Helpers;
 
 namespace KineticWorkspace.API.Tests.Helpers;
 
@@ -41,7 +42,8 @@ public static class TestDataFactory
             IsAvailable = true,
             IsFeatured = false,
             IsActive = true,
-            CreatedAt = DateTime.UtcNow.AddDays(-10)
+            CreatedAt = DateTime.UtcNow.AddDays(-10),
+            Amenities = new List<Amenity>()
         };
     }
 
@@ -59,7 +61,10 @@ public static class TestDataFactory
             TotalPrice = 100m,
             NumberOfGuests = 2,
             CreatedAt = now.AddDays(-1),
-            UpdatedAt = now
+            UpdatedAt = now,
+            User = null!,
+            Space = null!,
+            Payments = new List<Payment>()
         };
     }
 
@@ -74,7 +79,8 @@ public static class TestDataFactory
             Type = type,
             Category = "general",
             IsRead = false,
-            CreatedAt = DateTime.UtcNow.AddHours(-1)
+            CreatedAt = DateTime.UtcNow.AddHours(-1),
+            User = null!
         };
     }
 
@@ -87,7 +93,8 @@ public static class TestDataFactory
             Description = "High-speed WiFi",
             Icon = "wifi",
             IsActive = true,
-            CreatedAt = DateTime.UtcNow.AddDays(-5)
+            CreatedAt = DateTime.UtcNow.AddDays(-5),
+            Spaces = new List<Space>()
         };
     }
 
@@ -106,7 +113,9 @@ public static class TestDataFactory
             NumberOfGuests = 2,
             SessionId = $"test_session_{Guid.NewGuid()}",
             CreatedAt = now,
-            ExpiresAt = now.AddMinutes(30)
+            ExpiresAt = now.AddMinutes(30),
+            User = null!,
+            Space = null!
         };
     }
 }
