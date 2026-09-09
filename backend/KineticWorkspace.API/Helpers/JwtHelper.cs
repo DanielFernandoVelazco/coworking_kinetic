@@ -6,7 +6,7 @@ using KineticWorkspace.API.Models.Entities;
 
 namespace KineticWorkspace.API.Helpers
 {
-    public class JwtHelper
+    public class JwtHelper : IJwtHelper
     {
         private readonly IConfiguration _configuration;
 
