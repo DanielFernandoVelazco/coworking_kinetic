@@ -1,4 +1,3 @@
-// backend/KineticWorkspace.API/Services/Implementations/AuthService.cs
 using AutoMapper;
 using KineticWorkspace.API.Data;
 using KineticWorkspace.API.Helpers;
@@ -14,7 +13,7 @@ namespace KineticWorkspace.API.Services.Implementations
     {
         private readonly IUserRepository _userRepository;
         private readonly IRefreshTokenRepository _refreshTokenRepository;
-        private readonly JwtHelper _jwtHelper;
+        private readonly IJwtHelper _jwtHelper; // ✅ CAMBIADO a IJwtHelper
         private readonly IMapper _mapper;
         private readonly ILogger<AuthService> _logger;
         private readonly ApplicationDbContext _context;
@@ -22,7 +21,7 @@ namespace KineticWorkspace.API.Services.Implementations
         public AuthService(
             IUserRepository userRepository,
             IRefreshTokenRepository refreshTokenRepository,
-            JwtHelper jwtHelper,
+            IJwtHelper jwtHelper, // ✅ CAMBIADO a IJwtHelper
             IMapper mapper,
             ILogger<AuthService> logger,
             ApplicationDbContext context)
@@ -78,7 +77,6 @@ namespace KineticWorkspace.API.Services.Implementations
                 throw new InvalidOperationException("El email ya está registrado");
             }
 
-            // ✅ Usar Execution Strategy para transacciones con reintentos
             var strategy = _context.Database.CreateExecutionStrategy();
 
             return await strategy.ExecuteAsync(async () =>
@@ -149,7 +147,6 @@ namespace KineticWorkspace.API.Services.Implementations
                 throw new UnauthorizedAccessException("Usuario no encontrado o desactivado");
             }
 
-            // ✅ Usar Execution Strategy para transacciones con reintentos
             var strategy = _context.Database.CreateExecutionStrategy();
 
             return await strategy.ExecuteAsync(async () =>
@@ -258,7 +255,6 @@ namespace KineticWorkspace.API.Services.Implementations
                 return false;
             }
 
-            // ✅ Usar Execution Strategy para transacciones con reintentos
             var strategy = _context.Database.CreateExecutionStrategy();
 
             return await strategy.ExecuteAsync(async () =>
