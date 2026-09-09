@@ -1,4 +1,3 @@
-// backend/KineticWorkspace.API/Mappings/MappingProfile.cs
 using AutoMapper;
 using KineticWorkspace.API.Models.DTOs.Amenities;
 using KineticWorkspace.API.Models.DTOs.Auth;
@@ -24,21 +23,19 @@ namespace KineticWorkspace.API.Mappings
 
             // ==================== SPACE MAPPINGS ====================
             CreateMap<Space, SpaceResponseDto>()
-     .ForMember(dest => dest.Amenities,
-         opt => opt.MapFrom(src => src.Amenities.Select(a => a.Name).ToList()))
-     .ForMember(dest => dest.ImageUrls, opt => opt.Ignore())
-     .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsActive))
-     // ✅ AGREGAR: Mapeo de IDs de amenidades para el frontend
-     .ForMember(dest => dest.AmenityIds,
-         opt => opt.MapFrom(src => src.Amenities.Select(a => a.Id).ToList()))
-     .AfterMap((src, dest) =>
-     {
-         dest.ImageUrls = string.IsNullOrEmpty(src.ImageUrls)
-             ? new List<string>()
-             : src.ImageUrls.Split(',').ToList();
-     });
+                .ForMember(dest => dest.Amenities,
+                    opt => opt.MapFrom(src => src.Amenities.Select(a => a.Name).ToList()))
+                .ForMember(dest => dest.ImageUrls, opt => opt.Ignore())
+                .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsActive))
+                .ForMember(dest => dest.AmenityIds,
+                    opt => opt.MapFrom(src => src.Amenities.Select(a => a.Id).ToList()))
+                .AfterMap((src, dest) =>
+                {
+                    dest.ImageUrls = string.IsNullOrEmpty(src.ImageUrls)
+                        ? new List<string>()
+                        : src.ImageUrls.Split(',').ToList();
+                });
 
-            // ✅ Mapeo de SpaceRequestDto a Space (ignoramos Amenities porque se asignan manualmente)
             CreateMap<SpaceRequestDto, Space>()
                 .ForMember(dest => dest.Amenities, opt => opt.Ignore())
                 .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsActive))
@@ -50,7 +47,6 @@ namespace KineticWorkspace.API.Mappings
                 });
 
             // ==================== RESERVATION MAPPINGS ====================
-            // Mappings/MappingProfile.cs
             CreateMap<Reservation, ReservationResponseDto>()
                 .ForMember(dest => dest.UserName,
                     opt => opt.MapFrom(src => src.User != null ? $"{src.User.FirstName} {src.User.LastName}" : "Unknown"))
@@ -69,7 +65,7 @@ namespace KineticWorkspace.API.Mappings
                         : null))
                 .AfterMap((src, dest) =>
                 {
-                    // ✅ MANEJO DE NULL
+                    // ✅ MANEJO DE NULL PARA EVITAR EXCEPCIONES
                     if (src.Space != null && !string.IsNullOrEmpty(src.Space.ImageUrls))
                     {
                         dest.SpaceImageUrl = src.Space.ImageUrls.Split(',').FirstOrDefault();
