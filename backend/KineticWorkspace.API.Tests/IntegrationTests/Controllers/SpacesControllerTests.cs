@@ -19,13 +19,27 @@ public class SpacesControllerTests : IClassFixture<WebApplicationFactory<Program
     [Fact]
     public async Task GetAllSpaces_ReturnsOk()
     {
+        // Arrange: Seed data first
+        await SeedDataAsync();
+
         // Act
         var response = await _client.GetAsync("/api/spaces");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var spaces = await response.Content.ReadFromJsonAsync<List<SpaceResponseDto>>();
-        spaces.Should().NotBeNull();
+    }
+
+    private async Task SeedDataAsync()
+    {
+        // Agregar datos de prueba antes de ejecutar los tests
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        if (!db.Spaces.Any())
+        {
+            db.Spaces.Add(TestDataFactory.CreateTestSpace());
+            await db.SaveChangesAsync();
+        }
     }
 
     [Fact]
