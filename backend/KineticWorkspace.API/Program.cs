@@ -1,4 +1,3 @@
-// backend/KineticWorkspace.API/Program.cs
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -30,8 +29,6 @@ builder.Host.UseSerilog();
 
 // Configurar EPPlus para modo no comercial
 ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-
-builder.Services.AddScoped<IJwtHelper, JwtHelper>();
 
 // Configurar Rate Limiting
 builder.Services.AddMemoryCache();
@@ -157,8 +154,8 @@ builder.Services.AddScoped<IAlertService, AlertService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IAmenityService, AmenityService>();
 
-// Registrar Helpers
-builder.Services.AddScoped<JwtHelper>();
+// Registrar Helpers - ✅ CAMBIADO A IJwtHelper
+builder.Services.AddScoped<IJwtHelper, JwtHelper>();
 
 // Registrar Seeders
 builder.Services.AddScoped<DataSeeder>();
