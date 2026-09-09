@@ -34,18 +34,22 @@ public class AuthControllerTests : IClassFixture<WebApplicationFactory<Program>>
                 var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 db.Database.EnsureCreated();
 
-                // ✅ USAR PasswordHelper DEL PROYECTO PRINCIPAL
-                db.Users.Add(new Models.Entities.User
+                // ✅ VERIFICAR SI EL USUARIO YA EXISTE ANTES DE AGREGAR
+                var existingUser = db.Users.FirstOrDefault(u => u.Email == "test@test.com");
+                if (existingUser == null)
                 {
-                    Id = 1,
-                    FirstName = "Test",
-                    LastName = "User",
-                    Email = "test@test.com",
-                    PasswordHash = KineticWorkspace.API.Helpers.PasswordHelper.HashPassword("Test123!"),
-                    IsActive = true,
-                    CreatedAt = DateTime.UtcNow
-                });
-                db.SaveChanges();
+                    db.Users.Add(new Models.Entities.User
+                    {
+                        Id = 1,
+                        FirstName = "Test",
+                        LastName = "User",
+                        Email = "test@test.com",
+                        PasswordHash = KineticWorkspace.API.Helpers.PasswordHelper.HashPassword("Test123!"),
+                        IsActive = true,
+                        CreatedAt = DateTime.UtcNow
+                    });
+                    db.SaveChanges();
+                }
             });
         });
 
