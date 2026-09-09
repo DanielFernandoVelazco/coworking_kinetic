@@ -50,27 +50,34 @@ namespace KineticWorkspace.API.Mappings
                 });
 
             // ==================== RESERVATION MAPPINGS ====================
+            // Mappings/MappingProfile.cs
             CreateMap<Reservation, ReservationResponseDto>()
                 .ForMember(dest => dest.UserName,
-                    opt => opt.MapFrom(src => $"{src.User.FirstName} {src.User.LastName}"))
+                    opt => opt.MapFrom(src => src.User != null ? $"{src.User.FirstName} {src.User.LastName}" : "Unknown"))
                 .ForMember(dest => dest.SpaceName,
-                    opt => opt.MapFrom(src => src.Space.Name))
+                    opt => opt.MapFrom(src => src.Space != null ? src.Space.Name : "Unknown"))
                 .ForMember(dest => dest.SpaceType,
-                    opt => opt.MapFrom(src => src.Space.Type))
+                    opt => opt.MapFrom(src => src.Space != null ? src.Space.Type : "Unknown"))
                 .ForMember(dest => dest.SpaceImageUrl, opt => opt.Ignore())
                 .ForMember(dest => dest.PaidAmount,
-                    opt => opt.MapFrom(src => src.Payments.Any()
+                    opt => opt.MapFrom(src => src.Payments != null && src.Payments.Any()
                         ? src.Payments.Sum(p => p.Amount)
                         : (decimal?)null))
                 .ForMember(dest => dest.PaymentStatus,
-                    opt => opt.MapFrom(src => src.Payments.Any()
+                    opt => opt.MapFrom(src => src.Payments != null && src.Payments.Any()
                         ? src.Payments.First().Status
                         : null))
                 .AfterMap((src, dest) =>
                 {
-                    dest.SpaceImageUrl = string.IsNullOrEmpty(src.Space.ImageUrls)
-                        ? null
-                        : src.Space.ImageUrls.Split(',').FirstOrDefault();
+                    // ✅ MANEJO DE NULL
+                    if (src.Space != null && !string.IsNullOrEmpty(src.Space.ImageUrls))
+                    {
+                        dest.SpaceImageUrl = src.Space.ImageUrls.Split(',').FirstOrDefault();
+                    }
+                    else
+                    {
+                        dest.SpaceImageUrl = null;
+                    }
                 });
 
             CreateMap<ReservationRequestDto, Reservation>();
