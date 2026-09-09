@@ -31,6 +31,8 @@ builder.Host.UseSerilog();
 // Configurar EPPlus para modo no comercial
 ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
+builder.Services.AddScoped<IJwtHelper, JwtHelper>();
+
 // Configurar Rate Limiting
 builder.Services.AddMemoryCache();
 builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
