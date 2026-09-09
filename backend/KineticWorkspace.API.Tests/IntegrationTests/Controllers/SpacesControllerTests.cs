@@ -1,16 +1,19 @@
 using System.Net;
 using System.Net.Http.Json;
-using KineticWorkspace.API.Models.DTOs.Spaces;
 using Microsoft.AspNetCore.Mvc.Testing;
+using KineticWorkspace.API.Data;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace KineticWorkspace.API.Tests.IntegrationTests.Controllers;
 
 public class SpacesControllerTests : IClassFixture<WebApplicationFactory<Program>>
 {
+    private readonly WebApplicationFactory<Program> _factory;
     private readonly HttpClient _client;
 
     public SpacesControllerTests(WebApplicationFactory<Program> factory)
     {
+        _factory = factory;
         _client = factory.CreateClient();
     }
 
