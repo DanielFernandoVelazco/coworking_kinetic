@@ -34,8 +34,8 @@ namespace KineticWorkspace.API.Services.Implementations
             if (pageSize < 1) pageSize = 20;
             if (pageSize > 100) pageSize = 100;
 
-            var spaces = await _spaceRepository.GetPagedAsync(page, pageSize);
-            return _mapper.Map<IEnumerable<SpaceResponseDto>>(spaces);
+            var (items, _) = await _spaceRepository.GetPagedWithAmenitiesAsync(page, pageSize);
+            return _mapper.Map<IEnumerable<SpaceResponseDto>>(items);
         }
 
         public async Task<IEnumerable<SpaceResponseDto>> GetAvailableSpacesAsync(DateTime startTime, DateTime endTime, int page = 1, int pageSize = 20)
@@ -166,8 +166,7 @@ namespace KineticWorkspace.API.Services.Implementations
 
         public async Task<IEnumerable<SpaceResponseDto>> GetAllSpacesUnpaginatedAsync()
         {
-            // ✅ Usar el método que ya existe y ahora incluye Amenities
-            var spaces = await _spaceRepository.GetAllAsync();
+            var spaces = await _spaceRepository.GetAllWithAmenitiesAsync();
             return _mapper.Map<IEnumerable<SpaceResponseDto>>(spaces);
         }
     }
