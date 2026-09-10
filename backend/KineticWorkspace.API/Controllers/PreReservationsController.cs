@@ -1,8 +1,6 @@
 // backend/KineticWorkspace.API/Controllers/PreReservationsController.cs
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore; // ✅ AGREGAR ESTE USING
-using KineticWorkspace.API.Data;
 using KineticWorkspace.API.Models.DTOs.PreReservations;
 using KineticWorkspace.API.Services.Interfaces;
 
@@ -15,16 +13,13 @@ namespace KineticWorkspace.API.Controllers
     {
         private readonly IPreReservationService _preReservationService;
         private readonly ILogger<PreReservationsController> _logger;
-        private readonly ApplicationDbContext _context;
 
         public PreReservationsController(
-            IPreReservationService preReservationService,
-            ILogger<PreReservationsController> logger,
-            ApplicationDbContext context)
+     IPreReservationService preReservationService,
+     ILogger<PreReservationsController> logger)
         {
             _preReservationService = preReservationService;
             _logger = logger;
-            _context = context;
         }
 
         /// <summary>
@@ -213,25 +208,12 @@ namespace KineticWorkspace.API.Controllers
             try
             {
                 var userId = int.Parse(User.FindFirst("userId")?.Value ?? "0");
+                var result = await _preReservationService.GetPreReservationStatusAsync(id, userId);
 
-                // ✅ AHORA FirstOrDefaultAsync FUNCIONA CON EL using Microsoft.EntityFrameworkCore;
-                var preReservation = await _context.PreReservations
-                    .FirstOrDefaultAsync(pr => pr.Id == id && pr.UserId == userId);
-
-                if (preReservation == null)
+                if (result == null)
                     return NotFound(new { message = "Pre-reserva no encontrada" });
 
-                return Ok(new
-                {
-                    preReservation.Id,
-                    preReservation.Status,
-                    preReservation.PaymentIntentId,
-                    preReservation.ExpiresAt,
-                    preReservation.CreatedAt,
-                    preReservation.UpdatedAt,
-                    preReservation.TotalPrice,
-                    preReservation.PaidAmount
-                });
+                return Ok(result);
             }
             catch (Exception ex)
             {
