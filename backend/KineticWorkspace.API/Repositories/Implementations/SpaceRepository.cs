@@ -12,19 +12,7 @@ namespace KineticWorkspace.API.Repositories.Implementations
         {
         }
 
-        // ✅ ÚNICO GetAllAsync - Con override e incluyendo Amenities
-        public override async Task<IEnumerable<Space>> GetAllAsync()
-        {
-            return await _dbSet
-                .Include(s => s.Amenities)
-                .Include(s => s.Reviews)
-                .Where(s => s.DeletedAt == null)
-                .ToListAsync();
-        }
-
-        // ✅ NUEVO: Método para obtener todos sin paginación (ya existe en el código original)
-        // Este método NO debe llamarse GetAllAsync, debe tener un nombre diferente
-        public async Task<IEnumerable<Space>> GetAllUnpaginatedWithAmenitiesAsync()
+        public async Task<IEnumerable<Space>> GetAllWithAmenitiesAsync()
         {
             return await _dbSet
                 .Include(s => s.Amenities)
@@ -32,6 +20,24 @@ namespace KineticWorkspace.API.Repositories.Implementations
                 .Where(s => s.DeletedAt == null)
                 .OrderByDescending(s => s.CreatedAt)
                 .ToListAsync();
+        }
+
+        public async Task<(IEnumerable<Space> Items, int TotalCount)> GetPagedWithAmenitiesAsync(int page, int pageSize)
+        {
+            var query = _dbSet
+                .Include(s => s.Amenities)
+                .Include(s => s.Reviews)
+                .Where(s => s.DeletedAt == null);
+
+            var totalCount = await query.CountAsync();
+
+            var items = await query
+                .OrderByDescending(s => s.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, totalCount);
         }
 
         // ========== RESTO DE MÉTODOS EXISTENTES ==========
