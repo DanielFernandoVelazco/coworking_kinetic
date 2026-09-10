@@ -468,5 +468,25 @@ namespace KineticWorkspace.API.Services.Implementations
                 IsPaid = isPaid
             };
         }
+
+        public async Task<PreReservationStatusDto?> GetPreReservationStatusAsync(int id, int userId)
+        {
+            var preReservation = await _context.PreReservations
+                .FirstOrDefaultAsync(pr => pr.Id == id && pr.UserId == userId);
+
+            if (preReservation == null) return null;
+
+            return new PreReservationStatusDto
+            {
+                Id = preReservation.Id,
+                Status = preReservation.Status,
+                PaymentIntentId = preReservation.PaymentIntentId,
+                ExpiresAt = preReservation.ExpiresAt,
+                CreatedAt = preReservation.CreatedAt,
+                UpdatedAt = preReservation.UpdatedAt,
+                TotalPrice = preReservation.TotalPrice,
+                PaidAmount = preReservation.PaidAmount
+            };
+        }
     }
 }
