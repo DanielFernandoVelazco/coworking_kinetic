@@ -14,6 +14,9 @@ using KineticWorkspace.API.Services.Interfaces;
 using Serilog;
 using AspNetCoreRateLimit;
 using OfficeOpenXml;
+using KineticWorkspace.API.Helpers.Formatting;
+using KineticWorkspace.API.Helpers.Pricing;
+using KineticWorkspace.API.Helpers.Validation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,6 +41,11 @@ builder.Services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounte
 builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
 builder.Services.AddSingleton<IProcessingStrategy, AsyncKeyLockProcessingStrategy>();
 builder.Services.AddInMemoryRateLimiting();
+
+// Helpers de utilidades
+builder.Services.AddScoped<IReservationDateValidator, ReservationDateValidator>();
+builder.Services.AddScoped<IPricingCalculator, PricingCalculator>();
+builder.Services.AddScoped<ITimeAgoFormatter, TimeAgoFormatter>();
 
 // Agregar servicios al contenedor
 builder.Services.AddControllers();
