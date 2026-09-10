@@ -17,6 +17,7 @@ using OfficeOpenXml;
 using KineticWorkspace.API.Helpers.Formatting;
 using KineticWorkspace.API.Helpers.Pricing;
 using KineticWorkspace.API.Helpers.Validation;
+using KineticWorkspace.API.Services.Implementations.Payments;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,6 +47,7 @@ builder.Services.AddInMemoryRateLimiting();
 builder.Services.AddScoped<IReservationDateValidator, ReservationDateValidator>();
 builder.Services.AddScoped<IPricingCalculator, PricingCalculator>();
 builder.Services.AddScoped<ITimeAgoFormatter, TimeAgoFormatter>();
+builder.Services.AddScoped<IPaymentProcessorService, PaymentProcessorService>();
 
 // Agregar servicios al contenedor
 builder.Services.AddControllers();
