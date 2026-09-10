@@ -6,6 +6,8 @@ using KineticWorkspace.API.Models.DTOs.PreReservations;
 using KineticWorkspace.API.Models.Entities;
 using KineticWorkspace.API.Repositories.Interfaces;
 using KineticWorkspace.API.Services.Interfaces;
+using KineticWorkspace.API.Helpers.Pricing;
+using KineticWorkspace.API.Helpers.Validation;
 
 namespace KineticWorkspace.API.Services.Implementations
 {
@@ -19,14 +21,18 @@ namespace KineticWorkspace.API.Services.Implementations
         private readonly ILogger<PreReservationService> _logger;
 
         private static readonly TimeSpan ExpirationTime = TimeSpan.FromMinutes(30);
+        private readonly IReservationDateValidator _dateValidator;
+        private readonly IPricingCalculator _pricingCalculator;
 
         public PreReservationService(
-            ApplicationDbContext context,
-            ISpaceRepository spaceRepository,
-            IReservationRepository reservationRepository,
-            IInvoiceService invoiceService,
-            IMapper mapper,
-            ILogger<PreReservationService> logger)
+     ApplicationDbContext context,
+     ISpaceRepository spaceRepository,
+     IReservationRepository reservationRepository,
+     IInvoiceService invoiceService,
+     IMapper mapper,
+     ILogger<PreReservationService> logger,
+     IReservationDateValidator dateValidator,
+     IPricingCalculator pricingCalculator)
         {
             _context = context;
             _spaceRepository = spaceRepository;
@@ -34,8 +40,9 @@ namespace KineticWorkspace.API.Services.Implementations
             _invoiceService = invoiceService;
             _mapper = mapper;
             _logger = logger;
+            _dateValidator = dateValidator;
+            _pricingCalculator = pricingCalculator;
         }
-
         public async Task<PreReservationResponseDto> CreatePreReservationAsync(PreReservationRequestDto request, int userId)
         {
             ValidateDates(request.StartTime, request.EndTime);
