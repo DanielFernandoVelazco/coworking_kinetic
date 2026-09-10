@@ -28,5 +28,7 @@ namespace KineticWorkspace.API.Services.Interfaces
 
         // Obtener carrito activo por sessionId
         Task<PreReservationResponseDto?> GetActiveCartBySessionIdAsync(string sessionId, int userId);
+        Task<PreReservationStatusDto?> GetPreReservationStatusAsync(int id, int userId);
+
     }
 }
