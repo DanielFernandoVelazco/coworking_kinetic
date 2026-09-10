@@ -14,16 +14,17 @@ namespace KineticWorkspace.API.Repositories.Implementations
 
         public async Task<IEnumerable<Alert>> GetUserAlertsAsync(int userId, bool? isRead = null, int limit = 50)
         {
-            var query = _dbSet
-                .Where(a => a.UserId == userId)
-                .OrderByDescending(a => a.CreatedAt);
+            var query = _dbSet.Where(a => a.UserId == userId);
 
             if (isRead.HasValue)
             {
-                query = (IOrderedQueryable<Alert>)query.Where(a => a.IsRead == isRead.Value);
+                query = query.Where(a => a.IsRead == isRead.Value);
             }
 
-            return await query.Take(limit).ToListAsync();
+            return await query
+                .OrderByDescending(a => a.CreatedAt)
+                .Take(limit)
+                .ToListAsync();
         }
 
         public async Task<IEnumerable<Alert>> GetUnreadAlertsAsync(int userId)
