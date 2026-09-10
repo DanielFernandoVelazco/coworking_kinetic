@@ -6,6 +6,7 @@ using KineticWorkspace.API.Models.DTOs.Alerts;
 using KineticWorkspace.API.Models.Entities;
 using KineticWorkspace.API.Services.Interfaces;
 using OfficeOpenXml;
+using KineticWorkspace.API.Helpers.Formatting;
 
 namespace KineticWorkspace.API.Services.Implementations
 {
@@ -14,15 +15,18 @@ namespace KineticWorkspace.API.Services.Implementations
         private readonly ApplicationDbContext _context;
         private readonly ILogger<AdminService> _logger;
         private readonly IAlertService _alertService;
+        private readonly ITimeAgoFormatter _timeAgoFormatter;
 
         public AdminService(
-            ApplicationDbContext context,
-            ILogger<AdminService> logger,
-            IAlertService alertService)
+     ApplicationDbContext context,
+     ILogger<AdminService> logger,
+     IAlertService alertService,
+     ITimeAgoFormatter timeAgoFormatter)
         {
             _context = context;
             _logger = logger;
             _alertService = alertService;
+            _timeAgoFormatter = timeAgoFormatter;
         }
 
         // ========== MÉTODOS DEL DASHBOARD ==========
@@ -689,7 +693,7 @@ namespace KineticWorkspace.API.Services.Implementations
                 ReadAt = a.ReadAt,
                 UserName = a.User != null ? $"{a.User.FirstName} {a.User.LastName}" : "Unknown",
                 UserEmail = a.User?.Email ?? "unknown@email.com",
-                TimeAgo = GetTimeAgo(a.CreatedAt)
+                TimeAgo = _timeAgoFormatter.Format(a.CreatedAt)
             });
         }
 
@@ -792,7 +796,7 @@ namespace KineticWorkspace.API.Services.Implementations
                 ReadAt = alert.ReadAt,
                 UserName = alert.User != null ? $"{alert.User.FirstName} {alert.User.LastName}" : "Unknown",
                 UserEmail = alert.User?.Email ?? "unknown@email.com",
-                TimeAgo = GetTimeAgo(alert.CreatedAt)
+                TimeAgo = _timeAgoFormatter.Format(alert.CreatedAt)
             };
         }
 
@@ -804,21 +808,6 @@ namespace KineticWorkspace.API.Services.Implementations
             _context.Alerts.Remove(alert);
             await _context.SaveChangesAsync();
             return true;
-        }
-
-        // ========== MÉTODOS AUXILIARES ==========
-
-        private string GetTimeAgo(DateTime dateTime)
-        {
-            var diff = DateTime.UtcNow - dateTime;
-
-            if (diff.TotalMinutes < 1) return "Just now";
-            if (diff.TotalMinutes < 60) return $"{(int)diff.TotalMinutes}m ago";
-            if (diff.TotalHours < 24) return $"{(int)diff.TotalHours}h ago";
-            if (diff.TotalDays < 7) return $"{(int)diff.TotalDays}d ago";
-            if (diff.TotalDays < 30) return $"{(int)(diff.TotalDays / 7)}w ago";
-            if (diff.TotalDays < 365) return $"{(int)(diff.TotalDays / 30)}mo ago";
-            return $"{(int)(diff.TotalDays / 365)}y ago";
         }
     }
 }
