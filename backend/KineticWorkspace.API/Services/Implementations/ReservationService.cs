@@ -4,6 +4,8 @@ using KineticWorkspace.API.Models.DTOs.Reservations;
 using KineticWorkspace.API.Models.Entities;
 using KineticWorkspace.API.Repositories.Interfaces;
 using KineticWorkspace.API.Services.Interfaces;
+using KineticWorkspace.API.Helpers.Pricing;
+using KineticWorkspace.API.Helpers.Validation;
 
 namespace KineticWorkspace.API.Services.Implementations
 {
@@ -13,17 +15,23 @@ namespace KineticWorkspace.API.Services.Implementations
         private readonly ISpaceRepository _spaceRepository;
         private readonly IMapper _mapper;
         private readonly ILogger<ReservationService> _logger;
+        private readonly IReservationDateValidator _dateValidator;
+        private readonly IPricingCalculator _pricingCalculator;
 
         public ReservationService(
-            IReservationRepository reservationRepository,
-            ISpaceRepository spaceRepository,
-            IMapper mapper,
-            ILogger<ReservationService> logger)
+     IReservationRepository reservationRepository,
+     ISpaceRepository spaceRepository,
+     IMapper mapper,
+     ILogger<ReservationService> logger,
+     IReservationDateValidator dateValidator,
+     IPricingCalculator pricingCalculator)
         {
             _reservationRepository = reservationRepository;
             _spaceRepository = spaceRepository;
             _mapper = mapper;
             _logger = logger;
+            _dateValidator = dateValidator;
+            _pricingCalculator = pricingCalculator;
         }
 
         // ==================== MÉTODOS EXISTENTES ====================
