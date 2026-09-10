@@ -4,6 +4,7 @@ using KineticWorkspace.API.Models.DTOs.Alerts;
 using KineticWorkspace.API.Models.Entities;
 using KineticWorkspace.API.Repositories.Interfaces;
 using KineticWorkspace.API.Services.Interfaces;
+using KineticWorkspace.API.Helpers.Formatting;
 
 namespace KineticWorkspace.API.Services.Implementations
 {
@@ -12,15 +13,17 @@ namespace KineticWorkspace.API.Services.Implementations
         private readonly IAlertRepository _alertRepository;
         private readonly IMapper _mapper;
         private readonly ILogger<AlertService> _logger;
-
+        private readonly ITimeAgoFormatter _timeAgoFormatter;
         public AlertService(
-            IAlertRepository alertRepository,
-            IMapper mapper,
-            ILogger<AlertService> logger)
+     IAlertRepository alertRepository,
+     IMapper mapper,
+     ILogger<AlertService> logger,
+     ITimeAgoFormatter timeAgoFormatter)
         {
             _alertRepository = alertRepository;
             _mapper = mapper;
             _logger = logger;
+            _timeAgoFormatter = timeAgoFormatter;
         }
 
         public async Task<IEnumerable<AlertResponseDto>> GetUserAlertsAsync(int userId, bool? isRead = null, int limit = 50)
