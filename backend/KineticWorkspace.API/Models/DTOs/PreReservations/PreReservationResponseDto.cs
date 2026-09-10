@@ -50,4 +50,17 @@ namespace KineticWorkspace.API.Models.DTOs.PreReservations
         public string PaymentMethod { get; set; } = string.Empty;
         public string TransactionId { get; set; } = string.Empty;
     }
+
+    // DTO para el endpoint de diagnóstico de estado
+    public class PreReservationStatusDto
+    {
+        public int Id { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public string? PaymentIntentId { get; set; }
+        public DateTime? ExpiresAt { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+        public decimal TotalPrice { get; set; }
+        public decimal? PaidAmount { get; set; }
+    }
 }
