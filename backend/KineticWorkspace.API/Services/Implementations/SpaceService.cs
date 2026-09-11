@@ -1,32 +1,35 @@
-// backend/KineticWorkspace.API/Services/Implementations/SpaceService.cs
 using AutoMapper;
-using KineticWorkspace.API.Data;
 using KineticWorkspace.API.Models.DTOs.Spaces;
 using KineticWorkspace.API.Models.Entities;
 using KineticWorkspace.API.Repositories.Interfaces;
 using KineticWorkspace.API.Services.Interfaces;
-using Microsoft.EntityFrameworkCore;
+using KineticWorkspace.API.Services.Interfaces.Spaces;
 
 namespace KineticWorkspace.API.Services.Implementations
 {
     public class SpaceService : ISpaceService
     {
         private readonly ISpaceRepository _spaceRepository;
+        private readonly ISpaceAvailabilityService _availabilityService;
+        private readonly ISpaceAmenityService _amenityService;
         private readonly IMapper _mapper;
         private readonly ILogger<SpaceService> _logger;
-        private readonly ApplicationDbContext _context;
 
         public SpaceService(
             ISpaceRepository spaceRepository,
+            ISpaceAvailabilityService availabilityService,
+            ISpaceAmenityService amenityService,
             IMapper mapper,
-            ILogger<SpaceService> logger,
-            ApplicationDbContext context)
+            ILogger<SpaceService> logger)
         {
             _spaceRepository = spaceRepository;
+            _availabilityService = availabilityService;
+            _amenityService = amenityService;
             _mapper = mapper;
             _logger = logger;
-            _context = context;
         }
+
+        // ==================== LECTURA PAGINADA ====================
 
         public async Task<IEnumerable<SpaceResponseDto>> GetAllSpacesAsync(int page = 1, int pageSize = 20)
         {
@@ -38,15 +41,10 @@ namespace KineticWorkspace.API.Services.Implementations
             return _mapper.Map<IEnumerable<SpaceResponseDto>>(items);
         }
 
-        public async Task<IEnumerable<SpaceResponseDto>> GetAvailableSpacesAsync(DateTime startTime, DateTime endTime, int page = 1, int pageSize = 20)
+        public async Task<IEnumerable<SpaceResponseDto>> GetAllSpacesUnpaginatedAsync()
         {
-            if (page < 1) page = 1;
-            if (pageSize < 1) pageSize = 20;
-            if (pageSize > 100) pageSize = 100;
-
-            var spaces = await _spaceRepository.GetAvailableSpacesAsync(startTime, endTime);
-            var pagedSpaces = spaces.Skip((page - 1) * pageSize).Take(pageSize);
-            return _mapper.Map<IEnumerable<SpaceResponseDto>>(pagedSpaces);
+            var spaces = await _spaceRepository.GetAllWithAmenitiesAsync();
+            return _mapper.Map<IEnumerable<SpaceResponseDto>>(spaces);
         }
 
         public async Task<SpaceResponseDto?> GetSpaceByIdAsync(int id)
@@ -54,6 +52,8 @@ namespace KineticWorkspace.API.Services.Implementations
             var space = await _spaceRepository.GetSpaceWithDetailsAsync(id);
             return space != null ? _mapper.Map<SpaceResponseDto>(space) : null;
         }
+
+        // ==================== CRUD ====================
 
         public async Task<SpaceResponseDto> CreateSpaceAsync(SpaceRequestDto request)
         {
@@ -65,17 +65,11 @@ namespace KineticWorkspace.API.Services.Implementations
                 space.ImageUrls = string.Join(",", request.ImageUrls);
             }
 
-            // Agregar Amenidades
-            if (request.AmenityIds != null && request.AmenityIds.Any())
-            {
-                var amenities = await _context.Amenities
-                    .Where(a => request.AmenityIds.Contains(a.Id))
-                    .ToListAsync();
-                space.Amenities = amenities;
-            }
+            space.Amenities = await _amenityService.ResolveAmenitiesAsync(request.AmenityIds);
 
             var createdSpace = await _spaceRepository.AddAsync(space);
-            _logger.LogInformation("Nuevo espacio creado: {SpaceName} con {AmenityCount} amenidades",
+            _logger.LogInformation(
+                "Nuevo espacio creado: {SpaceName} con {AmenityCount} amenidades",
                 space.Name, space.Amenities?.Count ?? 0);
 
             return _mapper.Map<SpaceResponseDto>(createdSpace);
@@ -94,13 +88,9 @@ namespace KineticWorkspace.API.Services.Implementations
                 existingSpace.ImageUrls = string.Join(",", request.ImageUrls);
             }
 
-            // Actualizar Amenidades
             if (request.AmenityIds != null)
             {
-                var amenities = await _context.Amenities
-                    .Where(a => request.AmenityIds.Contains(a.Id))
-                    .ToListAsync();
-                existingSpace.Amenities = amenities;
+                existingSpace.Amenities = await _amenityService.ResolveAmenitiesAsync(request.AmenityIds);
             }
             else
             {
@@ -108,7 +98,8 @@ namespace KineticWorkspace.API.Services.Implementations
             }
 
             await _spaceRepository.UpdateAsync(existingSpace);
-            _logger.LogInformation("Espacio actualizado: {SpaceName} con {AmenityCount} amenidades",
+            _logger.LogInformation(
+                "Espacio actualizado: {SpaceName} con {AmenityCount} amenidades",
                 existingSpace.Name, existingSpace.Amenities?.Count ?? 0);
 
             return _mapper.Map<SpaceResponseDto>(existingSpace);
@@ -127,6 +118,8 @@ namespace KineticWorkspace.API.Services.Implementations
             return true;
         }
 
+        // ==================== LISTADOS POR FILTRO ====================
+
         public async Task<IEnumerable<SpaceResponseDto>> GetFeaturedSpacesAsync(int limit = 10)
         {
             var spaces = await _spaceRepository.GetFeaturedSpacesAsync(limit);
@@ -139,35 +132,24 @@ namespace KineticWorkspace.API.Services.Implementations
             return _mapper.Map<IEnumerable<SpaceResponseDto>>(spaces);
         }
 
-        public async Task<IEnumerable<SpaceResponseDto>> SearchSpacesAsync(string searchTerm, string? city = null, string? type = null)
+        public async Task<IEnumerable<SpaceResponseDto>> SearchSpacesAsync(
+            string searchTerm, string? city = null, string? type = null)
         {
             var spaces = await _spaceRepository.SearchSpacesAsync(searchTerm, city, type);
             return _mapper.Map<IEnumerable<SpaceResponseDto>>(spaces);
         }
 
-        public async Task<bool> CheckAvailabilityAsync(int spaceId, DateTime startTime, DateTime endTime)
-        {
-            return await _spaceRepository.IsSpaceAvailableAsync(spaceId, startTime, endTime);
-        }
+        // ==================== DELEGACIÓN A DISPONIBILIDAD ====================
 
-        public async Task<SpaceAvailabilityDto?> GetSpaceAvailabilityAsync(int spaceId, DateTime startDate, DateTime endDate)
-        {
-            var space = await _spaceRepository.GetByIdAsync(spaceId);
-            if (space == null) return null;
+        public Task<IEnumerable<SpaceResponseDto>> GetAvailableSpacesAsync(
+            DateTime startTime, DateTime endTime, int page = 1, int pageSize = 20)
+            => _availabilityService.GetAvailableSpacesAsync(startTime, endTime, page, pageSize);
 
-            return new SpaceAvailabilityDto
-            {
-                SpaceId = space.Id,
-                SpaceName = space.Name,
-                Date = startDate,
-                AvailableSlots = new List<TimeSlotDto>()
-            };
-        }
+        public Task<bool> CheckAvailabilityAsync(int spaceId, DateTime startTime, DateTime endTime)
+            => _availabilityService.CheckAvailabilityAsync(spaceId, startTime, endTime);
 
-        public async Task<IEnumerable<SpaceResponseDto>> GetAllSpacesUnpaginatedAsync()
-        {
-            var spaces = await _spaceRepository.GetAllWithAmenitiesAsync();
-            return _mapper.Map<IEnumerable<SpaceResponseDto>>(spaces);
-        }
+        public Task<SpaceAvailabilityDto?> GetSpaceAvailabilityAsync(
+            int spaceId, DateTime startDate, DateTime endDate)
+            => _availabilityService.GetSpaceAvailabilityAsync(spaceId, startDate, endDate);
     }
 }
