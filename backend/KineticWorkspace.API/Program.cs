@@ -22,6 +22,8 @@ using KineticWorkspace.API.Services.Implementations.Admin;
 using KineticWorkspace.API.Services.Interfaces.Admin;
 using KineticWorkspace.API.Services.Implementations.Users;
 using KineticWorkspace.API.Services.Interfaces.Users;
+using KineticWorkspace.API.Services.Implementations.Spaces;
+using KineticWorkspace.API.Services.Interfaces.Spaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -161,6 +163,8 @@ builder.Services.AddScoped<IAmenityRepository, AmenityRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 builder.Services.AddScoped<ISpaceService, SpaceService>();
+builder.Services.AddScoped<ISpaceAvailabilityService, SpaceAvailabilityService>();
+builder.Services.AddScoped<ISpaceAmenityService, SpaceAmenityService>();
 builder.Services.AddScoped<IReservationService, ReservationService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IUserProfileService, UserProfileService>();
