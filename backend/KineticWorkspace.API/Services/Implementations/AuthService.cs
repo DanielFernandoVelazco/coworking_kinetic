@@ -55,15 +55,7 @@ namespace KineticWorkspace.API.Services.Implementations
             await _userRepository.UpdateLastLoginAsync(user.Id);
 
             var accessToken = _jwtHelper.GenerateJwtToken(user);
-            var refreshToken = _jwtHelper.GenerateRefreshToken();
-
-            var refreshTokenEntity = new RefreshToken
-            {
-                UserId = user.Id,
-                Token = refreshToken,
-                ExpiresAt = DateTime.UtcNow.AddDays(7)
-            };
-            await _refreshTokenRepository.AddAsync(refreshTokenEntity);
+            var refreshToken = await CreateRefreshTokenAsync(user.Id);
 
             return new LoginResponseDto
             {
@@ -106,15 +98,7 @@ namespace KineticWorkspace.API.Services.Implementations
                     await _userRepository.AddAsync(user);
 
                     var accessToken = _jwtHelper.GenerateJwtToken(user);
-                    var refreshToken = _jwtHelper.GenerateRefreshToken();
-
-                    var refreshTokenEntity = new RefreshToken
-                    {
-                        UserId = user.Id,
-                        Token = refreshToken,
-                        ExpiresAt = DateTime.UtcNow.AddDays(7)
-                    };
-                    await _refreshTokenRepository.AddAsync(refreshTokenEntity);
+                    var refreshToken = await CreateRefreshTokenAsync(user.Id);
 
                     await transaction.CommitAsync();
 
@@ -162,15 +146,7 @@ namespace KineticWorkspace.API.Services.Implementations
                     await _refreshTokenRepository.RevokeAsync(refreshTokenEntity.Id);
 
                     var accessToken = _jwtHelper.GenerateJwtToken(user);
-                    var newRefreshToken = _jwtHelper.GenerateRefreshToken();
-
-                    var newRefreshTokenEntity = new RefreshToken
-                    {
-                        UserId = user.Id,
-                        Token = newRefreshToken,
-                        ExpiresAt = DateTime.UtcNow.AddDays(7)
-                    };
-                    await _refreshTokenRepository.AddAsync(newRefreshTokenEntity);
+                    var newRefreshToken = await CreateRefreshTokenAsync(user.Id);
 
                     await transaction.CommitAsync();
 
@@ -211,6 +187,27 @@ namespace KineticWorkspace.API.Services.Implementations
             // TODO: Implementar verificación de email
             await Task.CompletedTask;
             return true;
+        }
+
+        // ==================== HELPERS PRIVADOS ====================
+
+        /// <summary>
+        /// Genera un refresh token nuevo, lo persiste y lo devuelve en texto plano.
+        /// </summary>
+        private async Task<string> CreateRefreshTokenAsync(int userId)
+        {
+            var refreshToken = _jwtHelper.GenerateRefreshToken();
+
+            var refreshTokenEntity = new RefreshToken
+            {
+                UserId = userId,
+                Token = refreshToken,
+                ExpiresAt = DateTime.UtcNow.AddDays(7)
+            };
+
+            await _refreshTokenRepository.AddAsync(refreshTokenEntity);
+
+            return refreshToken;
         }
     }
 }
