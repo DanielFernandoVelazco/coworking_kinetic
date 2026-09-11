@@ -157,6 +157,7 @@ builder.Services.AddScoped<IAmenityRepository, AmenityRepository>();
 
 // Registrar Services
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 builder.Services.AddScoped<ISpaceService, SpaceService>();
 builder.Services.AddScoped<IReservationService, ReservationService>();
 builder.Services.AddScoped<IUserService, UserService>();
@@ -169,7 +170,7 @@ builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
 builder.Services.AddScoped<IAdminReportService, AdminReportService>();
 builder.Services.AddScoped<IAdminAlertService, AdminAlertService>();
 
-// Registrar Helpers - ✅ CAMBIADO A IJwtHelper
+// Registrar Helpers - CAMBIADO A IJwtHelper
 builder.Services.AddScoped<IJwtHelper, JwtHelper>();
 
 // Registrar Seeders
