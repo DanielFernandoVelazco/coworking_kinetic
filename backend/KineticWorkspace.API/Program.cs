@@ -18,6 +18,8 @@ using KineticWorkspace.API.Helpers.Formatting;
 using KineticWorkspace.API.Helpers.Pricing;
 using KineticWorkspace.API.Helpers.Validation;
 using KineticWorkspace.API.Services.Implementations.Payments;
+using KineticWorkspace.API.Services.Implementations.Admin;
+using KineticWorkspace.API.Services.Interfaces.Admin;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -163,6 +165,9 @@ builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 builder.Services.AddScoped<IAlertService, AlertService>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IAmenityService, AmenityService>();
+builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
+builder.Services.AddScoped<IAdminReportService, AdminReportService>();
+builder.Services.AddScoped<IAdminAlertService, AdminAlertService>();
 
 // Registrar Helpers - ✅ CAMBIADO A IJwtHelper
 builder.Services.AddScoped<IJwtHelper, JwtHelper>();
