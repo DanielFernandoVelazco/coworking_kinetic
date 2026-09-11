@@ -20,6 +20,8 @@ using KineticWorkspace.API.Helpers.Validation;
 using KineticWorkspace.API.Services.Implementations.Payments;
 using KineticWorkspace.API.Services.Implementations.Admin;
 using KineticWorkspace.API.Services.Interfaces.Admin;
+using KineticWorkspace.API.Services.Implementations.Users;
+using KineticWorkspace.API.Services.Interfaces.Users;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -161,6 +163,8 @@ builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 builder.Services.AddScoped<ISpaceService, SpaceService>();
 builder.Services.AddScoped<IReservationService, ReservationService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IUserProfileService, UserProfileService>();
+builder.Services.AddScoped<IUserAdminService, UserAdminService>();
 builder.Services.AddScoped<IPreReservationService, PreReservationService>();
 builder.Services.AddScoped<IInvoiceService, InvoiceService>();
 builder.Services.AddScoped<IAlertService, AlertService>();
