@@ -1,4 +1,5 @@
 using AutoMapper;
+using KineticWorkspace.API.Mappings.Resolvers;
 using KineticWorkspace.API.Models.DTOs.Amenities;
 using KineticWorkspace.API.Models.DTOs.Auth;
 using KineticWorkspace.API.Models.DTOs.Reservations;
@@ -12,7 +13,16 @@ namespace KineticWorkspace.API.Mappings
     {
         public MappingProfile()
         {
-            // ==================== AUTH MAPPINGS ====================
+            ConfigureUserMappings();
+            ConfigureSpaceMappings();
+            ConfigureReservationMappings();
+            ConfigureAmenityMappings();
+        }
+
+        // ==================== USER ====================
+
+        private void ConfigureUserMappings()
+        {
             CreateMap<User, UserResponseDto>()
                 .ForMember(dest => dest.FullName,
                     opt => opt.MapFrom(src => $"{src.FirstName} {src.LastName}"));
@@ -21,40 +31,48 @@ namespace KineticWorkspace.API.Mappings
                 .ForMember(dest => dest.FullName,
                     opt => opt.MapFrom(src => $"{src.FirstName} {src.LastName}"));
 
-            // ==================== SPACE MAPPINGS ====================
+            CreateMap<UserUpdateDto, User>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+        }
+
+        // ==================== SPACE ====================
+
+        private void ConfigureSpaceMappings()
+        {
             CreateMap<Space, SpaceResponseDto>()
+                .ForMember(dest => dest.ImageUrls,
+                    opt => opt.MapFrom(src => ImageUrlResolver.SplitToList(src.ImageUrls)))
                 .ForMember(dest => dest.Amenities,
-                    opt => opt.MapFrom(src => src.Amenities.Select(a => a.Name).ToList()))
-                .ForMember(dest => dest.ImageUrls, opt => opt.Ignore())
-                .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsActive))
+                    opt => opt.MapFrom(src => AmenityResolver.GetNames(src.Amenities)))
                 .ForMember(dest => dest.AmenityIds,
-                    opt => opt.MapFrom(src => src.Amenities.Select(a => a.Id).ToList()))
-                .AfterMap((src, dest) =>
-                {
-                    dest.ImageUrls = string.IsNullOrEmpty(src.ImageUrls)
-                        ? new List<string>()
-                        : src.ImageUrls.Split(',').ToList();
-                });
+                    opt => opt.MapFrom(src => AmenityResolver.GetIds(src.Amenities)))
+                .ForMember(dest => dest.IsActive,
+                    opt => opt.MapFrom(src => src.IsActive));
 
             CreateMap<SpaceRequestDto, Space>()
                 .ForMember(dest => dest.Amenities, opt => opt.Ignore())
-                .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.IsActive))
-                .AfterMap((src, dest) =>
-                {
-                    dest.ImageUrls = src.ImageUrls != null && src.ImageUrls.Any()
-                        ? string.Join(",", src.ImageUrls)
-                        : null;
-                });
+                .ForMember(dest => dest.ImageUrls, opt => opt.Ignore())
+                .ForMember(dest => dest.IsActive,
+                    opt => opt.MapFrom(src => src.IsActive));
+        }
 
-            // ==================== RESERVATION MAPPINGS ====================
+        // ==================== RESERVATION ====================
+
+        private void ConfigureReservationMappings()
+        {
             CreateMap<Reservation, ReservationResponseDto>()
                 .ForMember(dest => dest.UserName,
-                    opt => opt.MapFrom(src => src.User != null ? $"{src.User.FirstName} {src.User.LastName}" : "Unknown"))
+                    opt => opt.MapFrom(src => src.User != null
+                        ? $"{src.User.FirstName} {src.User.LastName}"
+                        : "Unknown"))
                 .ForMember(dest => dest.SpaceName,
                     opt => opt.MapFrom(src => src.Space != null ? src.Space.Name : "Unknown"))
                 .ForMember(dest => dest.SpaceType,
                     opt => opt.MapFrom(src => src.Space != null ? src.Space.Type : "Unknown"))
-                .ForMember(dest => dest.SpaceImageUrl, opt => opt.Ignore())
+                .ForMember(dest => dest.SpaceImageUrl,
+                    opt => opt.MapFrom(src => src.Space != null
+                        ? ImageUrlResolver.GetFirst(src.Space.ImageUrls)
+                        : null))
                 .ForMember(dest => dest.PaidAmount,
                     opt => opt.MapFrom(src => src.Payments != null && src.Payments.Any()
                         ? src.Payments.Sum(p => p.Amount)
@@ -62,27 +80,15 @@ namespace KineticWorkspace.API.Mappings
                 .ForMember(dest => dest.PaymentStatus,
                     opt => opt.MapFrom(src => src.Payments != null && src.Payments.Any()
                         ? src.Payments.First().Status
-                        : null))
-                .AfterMap((src, dest) =>
-                {
-                    // ✅ MANEJO DE NULL PARA EVITAR EXCEPCIONES
-                    if (src.Space != null && !string.IsNullOrEmpty(src.Space.ImageUrls))
-                    {
-                        dest.SpaceImageUrl = src.Space.ImageUrls.Split(',').FirstOrDefault();
-                    }
-                    else
-                    {
-                        dest.SpaceImageUrl = null;
-                    }
-                });
+                        : null));
 
             CreateMap<ReservationRequestDto, Reservation>();
+        }
 
-            // ==================== USER MAPPINGS ====================
-            CreateMap<UserUpdateDto, User>()
-                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+        // ==================== AMENITY ====================
 
-            // ==================== AMENITY MAPPINGS ====================
+        private void ConfigureAmenityMappings()
+        {
             CreateMap<AmenityRequestDto, Amenity>()
                 .ForMember(dest => dest.Spaces, opt => opt.Ignore());
 
