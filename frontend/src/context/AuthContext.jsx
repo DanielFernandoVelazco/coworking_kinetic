@@ -1,5 +1,7 @@
+// frontend/src/context/AuthContext.jsx
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import authService from '../api/auth.service';
+import { saveAuth, loadAuth, clearAuth } from '../utils/authStorage';
 import toast from 'react-hot-toast';
 
 const AuthContext = createContext();
@@ -17,18 +19,12 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+    // Restaurar sesión al montar
     useEffect(() => {
-        const token = localStorage.getItem('accessToken');
-        const userData = localStorage.getItem('user');
-
-        if (token && userData) {
-            try {
-                setUser(JSON.parse(userData));
-                setIsAuthenticated(true);
-            } catch (error) {
-                console.error('Error parsing user data:', error);
-                localStorage.removeItem('user');
-            }
+        const auth = loadAuth();
+        if (auth) {
+            setUser(auth.user);
+            setIsAuthenticated(true);
         }
         setLoading(false);
     }, []);
@@ -38,9 +34,7 @@ export const AuthProvider = ({ children }) => {
             const response = await authService.login(credentials);
             const { accessToken, refreshToken, user } = response;
 
-            localStorage.setItem('accessToken', accessToken);
-            localStorage.setItem('refreshToken', refreshToken);
-            localStorage.setItem('user', JSON.stringify(user));
+            saveAuth({ accessToken, refreshToken, user });
 
             setUser(user);
             setIsAuthenticated(true);
@@ -58,9 +52,7 @@ export const AuthProvider = ({ children }) => {
             const response = await authService.register(userData);
             const { accessToken, refreshToken, user } = response;
 
-            localStorage.setItem('accessToken', accessToken);
-            localStorage.setItem('refreshToken', refreshToken);
-            localStorage.setItem('user', JSON.stringify(user));
+            saveAuth({ accessToken, refreshToken, user });
 
             setUser(user);
             setIsAuthenticated(true);
@@ -79,9 +71,7 @@ export const AuthProvider = ({ children }) => {
         } catch (error) {
             console.error('Error al cerrar sesión:', error);
         } finally {
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-            localStorage.removeItem('user');
+            clearAuth();
             setUser(null);
             setIsAuthenticated(false);
             toast.success('Sesión cerrada');
