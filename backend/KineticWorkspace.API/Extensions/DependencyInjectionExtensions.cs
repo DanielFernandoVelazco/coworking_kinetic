@@ -17,6 +17,8 @@ using KineticWorkspace.API.Services.Interfaces.Admin;
 using KineticWorkspace.API.Services.Interfaces.Spaces;
 using KineticWorkspace.API.Services.Interfaces.Users;
 using KineticWorkspace.API.Data.SeedData.Seeders;
+using KineticWorkspace.API.Services.Implementations.Reservations;
+using KineticWorkspace.API.Services.Interfaces.Reservations;
 
 namespace KineticWorkspace.API.Extensions
 {
@@ -53,6 +55,8 @@ namespace KineticWorkspace.API.Extensions
             services.AddScoped<ISpaceAmenityService, SpaceAmenityService>();
 
             // ========== SERVICES: RESERVATIONS ==========
+            services.AddScoped<IUserReservationService, UserReservationService>();
+            services.AddScoped<IAdminReservationService, AdminReservationService>();
             services.AddScoped<IReservationService, ReservationService>();
             services.AddScoped<IPreReservationService, PreReservationService>();
             services.AddScoped<IInvoiceService, InvoiceService>();
