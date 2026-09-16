@@ -1,368 +1,67 @@
-// backend/KineticWorkspace.API/Services/Implementations/ReservationService.cs
-using AutoMapper;
 using KineticWorkspace.API.Models.DTOs.Reservations;
-using KineticWorkspace.API.Models.Entities;
-using KineticWorkspace.API.Repositories.Interfaces;
 using KineticWorkspace.API.Services.Interfaces;
-using KineticWorkspace.API.Helpers.Pricing;
-using KineticWorkspace.API.Helpers.Validation;
+using KineticWorkspace.API.Services.Interfaces.Reservations;
 
 namespace KineticWorkspace.API.Services.Implementations
 {
+    /// <summary>
+    /// Fachada que delega a los servicios especializados de reservas.
+    /// Se mantiene para no romper ReservationsController.
+    /// </summary>
     public class ReservationService : IReservationService
     {
-        private readonly IReservationRepository _reservationRepository;
-        private readonly ISpaceRepository _spaceRepository;
-        private readonly IMapper _mapper;
-        private readonly ILogger<ReservationService> _logger;
-        private readonly IReservationDateValidator _dateValidator;
-        private readonly IPricingCalculator _pricingCalculator;
+        private readonly IUserReservationService _userService;
+        private readonly IAdminReservationService _adminService;
 
         public ReservationService(
-     IReservationRepository reservationRepository,
-     ISpaceRepository spaceRepository,
-     IMapper mapper,
-     ILogger<ReservationService> logger,
-     IReservationDateValidator dateValidator,
-     IPricingCalculator pricingCalculator)
+            IUserReservationService userService,
+            IAdminReservationService adminService)
         {
-            _reservationRepository = reservationRepository;
-            _spaceRepository = spaceRepository;
-            _mapper = mapper;
-            _logger = logger;
-            _dateValidator = dateValidator;
-            _pricingCalculator = pricingCalculator;
+            _userService = userService;
+            _adminService = adminService;
         }
 
-        // ==================== MÉTODOS EXISTENTES ====================
+        // ========== USER ==========
+        public Task<IEnumerable<ReservationResponseDto>> GetUserReservationsAsync(int userId)
+            => _userService.GetUserReservationsAsync(userId);
 
-        public async Task<IEnumerable<ReservationResponseDto>> GetUserReservationsAsync(int userId)
-        {
-            var reservations = await _reservationRepository.GetUserReservationsAsync(userId);
-            return _mapper.Map<IEnumerable<ReservationResponseDto>>(reservations);
-        }
+        public Task<IEnumerable<ReservationResponseDto>> GetUpcomingReservationsAsync(int userId, int limit = 10)
+            => _userService.GetUpcomingReservationsAsync(userId, limit);
 
-        public async Task<IEnumerable<ReservationResponseDto>> GetSpaceReservationsAsync(int spaceId)
-        {
-            var reservations = await _reservationRepository.GetSpaceReservationsAsync(spaceId);
-            return _mapper.Map<IEnumerable<ReservationResponseDto>>(reservations);
-        }
+        public Task<ReservationSummaryDto> GetReservationSummaryAsync(int userId)
+            => _userService.GetReservationSummaryAsync(userId);
 
-        public async Task<ReservationResponseDto?> GetReservationByIdAsync(int id)
-        {
-            var reservation = await _reservationRepository.GetReservationWithDetailsAsync(id);
-            return reservation != null ? _mapper.Map<ReservationResponseDto>(reservation) : null;
-        }
+        public Task<ReservationResponseDto?> GetReservationByIdAsync(int id)
+            => _userService.GetReservationByIdAsync(id);
 
-        public async Task<ReservationResponseDto> CreateReservationAsync(ReservationRequestDto request, int userId)
-        {
-            ValidateReservationDates(request.StartTime, request.EndTime);
+        public Task<IEnumerable<ReservationResponseDto>> GetSpaceReservationsAsync(int spaceId)
+            => _userService.GetSpaceReservationsAsync(spaceId);
 
-            var isAvailable = await _spaceRepository.IsSpaceAvailableAsync(request.SpaceId, request.StartTime, request.EndTime);
-            if (!isAvailable)
-            {
-                throw new InvalidOperationException("El espacio no está disponible en el horario seleccionado");
-            }
+        public Task<ReservationResponseDto> CreateReservationAsync(ReservationRequestDto request, int userId)
+            => _userService.CreateReservationAsync(request, userId);
 
-            var space = await _spaceRepository.GetByIdAsync(request.SpaceId);
-            if (space == null)
-            {
-                throw new InvalidOperationException("Espacio no encontrado");
-            }
+        public Task<ReservationResponseDto?> UpdateReservationAsync(
+            int id, ReservationRequestDto request, int userId, bool isAdmin = false)
+            => _userService.UpdateReservationAsync(id, request, userId, isAdmin);
 
-            var numberOfGuests = request.NumberOfGuests ?? space.Capacity;
-            if (numberOfGuests > space.Capacity)
-            {
-                throw new InvalidOperationException($"La capacidad máxima del espacio es de {space.Capacity} personas. Has seleccionado {numberOfGuests}.");
-            }
+        public Task<bool> CancelReservationAsync(int id, int userId, string reason, bool isAdmin = false)
+            => _userService.CancelReservationAsync(id, userId, reason, isAdmin);
 
-            var totalPrice = CalculateTotalPrice(space, request.StartTime, request.EndTime);
+        public Task<PaginatedReservationResponseDto> GetUserReservationsFilteredAsync(
+            int userId, int page, int pageSize, string? sortBy, string? status)
+            => _userService.GetUserReservationsFilteredAsync(userId, page, pageSize, sortBy, status);
 
-            var reservation = new Reservation
-            {
-                UserId = userId,
-                SpaceId = request.SpaceId,
-                StartTime = request.StartTime,
-                EndTime = request.EndTime,
-                Status = "Pending",
-                Notes = request.Notes,
-                NumberOfGuests = numberOfGuests,
-                TotalPrice = totalPrice,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
+        // ========== ADMIN ==========
+        public Task<IEnumerable<ReservationResponseDto>> GetActiveReservationsAsync()
+            => _adminService.GetActiveReservationsAsync();
 
-            var createdReservation = await _reservationRepository.AddAsync(reservation);
-            _logger.LogInformation("Nueva reservación creada: {ReservationId}", createdReservation.Id);
+        public Task<bool> ConfirmReservationAsync(int id, int adminUserId)
+            => _adminService.ConfirmReservationAsync(id, adminUserId);
 
-            return _mapper.Map<ReservationResponseDto>(createdReservation);
-        }
-
-        // ==================== UPDATE RESERVA ====================
-
-        public async Task<ReservationResponseDto?> UpdateReservationAsync(int id, ReservationRequestDto request, int userId, bool isAdmin = false)
-        {
-            ValidateReservationDates(request.StartTime, request.EndTime);
-
-            var reservation = await _reservationRepository.GetReservationWithDetailsAsync(id);
-            if (reservation == null) return null;
-
-            // ✅ PERMITIR: Si es administrador, puede modificar cualquier reserva
-            if (reservation.UserId != userId && !isAdmin)
-            {
-                throw new UnauthorizedAccessException("No tienes permiso para modificar esta reservación");
-            }
-
-            // Si no es admin, verificar que la reserva no esté cancelada o completada
-            if (!isAdmin)
-            {
-                if (reservation.Status == "Cancelled" || reservation.Status == "Completed")
-                {
-                    throw new InvalidOperationException("No se puede modificar una reservación cancelada o completada");
-                }
-            }
-
-            var isAvailable = await _spaceRepository.IsSpaceAvailableAsync(request.SpaceId, request.StartTime, request.EndTime, id);
-            if (!isAvailable)
-            {
-                throw new InvalidOperationException("El espacio no está disponible en el nuevo horario");
-            }
-
-            var space = await _spaceRepository.GetByIdAsync(request.SpaceId);
-            if (space == null)
-            {
-                throw new InvalidOperationException("Espacio no encontrado");
-            }
-
-            var numberOfGuests = request.NumberOfGuests ?? space.Capacity;
-            if (numberOfGuests > space.Capacity)
-            {
-                throw new InvalidOperationException($"La capacidad máxima del espacio es de {space.Capacity} personas. Has seleccionado {numberOfGuests}.");
-            }
-
-            var totalPrice = CalculateTotalPrice(space, request.StartTime, request.EndTime);
-
-            var previousUserId = reservation.UserId;
-            var previousSpaceId = reservation.SpaceId;
-            var previousStartTime = reservation.StartTime;
-            var previousEndTime = reservation.EndTime;
-
-            reservation.SpaceId = request.SpaceId;
-            reservation.StartTime = request.StartTime;
-            reservation.EndTime = request.EndTime;
-            reservation.Notes = request.Notes;
-            reservation.NumberOfGuests = numberOfGuests;
-            reservation.TotalPrice = totalPrice;
-            reservation.UpdatedAt = DateTime.UtcNow;
-
-            if (isAdmin && request.UserId.HasValue && request.UserId.Value > 0)
-            {
-                reservation.UserId = request.UserId.Value;
-            }
-
-            await _reservationRepository.UpdateAsync(reservation);
-
-            _logger.LogInformation(
-                "Reservación {ReservationId} actualizada por Admin {AdminId}. " +
-                "Usuario: {PreviousUserId} → {NewUserId}, " +
-                "Espacio: {PreviousSpaceId} → {NewSpaceId}",
-                id, userId, previousUserId, reservation.UserId,
-                previousSpaceId, reservation.SpaceId
-            );
-
-            return _mapper.Map<ReservationResponseDto>(reservation);
-        }
-
-        // ==================== ✅ CANCELAR RESERVA (CORREGIDO) ====================
-
-        public async Task<bool> CancelReservationAsync(int id, int userId, string reason, bool isAdmin = false)
-        {
-            var reservation = await _reservationRepository.GetReservationWithDetailsAsync(id);
-            if (reservation == null) return false;
-
-            // ✅ PERMITIR: Si es administrador, puede cancelar cualquier reserva
-            if (reservation.UserId != userId && !isAdmin)
-            {
-                throw new UnauthorizedAccessException("No tienes permiso para cancelar esta reservación");
-            }
-
-            // ✅ Si no es admin, verificar que la reserva no esté completada
-            if (!isAdmin && reservation.Status == "Completed")
-            {
-                throw new InvalidOperationException("No se puede cancelar una reservación completada");
-            }
-
-            // ✅ Log de cancelación por admin
-            if (isAdmin && reservation.UserId != userId)
-            {
-                _logger.LogInformation(
-                    "Reservación {ReservationId} cancelada por Administrador {AdminId}. " +
-                    "Propietario original: {OwnerId}. Motivo: {Reason}",
-                    id, userId, reservation.UserId, reason
-                );
-            }
-
-            reservation.UpdatedAt = DateTime.UtcNow;
-            return await _reservationRepository.CancelReservationAsync(id, reason);
-        }
-
-        // ==================== CONFIRMAR RESERVA ====================
-
-        public async Task<bool> ConfirmReservationAsync(int id, int adminUserId)
-        {
-            var reservation = await _reservationRepository.GetByIdAsync(id);
-            if (reservation == null) return false;
-
-            if (reservation.Status != "Pending")
-            {
-                throw new InvalidOperationException("Solo se pueden confirmar reservaciones pendientes");
-            }
-
-            reservation.Status = "Confirmed";
-            reservation.UpdatedAt = DateTime.UtcNow;
-            await _reservationRepository.UpdateAsync(reservation);
-
-            _logger.LogInformation("Reservación confirmada: {ReservationId} por Admin: {AdminId}", id, adminUserId);
-            return true;
-        }
-
-        // ==================== MÉTODOS CON FILTROS ====================
-
-        public async Task<IEnumerable<ReservationResponseDto>> GetUpcomingReservationsAsync(int userId, int limit = 10)
-        {
-            var reservations = await _reservationRepository.GetUpcomingReservationsAsync(userId, limit);
-            return _mapper.Map<IEnumerable<ReservationResponseDto>>(reservations);
-        }
-
-        public async Task<IEnumerable<ReservationResponseDto>> GetActiveReservationsAsync()
-        {
-            var reservations = await _reservationRepository.GetActiveReservationsAsync();
-            return _mapper.Map<IEnumerable<ReservationResponseDto>>(reservations);
-        }
-
-        public async Task<ReservationSummaryDto> GetReservationSummaryAsync(int userId)
-        {
-            var reservations = await _reservationRepository.GetUserReservationsAsync(userId);
-            var reservationList = reservations?.ToList() ?? new List<Reservation>();
-
-            var summary = new ReservationSummaryDto
-            {
-                TotalReservations = reservationList.Count,
-                ActiveReservations = reservationList.Count(r => r.Status == "Confirmed" && r.StartTime <= DateTime.UtcNow && r.EndTime >= DateTime.UtcNow),
-                UpcomingReservations = reservationList.Count(r => r.Status == "Confirmed" && r.StartTime > DateTime.UtcNow),
-                CompletedReservations = reservationList.Count(r => r.Status == "Completed"),
-                CancelledReservations = reservationList.Count(r => r.Status == "Cancelled"),
-                TotalSpent = reservationList.Where(r => r.Status == "Completed").Sum(r => r.TotalPrice),
-                TotalHoursBooked = (int)reservationList.Where(r => r.Status == "Completed").Sum(r => (r.EndTime - r.StartTime).TotalHours)
-            };
-
-            if (summary.TotalReservations > 0)
-            {
-                summary.AverageSpentPerReservation = summary.TotalSpent / summary.TotalReservations;
-            }
-
-            return summary;
-        }
-
-        public async Task<PaginatedReservationResponseDto> GetUserReservationsFilteredAsync(
-            int userId,
-            int page,
-            int pageSize,
-            string? sortBy,
-            string? status)
-        {
-            if (page < 1) page = 1;
-            if (pageSize < 1) pageSize = 10;
-            if (pageSize > 100) pageSize = 100;
-
-            var (items, totalCount) = await _reservationRepository.GetUserReservationsFilteredAsync(
-                userId, page, pageSize, sortBy, status);
-
-            var mappedItems = _mapper.Map<IEnumerable<ReservationResponseDto>>(items);
-
-            return new PaginatedReservationResponseDto
-            {
-                Items = mappedItems.ToList(),
-                CurrentPage = page,
-                PageSize = pageSize,
-                TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
-                TotalCount = totalCount,
-                SortBy = sortBy ?? "date_desc",
-                Status = status ?? "all"
-            };
-        }
-
-        public async Task<PaginatedReservationResponseDto> GetAllReservationsFilteredAsync(
-            int page,
-            int pageSize,
-            string? sortBy,
-            string? status,
-            string? searchTerm,
-            int? userId,
-            int? spaceId)
-        {
-            if (page < 1) page = 1;
-            if (pageSize < 1) pageSize = 15;
-            if (pageSize > 100) pageSize = 100;
-
-            var (items, totalCount) = await _reservationRepository.GetAllReservationsFilteredAsync(
+        public Task<PaginatedReservationResponseDto> GetAllReservationsFilteredAsync(
+            int page, int pageSize, string? sortBy, string? status,
+            string? searchTerm, int? userId, int? spaceId)
+            => _adminService.GetAllReservationsFilteredAsync(
                 page, pageSize, sortBy, status, searchTerm, userId, spaceId);
-
-            var mappedItems = _mapper.Map<IEnumerable<ReservationResponseDto>>(items);
-
-            return new PaginatedReservationResponseDto
-            {
-                Items = mappedItems.ToList(),
-                CurrentPage = page,
-                PageSize = pageSize,
-                TotalPages = (int)Math.Ceiling((double)totalCount / pageSize),
-                TotalCount = totalCount,
-                SortBy = sortBy ?? "date_desc",
-                Status = status ?? "all"
-            };
-        }
-
-        // ==================== MÉTODOS PRIVADOS AUXILIARES ====================
-
-        private void ValidateReservationDates(DateTime startTime, DateTime endTime)
-        {
-            if (startTime >= endTime)
-            {
-                throw new InvalidOperationException("La fecha de inicio debe ser anterior a la fecha de fin");
-            }
-
-            var minStartTime = DateTime.UtcNow.AddMinutes(-1);
-            if (startTime < minStartTime)
-            {
-                throw new InvalidOperationException("No se pueden hacer reservas en el pasado");
-            }
-
-            var maxDuration = TimeSpan.FromDays(30);
-            if (endTime - startTime > maxDuration)
-            {
-                throw new InvalidOperationException($"La duración máxima de una reserva es de {maxDuration.Days} días");
-            }
-
-            var minDuration = TimeSpan.FromMinutes(30);
-            if (endTime - startTime < minDuration)
-            {
-                throw new InvalidOperationException($"La duración mínima de una reserva es de {minDuration.Minutes} minutos");
-            }
-        }
-
-        private decimal CalculateTotalPrice(Space space, DateTime startTime, DateTime endTime)
-        {
-            var totalHours = (endTime - startTime).TotalHours;
-            var totalDays = (endTime.Date - startTime.Date).Days;
-
-            if (totalDays >= 1 && space.PricePerDay.HasValue && space.PricePerDay.Value > 0)
-            {
-                var days = totalDays;
-                var remainingHours = totalHours % 24;
-                return (decimal)days * space.PricePerDay.Value + (decimal)remainingHours * space.PricePerHour;
-            }
-
-            return space.PricePerHour * (decimal)totalHours;
-        }
     }
 }
