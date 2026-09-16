@@ -37,6 +37,9 @@ builder.Services.AddCustomHealthChecks();
 
 var app = builder.Build();
 
+// Manejo global de excepciones (primero en el pipeline)
+app.UseGlobalExceptionHandling();
+
 // Rate Limiting
 app.UseIpRateLimiting();
 
