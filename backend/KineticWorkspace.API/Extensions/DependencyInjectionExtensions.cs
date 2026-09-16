@@ -78,6 +78,7 @@ namespace KineticWorkspace.API.Extensions
             services.AddScoped<AmenitySeeder>();
             services.AddScoped<SpaceSeeder>();
             services.AddScoped<AdminUserSeeder>();
+            services.AddScoped<TestReservationSeeder>();
 
             // ========== AUTOMAPPER ==========
             services.AddAutoMapper(typeof(MappingProfile).Assembly);
