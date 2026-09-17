@@ -1,22 +1,34 @@
 // frontend/src/api/pre-reservations.service.js
-import axiosInstance from './axios.config';
+import request from './helpers/request';
 
 const API_URL = '/prereservations';
 
 export const preReservationsService = {
-    // Crear una pre-reserva (carrito)
-    create: async (data) => {
-        const response = await axiosInstance.post(API_URL, data);
-        return response.data;
+    // ============ CARRITO ============
+    create: (data) => request.post(API_URL, data),
+
+    getById: (id) => request.get(`${API_URL}/${id}`),
+
+    getStatus: (id) => request.get(`${API_URL}/status/${id}`),
+
+    getUserPreReservations: (status = null) => {
+        const params = status ? { status } : {};
+        return request.get(`${API_URL}/user`, { params });
     },
 
-    // ✅ NUEVO: Verificar estado de una pre-reserva
-    getStatus: async (id) => {
-        const response = await axiosInstance.get(`${API_URL}/${id}`);
-        return response.data;
-    },
+    getActiveCart: (sessionId) => request.get(`${API_URL}/cart/${sessionId}`),
 
-    // ✅ NUEVO: Verificar si una pre-reserva fue pagada
+    // ============ PAGO ============
+    processPayment: (data) => request.post(`${API_URL}/payment`, data),
+
+    confirmPayment: (data) => request.post(`${API_URL}/confirm`, data),
+
+    cancel: (id, reason = null) =>
+        request.post(`${API_URL}/${id}/cancel`, reason ? { reason } : {}),
+
+    cleanExpired: () => request.post(`${API_URL}/clean-expired`),
+
+    // ============ HELPERS ============
     checkIfPaid: async (id) => {
         try {
             const data = await preReservationsService.getById(id);
@@ -24,49 +36,6 @@ export const preReservationsService = {
         } catch {
             return false;
         }
-    },
-
-    // Obtener pre-reserva por ID
-    getById: async (id) => {
-        const response = await axiosInstance.get(`${API_URL}/${id}`);
-        return response.data;
-    },
-
-    // Obtener todas las pre-reservas del usuario (carrito activo)
-    getUserPreReservations: async (status = null) => {
-        const params = status ? { status } : {};
-        const response = await axiosInstance.get(`${API_URL}/user`, { params });
-        return response.data;
-    },
-
-    // Obtener carrito activo por sessionId
-    getActiveCart: async (sessionId) => {
-        const response = await axiosInstance.get(`${API_URL}/cart/${sessionId}`);
-        return response.data;
-    },
-
-    // Procesar pago de la pre-reserva
-    processPayment: async (data) => {
-        const response = await axiosInstance.post(`${API_URL}/payment`, data);
-        return response.data;
-    },
-
-    // Confirmar pago y convertir en reserva definitiva
-    confirmPayment: async (data) => {
-        const response = await axiosInstance.post(`${API_URL}/confirm`, data);
-        return response.data;
-    },
-
-    // Cancelar pre-reserva
-    cancel: async (id, reason = null) => {
-        const response = await axiosInstance.post(`${API_URL}/${id}/cancel`, reason ? { reason } : {});
-        return response.data;
-    },
-
-    // Limpiar pre-reservas expiradas
-    cleanExpired: async () => {
-        const response = await axiosInstance.post(`${API_URL}/clean-expired`);
-        return response.data;
     },
 };
 
