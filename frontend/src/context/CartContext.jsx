@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import preReservationsService from '../api/pre-reservations.service';
+import { getOrCreateSessionId } from '../utils/cartSession';
 import toast from 'react-hot-toast';
 
 const CartContext = createContext();
@@ -20,14 +21,9 @@ export const CartProvider = ({ children }) => {
     const [loading, setLoading] = useState(false);
     const [sessionId, setSessionId] = useState(null);
 
-    // Generar o recuperar sessionId
+    // Obtener/crear sessionId al montar
     useEffect(() => {
-        let storedSessionId = localStorage.getItem('cartSessionId');
-        if (!storedSessionId) {
-            storedSessionId = `cart_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-            localStorage.setItem('cartSessionId', storedSessionId);
-        }
-        setSessionId(storedSessionId);
+        setSessionId(getOrCreateSessionId());
     }, []);
 
     // Cargar carrito cuando el usuario se autentica
@@ -39,7 +35,8 @@ export const CartProvider = ({ children }) => {
         }
     }, [isAuthenticated, sessionId]);
 
-    // Cargar carrito desde el backend
+    // ==================== LECTURA ====================
+
     const loadCart = useCallback(async () => {
         if (!isAuthenticated || !sessionId) return;
 
@@ -49,7 +46,6 @@ export const CartProvider = ({ children }) => {
             if (cart) {
                 setCartItems([cart]);
             } else {
-                // Intentar cargar todas las pre-reservas pendientes
                 const preReservations = await preReservationsService.getUserPreReservations('Pending');
                 if (Array.isArray(preReservations) && preReservations.length > 0) {
                     setCartItems(preReservations);
@@ -65,7 +61,8 @@ export const CartProvider = ({ children }) => {
         }
     }, [isAuthenticated, sessionId]);
 
-    // Agregar al carrito (crear pre-reserva)
+    // ==================== ESCRITURA ====================
+
     const addToCart = async (spaceId, startTime, endTime, notes = '', numberOfGuests = 1) => {
         if (!isAuthenticated) {
             toast.error('Por favor, inicia sesión para reservar');
@@ -80,7 +77,7 @@ export const CartProvider = ({ children }) => {
                 endTime,
                 notes,
                 numberOfGuests,
-                sessionId
+                sessionId,
             };
 
             const result = await preReservationsService.create(data);
@@ -96,14 +93,13 @@ export const CartProvider = ({ children }) => {
         }
     };
 
-    // Procesar pago
     const processPayment = async (preReservationId, paymentMethod, billingInfo = null) => {
         setLoading(true);
         try {
             const data = {
                 preReservationId,
                 paymentMethod,
-                ...billingInfo
+                ...billingInfo,
             };
 
             const result = await preReservationsService.processPayment(data);
@@ -118,7 +114,6 @@ export const CartProvider = ({ children }) => {
         }
     };
 
-    // Confirmar pago
     const confirmPayment = async (preReservationId, paymentIntentId) => {
         setLoading(true);
         try {
@@ -126,7 +121,7 @@ export const CartProvider = ({ children }) => {
 
             const result = await preReservationsService.confirmPayment({
                 preReservationId,
-                paymentIntentId
+                paymentIntentId,
             });
 
             console.log('📥 Resultado confirmación:', result);
@@ -149,7 +144,6 @@ export const CartProvider = ({ children }) => {
         }
     };
 
-    // Cancelar pre-reserva
     const cancelItem = async (preReservationId, reason = '') => {
         try {
             await preReservationsService.cancel(preReservationId, reason);
@@ -163,39 +157,31 @@ export const CartProvider = ({ children }) => {
         }
     };
 
-    // ✅ Limpiar carrito (solo se llama en caso de éxito)
+    // ==================== UTILIDADES ====================
+
     const clearCart = useCallback(() => {
         setCartItems([]);
-        // ✅ También limpiar la sessionId para forzar recarga
-        // localStorage.removeItem('cartSessionId');
         console.log('🛒 Carrito limpiado');
     }, []);
 
-
-    // ✅ AGREGAR MÉTODO PARA VERIFICAR SI HAY RESERVAS PENDIENTES
     const hasPendingItems = useCallback(() => {
         return cartItems.some(item =>
-            item.status === 'Pending' ||
-            item.status === 'PaymentPending'
+            item.status === 'Pending' || item.status === 'PaymentPending'
         );
     }, [cartItems]);
 
-    // ✅ AGREGAR MÉTODO PARA FORZAR RECARGA DESPUÉS DEL PAGO
     const refreshAfterPayment = useCallback(async () => {
         console.log('🔄 Refrescando carrito después del pago...');
         await clearCart();
-        // Esperar un momento para que el backend procese
         await new Promise(resolve => setTimeout(resolve, 500));
         await loadCart();
         console.log('✅ Carrito refrescado');
     }, [clearCart, loadCart]);
 
-    // Recargar carrito
     const refreshCart = async () => {
         await loadCart();
     };
 
-    // Calcular total
     const getTotal = () => {
         return cartItems.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
     };
@@ -214,11 +200,11 @@ export const CartProvider = ({ children }) => {
         cancelItem,
         clearCart,
         refreshCart,
-        refreshAfterPayment, // ✅ NUEVO
+        refreshAfterPayment,
         getTotal,
         getItemCount,
-        hasPendingItems, // ✅ NUEVO
-        loadCart
+        hasPendingItems,
+        loadCart,
     };
 
     return (
