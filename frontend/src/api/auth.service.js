@@ -1,43 +1,23 @@
-import axiosInstance from './axios.config';
+// frontend/src/api/auth.service.js
+import request from './helpers/request';
 
 const API_URL = '/auth';
 
 export const authService = {
-    // Registrar usuario
-    register: async (userData) => {
-        const response = await axiosInstance.post(`${API_URL}/register`, userData);
-        return response.data;
-    },
+    register: (userData) => request.post(`${API_URL}/register`, userData),
 
-    // Iniciar sesión
-    login: async (credentials) => {
-        const response = await axiosInstance.post(`${API_URL}/login`, credentials);
-        return response.data;
-    },
+    login: (credentials) => request.post(`${API_URL}/login`, credentials),
 
-    // Cerrar sesión
-    logout: async () => {
-        const response = await axiosInstance.post(`${API_URL}/logout`);
-        return response.data;
-    },
+    logout: () => request.post(`${API_URL}/logout`),
 
-    // Refrescar token
-    refreshToken: async (refreshToken) => {
-        const response = await axiosInstance.post(`${API_URL}/refresh-token`, { refreshToken });
-        return response.data;
-    },
+    refreshToken: (refreshToken) =>
+        request.post(`${API_URL}/refresh-token`, { refreshToken }),
 
-    // Recuperar contraseña
-    forgotPassword: async (email) => {
-        const response = await axiosInstance.post(`${API_URL}/forgot-password`, { email });
-        return response.data;
-    },
+    forgotPassword: (email) =>
+        request.post(`${API_URL}/forgot-password`, { email }),
 
-    // Resetear contraseña
-    resetPassword: async (token, newPassword) => {
-        const response = await axiosInstance.post(`${API_URL}/reset-password`, { token, newPassword });
-        return response.data;
-    },
+    resetPassword: (token, newPassword) =>
+        request.post(`${API_URL}/reset-password`, { token, newPassword }),
 };
 
 export default authService;
