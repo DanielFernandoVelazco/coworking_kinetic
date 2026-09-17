@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
-    LineChart,
     Line,
     XAxis,
     YAxis,
@@ -13,11 +12,13 @@ import {
     ResponsiveContainer,
     Area,
     ComposedChart,
-    Bar,
-    AreaChart
 } from 'recharts';
 import usersService from '../../api/users.service';
 import reservationsService from '../../api/reservations.service';
+import {
+    calculateMonthlyHistory,
+    calculateStatistics,
+} from '../../utils/profileStatistics';
 import toast from 'react-hot-toast';
 
 const ProfileOverview = () => {
@@ -36,7 +37,7 @@ const ProfileOverview = () => {
         mostBookedMonth: '',
         bestMonth: { month: '', count: 0, spent: 0 },
         monthlyAverage: 0,
-        trend: 'stable'
+        trend: 'stable',
     });
 
     useEffect(() => {
@@ -45,21 +46,20 @@ const ProfileOverview = () => {
                 const [profileData, summaryData, reservationsData] = await Promise.all([
                     usersService.getProfile(),
                     reservationsService.getSummary(),
-                    reservationsService.getUserReservations()
+                    reservationsService.getUserReservations(),
                 ]);
 
                 setProfile(profileData);
                 setSummary(summaryData);
-                setRecentReservations(Array.isArray(reservationsData) ? reservationsData.slice(0, 5) : []);
+                setRecentReservations(
+                    Array.isArray(reservationsData) ? reservationsData.slice(0, 5) : []
+                );
 
-                // Calcular histórico de los últimos 6 meses
                 const history = calculateMonthlyHistory(reservationsData);
                 setMonthlyHistory(history);
 
-                // Calcular estadísticas detalladas
                 const stats = calculateStatistics(reservationsData, history);
                 setStatistics(stats);
-
             } catch (error) {
                 console.error('Error fetching profile data:', error);
                 toast.error('Error al cargar el perfil');
@@ -71,101 +71,14 @@ const ProfileOverview = () => {
         fetchData();
     }, []);
 
-    const calculateMonthlyHistory = (reservations) => {
-        const months = [];
-        const now = new Date();
-
-        for (let i = 5; i >= 0; i--) {
-            const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            const monthName = date.toLocaleDateString('es-ES', { month: 'short', year: 'numeric' });
-
-            const monthReservations = reservations.filter(r => {
-                const rDate = new Date(r.startTime);
-                return rDate.getMonth() === date.getMonth() &&
-                    rDate.getFullYear() === date.getFullYear() &&
-                    r.status !== 'Cancelled';
-            });
-
-            const totalSpent = monthReservations.reduce((sum, r) => sum + (r.totalPrice || 0), 0);
-            const totalHours = monthReservations.reduce((sum, r) => {
-                const hours = (new Date(r.endTime) - new Date(r.startTime)) / (1000 * 60 * 60);
-                return sum + hours;
-            }, 0);
-
-            months.push({
-                month: monthName,
-                bookings: monthReservations.length,
-                spending: Math.round(totalSpent),
-                hours: Math.round(totalHours),
-                averagePerBooking: monthReservations.length > 0 ? Math.round(totalSpent / monthReservations.length) : 0
-            });
-        }
-
-        return months;
-    };
-
-    const calculateStatistics = (reservations, history) => {
-        const activeReservations = reservations.filter(r => r.status !== 'Cancelled');
-        const totalBookings = activeReservations.length;
-        const totalHours = activeReservations.reduce((sum, r) => {
-            const hours = (new Date(r.endTime) - new Date(r.startTime)) / (1000 * 60 * 60);
-            return sum + hours;
-        }, 0);
-        const totalSpent = activeReservations.reduce((sum, r) => sum + (r.totalPrice || 0), 0);
-        const averagePerBooking = totalBookings > 0 ? totalSpent / totalBookings : 0;
-
-        // Espacio favorito
-        const spaceTypes = {};
-        activeReservations.forEach(r => {
-            spaceTypes[r.spaceType] = (spaceTypes[r.spaceType] || 0) + 1;
-        });
-        let favoriteSpaceType = '';
-        let maxCount = 0;
-        Object.entries(spaceTypes).forEach(([type, count]) => {
-            if (count > maxCount) {
-                maxCount = count;
-                favoriteSpaceType = type;
-            }
-        });
-
-        // Mejor mes
-        let bestMonth = { month: '', count: 0, spent: 0 };
-        history.forEach(h => {
-            if (h.bookings > bestMonth.count) {
-                bestMonth = { month: h.month, count: h.bookings, spent: h.spending };
-            }
-        });
-
-        // Tendencia (comparar últimos 3 meses con los 3 anteriores)
-        const last3 = history.slice(-3).reduce((sum, h) => sum + h.bookings, 0);
-        const prev3 = history.slice(0, 3).reduce((sum, h) => sum + h.bookings, 0);
-        let trend = 'stable';
-        if (last3 > prev3 * 1.2) trend = 'up';
-        else if (last3 < prev3 * 0.8) trend = 'down';
-
-        // Promedio mensual
-        const monthlyAverage = history.length > 0 ?
-            history.reduce((sum, h) => sum + h.bookings, 0) / history.length : 0;
-
-        return {
-            totalBookings,
-            totalHours: Math.round(totalHours),
-            totalSpent: Math.round(totalSpent),
-            averagePerBooking: Math.round(averagePerBooking),
-            favoriteSpaceType,
-            mostBookedMonth: bestMonth.month,
-            bestMonth,
-            monthlyAverage: Math.round(monthlyAverage * 10) / 10,
-            trend
-        };
-    };
+    // ==================== HELPERS DE RENDER ====================
 
     const getStatusBadge = (status) => {
         const styles = {
-            'Confirmed': 'bg-emerald-100 text-emerald-700',
-            'Pending': 'bg-amber-100 text-amber-700',
-            'Completed': 'bg-blue-100 text-blue-700',
-            'Cancelled': 'bg-red-100 text-red-700'
+            Confirmed: 'bg-emerald-100 text-emerald-700',
+            Pending: 'bg-amber-100 text-amber-700',
+            Completed: 'bg-blue-100 text-blue-700',
+            Cancelled: 'bg-red-100 text-red-700',
         };
         return styles[status] || 'bg-gray-100 text-gray-700';
     };
@@ -177,7 +90,7 @@ const ProfileOverview = () => {
             day: 'numeric',
             year: 'numeric',
             hour: '2-digit',
-            minute: '2-digit'
+            minute: '2-digit',
         });
     };
 
@@ -199,17 +112,23 @@ const ProfileOverview = () => {
 
     const getTrendIcon = () => {
         switch (statistics.trend) {
-            case 'up': return 'trending_up';
-            case 'down': return 'trending_down';
-            default: return 'trending_flat';
+            case 'up':
+                return 'trending_up';
+            case 'down':
+                return 'trending_down';
+            default:
+                return 'trending_flat';
         }
     };
 
     const getTrendColor = () => {
         switch (statistics.trend) {
-            case 'up': return 'text-emerald-600';
-            case 'down': return 'text-red-600';
-            default: return 'text-amber-600';
+            case 'up':
+                return 'text-emerald-600';
+            case 'down':
+                return 'text-red-600';
+            default:
+                return 'text-amber-600';
         }
     };
 
@@ -242,7 +161,6 @@ const ProfileOverview = () => {
                         <p className="text-body-sm text-on-surface-variant mt-1">{profile.company}</p>
                     )}
                     <div className="flex flex-wrap gap-4 mt-3">
-                        {/* Job Title */}
                         <div className="flex items-center gap-2">
                             <span className="material-symbols-outlined text-primary text-sm">work</span>
                             <span className="text-body-md text-on-surface">
@@ -250,7 +168,6 @@ const ProfileOverview = () => {
                             </span>
                         </div>
 
-                        {/* Company */}
                         {profile?.company && (
                             <div className="flex items-center gap-2">
                                 <span className="material-symbols-outlined text-primary text-sm">business</span>
@@ -258,11 +175,14 @@ const ProfileOverview = () => {
                             </div>
                         )}
 
-                        {/* Member since */}
                         <div className="flex items-center gap-2">
                             <span className="material-symbols-outlined text-primary text-sm">calendar_today</span>
                             <span className="text-body-sm text-on-surface-variant">
-                                Member since {new Date(profile?.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                                Member since{' '}
+                                {new Date(profile?.createdAt).toLocaleDateString('en-US', {
+                                    month: 'long',
+                                    year: 'numeric',
+                                })}
                             </span>
                         </div>
                     </div>
@@ -307,14 +227,17 @@ const ProfileOverview = () => {
                 <span className="text-body-sm text-on-surface-variant">
                     Your booking activity is
                     <span className={`font-semibold ${getTrendColor()} ml-1`}>
-                        {statistics.trend === 'up' ? 'increasing' :
-                            statistics.trend === 'down' ? 'decreasing' : 'stable'}
-                    </span>
-                    {' '}compared to previous months
+                        {statistics.trend === 'up'
+                            ? 'increasing'
+                            : statistics.trend === 'down'
+                                ? 'decreasing'
+                                : 'stable'}
+                    </span>{' '}
+                    compared to previous months
                 </span>
             </div>
 
-            {/* Chart - Líneas combinadas */}
+            {/* Chart */}
             <div>
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="font-headline-md text-headline-md">Reservation History (Last 6 Months)</h3>
@@ -333,19 +256,8 @@ const ProfileOverview = () => {
                     <ResponsiveContainer width="100%" height={300}>
                         <ComposedChart data={monthlyHistory}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#ddc0ba" opacity={0.3} />
-                            <XAxis
-                                dataKey="month"
-                                stroke="#56423d"
-                                fontSize={12}
-                                tickLine={false}
-                            />
-                            <YAxis
-                                yAxisId="left"
-                                stroke="#56423d"
-                                fontSize={12}
-                                tickLine={false}
-                                axisLine={false}
-                            />
+                            <XAxis dataKey="month" stroke="#56423d" fontSize={12} tickLine={false} />
+                            <YAxis yAxisId="left" stroke="#56423d" fontSize={12} tickLine={false} axisLine={false} />
                             <YAxis
                                 yAxisId="right"
                                 orientation="right"
@@ -355,11 +267,7 @@ const ProfileOverview = () => {
                                 axisLine={false}
                             />
                             <Tooltip content={<CustomTooltip />} />
-                            <Legend
-                                verticalAlign="top"
-                                height={36}
-                                iconType="line"
-                            />
+                            <Legend verticalAlign="top" height={36} iconType="line" />
                             <Area
                                 yAxisId="left"
                                 type="monotone"
@@ -385,7 +293,6 @@ const ProfileOverview = () => {
                         </ComposedChart>
                     </ResponsiveContainer>
 
-                    {/* Stats debajo del gráfico */}
                     <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-outline-variant">
                         <div className="text-center">
                             <div className="text-body-xs text-on-surface-variant">Total Bookings</div>
@@ -428,22 +335,38 @@ const ProfileOverview = () => {
                 ) : (
                     <div className="space-y-3">
                         {recentReservations.map((reservation) => (
-                            <div key={reservation.id} className="flex items-center justify-between p-4 bg-surface-container-low rounded-lg border border-outline-variant hover:shadow-md transition-shadow">
+                            <div
+                                key={reservation.id}
+                                className="flex items-center justify-between p-4 bg-surface-container-low rounded-lg border border-outline-variant hover:shadow-md transition-shadow"
+                            >
                                 <div className="flex-1">
                                     <div className="flex items-center gap-2 flex-wrap">
-                                        <h4 className="font-body-md font-semibold text-on-surface">{reservation.spaceName}</h4>
-                                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(reservation.status)}`}>
+                                        <h4 className="font-body-md font-semibold text-on-surface">
+                                            {reservation.spaceName}
+                                        </h4>
+                                        <span
+                                            className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(reservation.status)}`}
+                                        >
                                             {reservation.status}
                                         </span>
                                     </div>
-                                    <p className="text-body-sm text-on-surface-variant">{formatDate(reservation.startTime)}</p>
+                                    <p className="text-body-sm text-on-surface-variant">
+                                        {formatDate(reservation.startTime)}
+                                    </p>
                                     {reservation.numberOfGuests && (
-                                        <p className="text-body-xs text-on-surface-variant">👥 {reservation.numberOfGuests} guests</p>
+                                        <p className="text-body-xs text-on-surface-variant">
+                                            👥 {reservation.numberOfGuests} guests
+                                        </p>
                                     )}
                                 </div>
                                 <div className="flex items-center gap-4">
-                                    <span className="font-headline-sm text-primary">${reservation.totalPrice?.toFixed(2) || '0.00'}</span>
-                                    <Link to={`/spaces/${reservation.spaceId}`} className="text-primary hover:text-secondary transition-colors">
+                                    <span className="font-headline-sm text-primary">
+                                        ${reservation.totalPrice?.toFixed(2) || '0.00'}
+                                    </span>
+                                    <Link
+                                        to={`/spaces/${reservation.spaceId}`}
+                                        className="text-primary hover:text-secondary transition-colors"
+                                    >
                                         <span className="material-symbols-outlined">arrow_forward</span>
                                     </Link>
                                 </div>
