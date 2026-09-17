@@ -1,49 +1,25 @@
-import axiosInstance from './axios.config';
+// frontend/src/api/users.service.js
+import request from './helpers/request';
 
 const API_URL = '/users';
 
 export const usersService = {
-    // Obtener perfil del usuario
-    getProfile: async () => {
-        const response = await axiosInstance.get(`${API_URL}/profile`);
-        return response.data;
-    },
+    // ============ PERFIL ============
+    getProfile: () => request.get(`${API_URL}/profile`),
 
-    // Actualizar perfil
-    updateProfile: async (userData) => {
-        const response = await axiosInstance.put(`${API_URL}/profile`, userData);
-        return response.data;
-    },
+    updateProfile: (userData) => request.put(`${API_URL}/profile`, userData),
 
-    // Cambiar contraseña
-    changePassword: async (passwordData) => {
-        const response = await axiosInstance.post(`${API_URL}/change-password`, passwordData);
-        return response.data;
-    },
+    changePassword: (passwordData) =>
+        request.post(`${API_URL}/change-password`, passwordData),
 
-    // Obtener todos los usuarios (Admin)
-    getAll: async () => {
-        const response = await axiosInstance.get(API_URL);
-        return response.data;
-    },
+    // ============ ADMIN ============
+    getAll: () => request.get(API_URL),
 
-    // Obtener usuario por ID (Admin)
-    getById: async (id) => {
-        const response = await axiosInstance.get(`${API_URL}/${id}`);
-        return response.data;
-    },
+    getById: (id) => request.get(`${API_URL}/${id}`),
 
-    // Actualizar usuario (Admin)
-    update: async (id, userData) => {
-        const response = await axiosInstance.put(`${API_URL}/${id}`, userData);
-        return response.data;
-    },
+    update: (id, userData) => request.put(`${API_URL}/${id}`, userData),
 
-    // Eliminar usuario (Admin)
-    delete: async (id) => {
-        const response = await axiosInstance.delete(`${API_URL}/${id}`);
-        return response.data;
-    },
+    delete: (id) => request.delete(`${API_URL}/${id}`),
 };
 
 export default usersService;
