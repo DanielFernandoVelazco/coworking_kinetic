@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import alertsService from '../api/alerts.service';
+import { useAlertPolling } from '../hooks/useAlertPolling';
 import toast from 'react-hot-toast';
 
 const AlertContext = createContext();
@@ -16,30 +17,27 @@ export const useAlerts = () => {
 
 export const AlertProvider = ({ children }) => {
     const { user, isAuthenticated } = useAuth();
-    const [alerts, setAlerts] = useState([]);
-    const [unreadCount, setUnreadCount] = useState(0);
-    const [loading, setLoading] = useState(false);
-    const [summary, setSummary] = useState({
-        total: 0,
-        unread: 0,
-        read: 0,
-        byType: {},
-        byCategory: {}
-    });
 
-    // Cargar alertas cuando el usuario se autentica
+    const [alerts, setAlerts] = useState([]);
+    const [loading, setLoading] = useState(false);
+
+    // Hook dedicado al count + summary (con polling opcional)
+    const {
+        count: unreadCount,
+        summary,
+        refresh: refreshCountAndSummary,
+        setCount: setUnreadCount,
+    } = useAlertPolling(isAuthenticated, { pollInterval: null });
+
+    // Reset al cerrar sesión
     useEffect(() => {
-        if (isAuthenticated && user) {
-            loadAlerts();
-            loadUnreadCount();
-        } else {
+        if (!isAuthenticated || !user) {
             setAlerts([]);
-            setUnreadCount(0);
-            setSummary({ total: 0, unread: 0, read: 0, byType: {}, byCategory: {} });
         }
     }, [isAuthenticated, user]);
 
-    // Cargar todas las alertas
+    // ==================== CARGA DE LISTADOS ====================
+
     const loadAlerts = useCallback(async (isRead = null) => {
         if (!isAuthenticated) return;
         setLoading(true);
@@ -55,7 +53,6 @@ export const AlertProvider = ({ children }) => {
         }
     }, [isAuthenticated]);
 
-    // Cargar solo no leídas
     const loadUnreadAlerts = useCallback(async () => {
         if (!isAuthenticated) return;
         try {
@@ -68,41 +65,25 @@ export const AlertProvider = ({ children }) => {
         }
     }, [isAuthenticated]);
 
-    // Cargar conteo de no leídas
+    // Delegamos a helpers del hook
     const loadUnreadCount = useCallback(async () => {
         if (!isAuthenticated) return;
-        try {
-            const count = await alertsService.getUnreadCount();
-            setUnreadCount(count || 0);
-            return count;
-        } catch (error) {
-            console.error('Error loading unread count:', error);
-            return 0;
-        }
-    }, [isAuthenticated]);
+        await refreshCountAndSummary();
+    }, [isAuthenticated, refreshCountAndSummary]);
 
-    // Cargar resumen
     const loadSummary = useCallback(async () => {
         if (!isAuthenticated) return;
-        try {
-            const data = await alertsService.getSummary();
-            setSummary(data || { total: 0, unread: 0, read: 0, byType: {}, byCategory: {} });
-            return data;
-        } catch (error) {
-            console.error('Error loading summary:', error);
-            return null;
-        }
-    }, [isAuthenticated]);
+        await refreshCountAndSummary();
+    }, [isAuthenticated, refreshCountAndSummary]);
 
-    // Marcar como leída
+    // ==================== MUTACIONES ====================
+
     const markAsRead = useCallback(async (alertId) => {
         try {
             await alertsService.markAsRead(alertId);
-            // Actualizar estado local
             setAlerts(prev => prev.map(a =>
                 a.id === alertId ? { ...a, isRead: true, readAt: new Date().toISOString() } : a
             ));
-            // Actualizar conteo
             setUnreadCount(prev => Math.max(0, prev - 1));
             toast.success('Alerta marcada como leída');
             return true;
@@ -111,13 +92,11 @@ export const AlertProvider = ({ children }) => {
             toast.error('Error al marcar alerta como leída');
             return false;
         }
-    }, []);
+    }, [setUnreadCount]);
 
-    // Marcar todas como leídas
     const markAllAsRead = useCallback(async () => {
         try {
             await alertsService.markAllAsRead();
-            // Actualizar estado local
             setAlerts(prev => prev.map(a => ({ ...a, isRead: true, readAt: new Date().toISOString() })));
             setUnreadCount(0);
             toast.success('Todas las alertas marcadas como leídas');
@@ -127,13 +106,11 @@ export const AlertProvider = ({ children }) => {
             toast.error('Error al marcar todas las alertas como leídas');
             return false;
         }
-    }, []);
+    }, [setUnreadCount]);
 
-    // Eliminar alerta
     const deleteAlert = useCallback(async (alertId) => {
         try {
             await alertsService.delete(alertId);
-            // Actualizar estado local
             const deleted = alerts.find(a => a.id === alertId);
             setAlerts(prev => prev.filter(a => a.id !== alertId));
             if (deleted && !deleted.isRead) {
@@ -146,9 +123,8 @@ export const AlertProvider = ({ children }) => {
             toast.error('Error al eliminar alerta');
             return false;
         }
-    }, [alerts]);
+    }, [alerts, setUnreadCount]);
 
-    // Eliminar todas las leídas
     const deleteAllRead = useCallback(async () => {
         try {
             await alertsService.deleteAllRead();
@@ -162,22 +138,20 @@ export const AlertProvider = ({ children }) => {
         }
     }, []);
 
-    // Refrescar todo
+    // ==================== REFRESH GLOBAL ====================
+
     const refresh = useCallback(async () => {
         await Promise.all([
             loadAlerts(),
-            loadUnreadCount(),
-            loadSummary()
+            refreshCountAndSummary(),
         ]);
-    }, [loadAlerts, loadUnreadCount, loadSummary]);
+    }, [loadAlerts, refreshCountAndSummary]);
 
-    // Crear alerta (para uso interno)
     const createAlert = useCallback(async (data) => {
         try {
             const result = await alertsService.create(data);
-            // Recargar alertas
             await loadAlerts();
-            await loadUnreadCount();
+            await refreshCountAndSummary();
             toast.success('Alerta creada');
             return result;
         } catch (error) {
@@ -185,7 +159,7 @@ export const AlertProvider = ({ children }) => {
             toast.error('Error al crear alerta');
             return null;
         }
-    }, [loadAlerts, loadUnreadCount]);
+    }, [loadAlerts, refreshCountAndSummary]);
 
     const value = {
         alerts,
@@ -201,7 +175,7 @@ export const AlertProvider = ({ children }) => {
         deleteAlert,
         deleteAllRead,
         refresh,
-        createAlert
+        createAlert,
     };
 
     return (
