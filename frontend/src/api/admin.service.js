@@ -1,115 +1,61 @@
 // frontend/src/api/admin.service.js
-import axiosInstance from './axios.config';
+import request from './helpers/request';
 
 const API_URL = '/admin';
 
 export const adminService = {
-    // ========== MÉTODOS EXISTENTES ==========
-    getDashboard: async () => {
-        const response = await axiosInstance.get(`${API_URL}/dashboard`);
-        return response.data;
-    },
+    // ============ DASHBOARD ============
+    getDashboard: () => request.get(`${API_URL}/dashboard`),
 
-    getSummary: async () => {
-        const response = await axiosInstance.get(`${API_URL}/summary`);
-        return response.data;
-    },
+    getSummary: () => request.get(`${API_URL}/summary`),
 
-    getMonthlyReservations: async (months = 12) => {
-        const response = await axiosInstance.get(`${API_URL}/monthly-reservations`, {
-            params: { months }
-        });
-        return response.data;
-    },
+    getMonthlyReservations: (months = 12) =>
+        request.get(`${API_URL}/monthly-reservations`, { params: { months } }),
 
-    getMonthlyRevenue: async (months = 12) => {
-        const response = await axiosInstance.get(`${API_URL}/monthly-revenue`, {
-            params: { months }
-        });
-        return response.data;
-    },
+    getMonthlyRevenue: (months = 12) =>
+        request.get(`${API_URL}/monthly-revenue`, { params: { months } }),
 
-    getRecentReservations: async (limit = 10) => {
-        const response = await axiosInstance.get(`${API_URL}/recent-reservations`, {
-            params: { limit }
-        });
-        return response.data;
-    },
+    getRecentReservations: (limit = 10) =>
+        request.get(`${API_URL}/recent-reservations`, { params: { limit } }),
 
-    getTopUsers: async (limit = 10) => {
-        const response = await axiosInstance.get(`${API_URL}/top-users`, {
-            params: { limit }
-        });
-        return response.data;
-    },
+    getTopUsers: (limit = 10) =>
+        request.get(`${API_URL}/top-users`, { params: { limit } }),
 
-    getTopSpaces: async (limit = 10) => {
-        const response = await axiosInstance.get(`${API_URL}/top-spaces`, {
-            params: { limit }
-        });
-        return response.data;
-    },
+    getTopSpaces: (limit = 10) =>
+        request.get(`${API_URL}/top-spaces`, { params: { limit } }),
 
-    getSystemHealth: async () => {
-        const response = await axiosInstance.get(`${API_URL}/health`);
-        return response.data;
-    },
+    getSystemHealth: () => request.get(`${API_URL}/health`),
 
+    // ============ REPORTES ============
     exportReport: async (startDate, endDate) => {
-        const response = await axiosInstance.get(`${API_URL}/export`, {
+        const response = await request.get(`${API_URL}/export`, {
             params: { startDate, endDate },
-            responseType: 'blob'
+            responseType: 'blob',
         });
-        return response.data;
+        return response;
     },
 
-    // ========== ✅ NUEVOS MÉTODOS DE ALERTAS ==========
-
-    // Obtener todas las alertas (admin)
-    getAllAlerts: async (isRead = null, limit = 100) => {
+    // ============ ALERTAS ============
+    getAllAlerts: (isRead = null, limit = 100) => {
         const params = { limit };
         if (isRead !== null) params.isRead = isRead;
-        const response = await axiosInstance.get(`${API_URL}/alerts`, { params });
-        return response.data;
+        return request.get(`${API_URL}/alerts`, { params });
     },
 
-    // Obtener estadísticas de alertas
-    getAlertStats: async () => {
-        const response = await axiosInstance.get(`${API_URL}/alerts/stats`);
-        return response.data;
-    },
+    getAlertStats: () => request.get(`${API_URL}/alerts/stats`),
 
-    // Enviar alerta masiva a todos los usuarios
-    broadcastAlert: async (data) => {
-        const response = await axiosInstance.post(`${API_URL}/alerts/broadcast`, data);
-        return response.data;
-    },
+    broadcastAlert: (data) =>
+        request.post(`${API_URL}/alerts/broadcast`, data),
 
-    // Crear alerta para usuario específico
-    createAlertForUser: async (userId, data) => {
-        const response = await axiosInstance.post(`${API_URL}/alerts/user/${userId}`, data);
-        return response.data;
-    },
+    createAlertForUser: (userId, data) =>
+        request.post(`${API_URL}/alerts/user/${userId}`, data),
 
-    // Obtener alerta por ID
-    getAlertById: async (id) => {
-        const response = await axiosInstance.get(`${API_URL}/alerts/${id}`);
-        return response.data;
-    },
+    getAlertById: (id) => request.get(`${API_URL}/alerts/${id}`),
 
-    // Eliminar alerta (admin)
-    deleteAlert: async (id) => {
-        const response = await axiosInstance.delete(`${API_URL}/alerts/${id}`);
-        return response.data;
-    },
+    deleteAlert: (id) => request.delete(`${API_URL}/alerts/${id}`),
 
-    // Limpiar alertas antiguas
-    cleanOldAlerts: async (daysOld = 30) => {
-        const response = await axiosInstance.post(`${API_URL}/alerts/clean`, null, {
-            params: { daysOld }
-        });
-        return response.data;
-    }
+    cleanOldAlerts: (daysOld = 30) =>
+        request.post(`${API_URL}/alerts/clean`, null, { params: { daysOld } }),
 };
 
 export default adminService;
