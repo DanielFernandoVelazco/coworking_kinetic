@@ -1,85 +1,39 @@
 // frontend/src/api/alerts.service.js
-import axiosInstance from './axios.config';
+import request from './helpers/request';
 
 const API_URL = '/alerts';
 
 export const alertsService = {
-    // Obtener todas las alertas del usuario
-    getAll: async (isRead = null, limit = 50) => {
-        const params = {};
+    // ============ USUARIO ============
+    getAll: (isRead = null, limit = 50) => {
+        const params = { limit };
         if (isRead !== null) params.isRead = isRead;
-        params.limit = limit;
-        const response = await axiosInstance.get(API_URL, { params });
-        return response.data;
+        return request.get(API_URL, { params });
     },
 
-    // Obtener solo alertas no leídas
-    getUnread: async () => {
-        const response = await axiosInstance.get(`${API_URL}/unread`);
-        return response.data;
-    },
+    getUnread: () => request.get(`${API_URL}/unread`),
 
-    // Obtener conteo de alertas no leídas
-    getUnreadCount: async () => {
-        const response = await axiosInstance.get(`${API_URL}/unread/count`);
-        return response.data.count;
-    },
+    getUnreadCount: () => request.get(`${API_URL}/unread/count`),
 
-    // Obtener resumen de alertas
-    getSummary: async () => {
-        const response = await axiosInstance.get(`${API_URL}/summary`);
-        return response.data;
-    },
+    getSummary: () => request.get(`${API_URL}/summary`),
 
-    // Obtener alerta por ID
-    getById: async (id) => {
-        const response = await axiosInstance.get(`${API_URL}/${id}`);
-        return response.data;
-    },
+    getById: (id) => request.get(`${API_URL}/${id}`),
 
-    // Marcar alerta como leída
-    markAsRead: async (id) => {
-        const response = await axiosInstance.put(`${API_URL}/${id}/read`);
-        return response.data;
-    },
+    markAsRead: (id) => request.put(`${API_URL}/${id}/read`),
 
-    // Marcar todas las alertas como leídas
-    markAllAsRead: async () => {
-        const response = await axiosInstance.put(`${API_URL}/read-all`);
-        return response.data;
-    },
+    markAllAsRead: () => request.put(`${API_URL}/read-all`),
 
-    // Eliminar alerta
-    delete: async (id) => {
-        const response = await axiosInstance.delete(`${API_URL}/${id}`);
-        return response.data;
-    },
+    delete: (id) => request.delete(`${API_URL}/${id}`),
 
-    // Eliminar todas las alertas leídas
-    deleteAllRead: async () => {
-        const response = await axiosInstance.delete(`${API_URL}/read`);
-        return response.data;
-    },
+    deleteAllRead: () => request.delete(`${API_URL}/read`),
 
-    // Crear alerta (Admin)
-    create: async (data) => {
-        const response = await axiosInstance.post(API_URL, data);
-        return response.data;
-    },
+    // ============ ADMIN ============
+    create: (data) => request.post(API_URL, data),
 
-    // Crear alerta para usuario específico (Admin)
-    createForUser: async (userId, data) => {
-        const response = await axiosInstance.post(`${API_URL}/user/${userId}`, data);
-        return response.data;
-    },
+    createForUser: (userId, data) => request.post(`${API_URL}/user/${userId}`, data),
 
-    // Limpiar alertas antiguas (Admin)
-    cleanOld: async (daysOld = 30) => {
-        const response = await axiosInstance.post(`${API_URL}/clean`, null, {
-            params: { daysOld }
-        });
-        return response.data;
-    }
+    cleanOld: (daysOld = 30) =>
+        request.post(`${API_URL}/clean`, null, { params: { daysOld } }),
 };
 
 export default alertsService;
