@@ -1,84 +1,41 @@
 // frontend/src/api/spaces.service.js
-import axiosInstance from './axios.config';
+import request from './helpers/request';
 
 const API_URL = '/spaces';
 
 export const spacesService = {
-    // Obtener todos los espacios (con paginación)
-    getAll: async (page = 1, pageSize = 100) => {
-        const response = await axiosInstance.get(API_URL, {
-            params: { page, pageSize }
-        });
-        return response.data;
-    },
+    // ============ LECTURA ============
+    getAll: (page = 1, pageSize = 100) =>
+        request.get(API_URL, { params: { page, pageSize } }),
 
-    // ✅ NUEVO: Obtener TODOS los espacios sin paginación
-    getAllUnpaginated: async () => {
-        const response = await axiosInstance.get(`${API_URL}/all`);
-        return response.data;
-    },
+    getAllUnpaginated: () => request.get(`${API_URL}/all`),
 
-    // Obtener espacios disponibles (con paginación)
-    getAvailable: async (startTime, endTime, page = 1, pageSize = 10) => {
-        const response = await axiosInstance.get(`${API_URL}/available`, {
-            params: { startTime, endTime, page, pageSize }
-        });
-        return response.data;
-    },
+    getAvailable: (startTime, endTime, page = 1, pageSize = 10) =>
+        request.get(`${API_URL}/available`, {
+            params: { startTime, endTime, page, pageSize },
+        }),
 
-    // Obtener espacios destacados
-    getFeatured: async (limit = 10) => {
-        const response = await axiosInstance.get(`${API_URL}/featured`, {
-            params: { limit }
-        });
-        return response.data;
-    },
+    getFeatured: (limit = 10) =>
+        request.get(`${API_URL}/featured`, { params: { limit } }),
 
-    // Obtener espacios por ciudad
-    getByCity: async (city) => {
-        const response = await axiosInstance.get(`${API_URL}/city/${city}`);
-        return response.data;
-    },
+    getByCity: (city) => request.get(`${API_URL}/city/${city}`),
 
-    // Buscar espacios
-    search: async (term, city = null, type = null) => {
-        const response = await axiosInstance.get(`${API_URL}/search`, {
-            params: { term, city, type }
-        });
-        return response.data;
-    },
+    search: (term, city = null, type = null) =>
+        request.get(`${API_URL}/search`, { params: { term, city, type } }),
 
-    // Obtener espacio por ID
-    getById: async (id) => {
-        const response = await axiosInstance.get(`${API_URL}/${id}`);
-        return response.data;
-    },
+    getById: (id) => request.get(`${API_URL}/${id}`),
 
-    // Crear espacio (Admin)
-    create: async (spaceData) => {
-        const response = await axiosInstance.post(API_URL, spaceData);
-        return response.data;
-    },
+    checkAvailability: (id, startTime, endTime) =>
+        request.get(`${API_URL}/${id}/availability`, {
+            params: { startTime, endTime },
+        }),
 
-    // Actualizar espacio (Admin)
-    update: async (id, spaceData) => {
-        const response = await axiosInstance.put(`${API_URL}/${id}`, spaceData);
-        return response.data;
-    },
+    // ============ ADMIN ============
+    create: (spaceData) => request.post(API_URL, spaceData),
 
-    // Eliminar espacio (Admin)
-    delete: async (id) => {
-        const response = await axiosInstance.delete(`${API_URL}/${id}`);
-        return response.data;
-    },
+    update: (id, spaceData) => request.put(`${API_URL}/${id}`, spaceData),
 
-    // Verificar disponibilidad
-    checkAvailability: async (id, startTime, endTime) => {
-        const response = await axiosInstance.get(`${API_URL}/${id}/availability`, {
-            params: { startTime, endTime }
-        });
-        return response.data;
-    },
+    delete: (id) => request.delete(`${API_URL}/${id}`),
 };
 
 export default spacesService;
