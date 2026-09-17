@@ -1,90 +1,48 @@
 // frontend/src/api/reservations.service.js
-import axiosInstance from './axios.config';
+import request from './helpers/request';
 
 const API_URL = '/reservations';
 
 export const reservationsService = {
-    // Obtener reservas con filtros y ordenamiento
-    getUserReservationsFiltered: async (page = 1, pageSize = 10, sortBy = 'date_desc', status = 'all') => {
-        const response = await axiosInstance.get(`${API_URL}/user/filtered`, {
-            params: { page, pageSize, sortBy, status }
-        });
-        return response.data;
-    },
+    // ============ USUARIO ============
+    getUserReservationsFiltered: (page = 1, pageSize = 10, sortBy = 'date_desc', status = 'all') =>
+        request.get(`${API_URL}/user/filtered`, {
+            params: { page, pageSize, sortBy, status },
+        }),
 
-    // Obtener reservas del usuario (método original - se mantiene por compatibilidad)
-    getUserReservations: async (page = 1, pageSize = 10) => {
-        const response = await axiosInstance.get(`${API_URL}/user`, {
-            params: { page, pageSize }
-        });
-        return response.data;
-    },
+    getUserReservations: (page = 1, pageSize = 10) =>
+        request.get(`${API_URL}/user`, { params: { page, pageSize } }),
 
-    // Obtener reservas próximas
-    getUpcoming: async (limit = 10) => {
-        const response = await axiosInstance.get(`${API_URL}/user/upcoming`, {
-            params: { limit }
-        });
-        return response.data;
-    },
+    getUpcoming: (limit = 10) =>
+        request.get(`${API_URL}/user/upcoming`, { params: { limit } }),
 
-    // Obtener resumen de reservas
-    getSummary: async () => {
-        const response = await axiosInstance.get(`${API_URL}/user/summary`);
-        return response.data;
-    },
+    getSummary: () => request.get(`${API_URL}/user/summary`),
 
-    // Obtener reservas de un espacio
-    getBySpace: async (spaceId) => {
-        const response = await axiosInstance.get(`${API_URL}/space/${spaceId}`);
-        return response.data;
-    },
+    getBySpace: (spaceId) => request.get(`${API_URL}/space/${spaceId}`),
 
-    // Obtener reserva por ID
-    getById: async (id) => {
-        const response = await axiosInstance.get(`${API_URL}/${id}`);
-        return response.data;
-    },
+    getById: (id) => request.get(`${API_URL}/${id}`),
 
-    // Crear reserva
-    create: async (reservationData) => {
-        const response = await axiosInstance.post(API_URL, reservationData);
-        return response.data;
-    },
+    getLatest: () => request.get(`${API_URL}/latest`),
 
-    // Actualizar reserva
-    update: async (id, reservationData) => {
-        const response = await axiosInstance.put(`${API_URL}/${id}`, reservationData);
-        return response.data;
-    },
+    create: (reservationData) => request.post(API_URL, reservationData),
 
-    // Cancelar reserva
-    cancel: async (id, reason) => {
-        const response = await axiosInstance.post(`${API_URL}/${id}/cancel`, { reason });
-        return response.data;
-    },
+    update: (id, reservationData) => request.put(`${API_URL}/${id}`, reservationData),
 
-    // Confirmar reserva (Admin)
-    confirm: async (id) => {
-        const response = await axiosInstance.post(`${API_URL}/${id}/confirm`);
-        return response.data;
-    },
+    cancel: (id, reason) =>
+        request.post(`${API_URL}/${id}/cancel`, { reason }),
 
-    // Obtener reservas activas (Admin)
-    getActive: async () => {
-        const response = await axiosInstance.get(`${API_URL}/active`);
-        return response.data;
-    },
+    // ============ ADMIN ============
+    confirm: (id) => request.post(`${API_URL}/${id}/confirm`),
 
-    // Obtener TODAS las reservas (solo admin)
-    getAllReservations: async (page = 1, pageSize = 15, sortBy = 'date_desc', status = 'all', search = '', userId = null, spaceId = null) => {
+    getActive: () => request.get(`${API_URL}/active`),
+
+    getAllReservations: (page = 1, pageSize = 15, sortBy = 'date_desc', status = 'all', search = '', userId = null, spaceId = null) => {
         const params = { page, pageSize, sortBy, status };
         if (search) params.search = search;
         if (userId) params.userId = userId;
         if (spaceId) params.spaceId = spaceId;
 
-        const response = await axiosInstance.get(`${API_URL}/admin/all`, { params });
-        return response.data;
+        return request.get(`${API_URL}/admin/all`, { params });
     },
 };
 
