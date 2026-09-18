@@ -14,6 +14,9 @@ const SPACE_TYPES = [
 
 const PAGE_SIZE = 12;
 
+import { useDebounce } from '../hooks/useDebounce';
+// ...otros imports igual
+
 const Catalog = () => {
     const [allSpaces, setAllSpaces] = useState([]);
     const [displayedSpaces, setDisplayedSpaces] = useState([]);
@@ -27,13 +30,16 @@ const Catalog = () => {
     });
     const [cities, setCities] = useState([]);
 
+    // ✅ Debounce del search para no filtrar en cada keystroke
+    const debouncedSearch = useDebounce(filters.search, 300);
+
     useEffect(() => {
         fetchAllSpaces();
     }, []);
 
     useEffect(() => {
         applyFiltersAndPagination();
-    }, [allSpaces, filters, currentPage]);
+    }, [allSpaces, filters.city, filters.type, debouncedSearch, currentPage]);
 
     const fetchAllSpaces = async () => {
         setLoading(true);
@@ -60,8 +66,8 @@ const Catalog = () => {
     const applyFilters = (spaces) => {
         let filtered = spaces;
 
-        if (filters.search) {
-            const searchLower = filters.search.toLowerCase();
+        if (debouncedSearch) {
+            const searchLower = debouncedSearch.toLowerCase();
             filtered = filtered.filter(s =>
                 s.name.toLowerCase().includes(searchLower) ||
                 s.description?.toLowerCase().includes(searchLower) ||
