@@ -7,6 +7,7 @@ import PaymentStep from './payment/PaymentStep';
 import ProcessingStep from './payment/ProcessingStep';
 import ConfirmStep from './payment/ConfirmStep';
 import ResultStep from './payment/ResultStep';
+import { formatDate } from '../../utils/dateFormatter';
 
 const PaymentModal = ({ item, onClose, onSuccess, onError }) => {
     const { processPayment, confirmPayment, clearCart } = useCart();
@@ -36,17 +37,6 @@ const PaymentModal = ({ item, onClose, onSuccess, onError }) => {
         cardExpiry: '12/26',
         cardCvv: '123',
     });
-
-    const formatDate = useCallback((dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-        });
-    }, []);
 
     const handleBillingChange = useCallback((e) => {
         setBillingInfo((prev) => ({ ...prev, [e.target.name]: e.target.value }));
