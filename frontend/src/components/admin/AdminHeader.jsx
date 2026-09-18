@@ -1,5 +1,6 @@
 // frontend/src/components/admin/AdminHeader.jsx
 import React from 'react';
+import Button from '../ui/Button';
 
 const AdminHeader = ({ icon, title, subtitle, onClearFilters, children }) => {
     return (
@@ -19,13 +20,9 @@ const AdminHeader = ({ icon, title, subtitle, onClearFilters, children }) => {
             </div>
             <div className="flex gap-2">
                 {onClearFilters && (
-                    <button
-                        onClick={onClearFilters}
-                        className="px-4 py-2 border border-outline-variant dark:border-outline-dark-variant rounded-lg hover:bg-surface-container-low dark:hover:bg-surface-dark-container-low transition-colors flex items-center gap-2 text-on-surface dark:text-on-dark-surface"
-                    >
-                        <span className="material-symbols-outlined text-sm">refresh</span>
+                    <Button variant="outline" onClick={onClearFilters} icon="refresh">
                         Limpiar Filtros
-                    </button>
+                    </Button>
                 )}
                 {children}
             </div>
