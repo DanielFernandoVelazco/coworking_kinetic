@@ -6,6 +6,7 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import PaymentModal from '../components/cart/PaymentModal';
 import toast from 'react-hot-toast';
+import { formatDate } from '../utils/dateFormatter';
 
 const CartPage = () => {
     const {
@@ -60,18 +61,6 @@ const CartPage = () => {
 
     // ✅ useMemo para verificar si hay items
     const hasItems = useMemo(() => cartItems.length > 0, [cartItems]);
-
-    // Formatear fecha
-    const formatDate = useCallback((dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    }, []);
 
     // Manejar checkout
     const handleCheckout = useCallback((item) => {
