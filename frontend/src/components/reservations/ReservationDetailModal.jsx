@@ -1,49 +1,11 @@
 // frontend/src/components/reservations/ReservationDetailModal.jsx
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { formatDate, formatDateShort } from '../../utils/dateFormatter';
+import { getStatusBadgeLight, getStatusIcon } from '../../utils/statusBadge';
 
 const ReservationDetailModal = ({ reservation, onClose }) => {
     if (!reservation) return null;
-
-    const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    };
-
-    const formatDateShort = (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-        });
-    };
-
-    const getStatusBadge = (status) => {
-        const styles = {
-            'Confirmed': 'bg-emerald-100 text-emerald-700',
-            'Pending': 'bg-amber-100 text-amber-700',
-            'Completed': 'bg-blue-100 text-blue-700',
-            'Cancelled': 'bg-red-100 text-red-700'
-        };
-        return styles[status] || 'bg-gray-100 text-gray-700';
-    };
-
-    const getStatusIcon = (status) => {
-        const icons = {
-            'Confirmed': 'check_circle',
-            'Pending': 'pending',
-            'Completed': 'task_alt',
-            'Cancelled': 'cancel'
-        };
-        return icons[status] || 'circle';
-    };
 
     const calculateDuration = (start, end) => {
         const diff = new Date(end) - new Date(start);
@@ -103,8 +65,8 @@ const ReservationDetailModal = ({ reservation, onClose }) => {
                             </span>
                             {reservation.paymentStatus && (
                                 <span className={`px-4 py-1.5 rounded-full text-sm font-semibold flex items-center gap-1.5 ${reservation.paymentStatus === 'Completed'
-                                        ? 'bg-emerald-100 text-emerald-700'
-                                        : 'bg-amber-100 text-amber-700'
+                                    ? 'bg-emerald-100 text-emerald-700'
+                                    : 'bg-amber-100 text-amber-700'
                                     }`}>
                                     <span className="material-symbols-outlined text-base">payments</span>
                                     {reservation.paymentStatus}
