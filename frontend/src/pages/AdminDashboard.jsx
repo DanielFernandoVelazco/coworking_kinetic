@@ -1,4 +1,7 @@
 // frontend/src/pages/AdminDashboard.jsx
+import { formatDate, formatDateShort } from '../utils/dateFormatter';
+import { getStatusColor } from '../utils/statusBadge';
+import { getTypeColor, getTypeIcon } from '../utils/typeBadge';
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -195,17 +198,6 @@ const AdminDashboard = () => {
         }).format(amount);
     };
 
-    const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    };
-
     const formatDateShort = (dateString) => {
         const date = new Date(dateString);
         return date.toLocaleDateString('en-US', {
@@ -214,46 +206,6 @@ const AdminDashboard = () => {
             hour: '2-digit',
             minute: '2-digit'
         });
-    };
-
-    // ✅ Formatear fecha para mostrar solo día/mes/año (sin hora)
-    const formatDateOnly = (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric'
-        });
-    };
-
-    const getStatusColor = (status) => {
-        const colors = {
-            'Confirmed': 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400',
-            'Pending': 'text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400',
-            'Completed': 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400',
-            'Cancelled': 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400'
-        };
-        return colors[status] || 'text-gray-600 bg-gray-100';
-    };
-
-    const getTypeColor = (type) => {
-        const colors = {
-            'info': 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400',
-            'success': 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400',
-            'warning': 'text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400',
-            'error': 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400'
-        };
-        return colors[type] || 'text-gray-600 bg-gray-100';
-    };
-
-    const getTypeIcon = (type) => {
-        const icons = {
-            'info': 'info',
-            'success': 'check_circle',
-            'warning': 'warning',
-            'error': 'error'
-        };
-        return icons[type] || 'notifications';
     };
 
     const CustomTooltip = ({ active, payload, label }) => {
@@ -803,7 +755,7 @@ const AdminDashboard = () => {
                                 {/* Fecha de emisión (sin hora) */}
                                 <div className="text-body-xs text-on-surface-variant flex-shrink-0 ml-4 text-right">
                                     <span className="material-symbols-outlined text-sm align-middle mr-1">calendar_today</span>
-                                    {formatDateOnly(alert.createdAt)}
+                                    {formatDateShort(alert.createdAt)}
                                 </div>
                             </div>
                         ))
