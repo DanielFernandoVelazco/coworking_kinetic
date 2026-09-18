@@ -3,6 +3,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAlerts } from '../../context/AlertContext';
 import { useAuth } from '../../context/AuthContext';
+import { getTypeColor, getTypeIcon } from '../../utils/typeBadge';
+import { formatTimeAgo } from '../../utils/timeAgo';
 
 const AlertBell = () => {
     const { unreadCount, alerts, markAsRead, markAllAsRead, loadAlerts } = useAlerts();
@@ -61,40 +63,6 @@ const AlertBell = () => {
         await markAllAsRead();
         // Actualizar la lista
         await loadAlerts(false);
-    };
-
-    const getTypeColor = (type) => {
-        const colors = {
-            'info': 'text-blue-600 bg-blue-100',
-            'success': 'text-emerald-600 bg-emerald-100',
-            'warning': 'text-amber-600 bg-amber-100',
-            'error': 'text-red-600 bg-red-100'
-        };
-        return colors[type] || 'text-gray-600 bg-gray-100';
-    };
-
-    const getTypeIcon = (type) => {
-        const icons = {
-            'info': 'info',
-            'success': 'check_circle',
-            'warning': 'warning',
-            'error': 'error'
-        };
-        return icons[type] || 'notifications';
-    };
-
-    const formatTimeAgo = (dateString) => {
-        if (!dateString) return '';
-        const date = new Date(dateString);
-        const now = new Date();
-        const diff = now - date;
-
-        if (diff < 60000) return 'Just now';
-        if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-        if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-        if (diff < 604800000) return `${Math.floor(diff / 86400000)}d ago`;
-        if (diff < 2592000000) return `${Math.floor(diff / 604800000)}w ago`;
-        return date.toLocaleDateString();
     };
 
     if (!isAuthenticated) return null;
