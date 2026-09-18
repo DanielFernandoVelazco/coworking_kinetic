@@ -20,6 +20,8 @@ import {
     calculateStatistics,
 } from '../../utils/profileStatistics';
 import toast from 'react-hot-toast';
+import { formatDate } from '../../utils/dateFormatter';
+import { getStatusBadgeLight } from '../../utils/statusBadge';
 
 const ProfileOverview = () => {
     const { user } = useAuth();
@@ -72,27 +74,6 @@ const ProfileOverview = () => {
     }, []);
 
     // ==================== HELPERS DE RENDER ====================
-
-    const getStatusBadge = (status) => {
-        const styles = {
-            Confirmed: 'bg-emerald-100 text-emerald-700',
-            Pending: 'bg-amber-100 text-amber-700',
-            Completed: 'bg-blue-100 text-blue-700',
-            Cancelled: 'bg-red-100 text-red-700',
-        };
-        return styles[status] || 'bg-gray-100 text-gray-700';
-    };
-
-    const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('es-ES', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-        });
-    };
 
     const CustomTooltip = ({ active, payload, label }) => {
         if (active && payload && payload.length) {
@@ -344,9 +325,7 @@ const ProfileOverview = () => {
                                         <h4 className="font-body-md font-semibold text-on-surface">
                                             {reservation.spaceName}
                                         </h4>
-                                        <span
-                                            className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadge(reservation.status)}`}
-                                        >
+                                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeLight(reservation.status)}`}>
                                             {reservation.status}
                                         </span>
                                     </div>
