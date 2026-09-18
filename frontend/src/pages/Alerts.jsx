@@ -4,6 +4,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAlerts } from '../context/AlertContext';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
+import { formatDate } from '../utils/dateFormatter';
+import { getTypeColor, getTypeIcon, getCategoryLabel } from '../utils/typeBadge';
 
 const Alerts = () => {
     const {
@@ -59,49 +61,6 @@ const Alerts = () => {
     }, [alerts, filter, selectedType, selectedCategory]);
 
     const filteredAlerts = getFilteredAlerts();
-
-    const getTypeColor = (type) => {
-        const colors = {
-            'info': 'text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400',
-            'success': 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400',
-            'warning': 'text-amber-600 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400',
-            'error': 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400'
-        };
-        return colors[type] || 'text-gray-600 bg-gray-100 dark:bg-gray-800 dark:text-gray-400';
-    };
-
-    const getTypeIcon = (type) => {
-        const icons = {
-            'info': 'info',
-            'success': 'check_circle',
-            'warning': 'warning',
-            'error': 'error'
-        };
-        return icons[type] || 'notifications';
-    };
-
-    const getCategoryLabel = (category) => {
-        const labels = {
-            'booking': '📅 Booking',
-            'payment': '💳 Payment',
-            'system': '⚙️ System',
-            'promotion': '🎉 Promotion',
-            'general': '📌 General'
-        };
-        return labels[category] || category;
-    };
-
-    const formatDate = (dateString) => {
-        if (!dateString) return '';
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    };
 
     const handleMarkRead = async (alertId) => {
         await markAsRead(alertId);
@@ -303,8 +262,8 @@ const Alerts = () => {
                         <div
                             key={alert.id}
                             className={`flex items-start gap-4 p-4 bg-surface-container-lowest rounded-xl border transition-all hover:shadow-md ${alert.isRead
-                                    ? 'border-outline-variant opacity-75'
-                                    : 'border-primary/30 shadow-sm'
+                                ? 'border-outline-variant opacity-75'
+                                : 'border-primary/30 shadow-sm'
                                 }`}
                         >
                             {/* Icono de tipo */}
