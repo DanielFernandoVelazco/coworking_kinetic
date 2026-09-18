@@ -78,11 +78,18 @@ axiosInstance.interceptors.response.use(
             }
         }
 
-        console.error(
-            `❌ Error en ${error.config?.method?.toUpperCase()} ${error.config?.url}:`,
-            error.response?.status,
-            error.response?.data
-        );
+        const url = error.config?.url || '';
+        const status = error.response?.status;
+        const isExpected404 =
+            status === 404 && url.includes('/prereservations/cart/');
+
+        if (!isExpected404) {
+            console.error(
+                `❌ Error en ${error.config?.method?.toUpperCase()} ${error.config?.url}:`,
+                status,
+                error.response?.data
+            );
+        }
 
         return Promise.reject(error);
     }
