@@ -11,6 +11,7 @@ import AdminEmptyState from '../components/admin/AdminEmptyState';
 import DeleteConfirmModal from '../components/admin/DeleteConfirmModal';
 import AdminTable from '../components/admin/AdminTable';
 import toast from 'react-hot-toast';
+import { formatDateShort as formatDate } from '../utils/dateFormatter';
 
 const PAGE_SIZE = 15;
 
@@ -187,15 +188,6 @@ const AdminAmenities = () => {
         isActive
             ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400'
             : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400';
-
-    const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-        });
-    };
 
     if (!user?.isAdmin) return null;
 
