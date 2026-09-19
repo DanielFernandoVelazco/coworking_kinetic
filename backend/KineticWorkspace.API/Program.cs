@@ -76,7 +76,7 @@ builder.Services.AddDatabase(builder.Configuration, builder.Environment);
 builder.Services.AddJwtAuthentication(builder.Configuration);
 
 // CORS
-builder.Services.AddCustomCors(builder.Configuration);
+builder.Services.AddCustomCors(builder.Configuration, builder.Environment);
 
 // Repos, servicios, helpers, seeders, AutoMapper
 builder.Services.AddApplicationServices();
