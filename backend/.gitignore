@@ -1,24 +1,35 @@
-# Build
-bin/
-obj/
-publish/
+# ============================================
+# Secretos y variables de entorno
+# ============================================
+.env
+.env.local
+.env.*.local
+*.env
 
-# IDE
-.vs/
-.vscode/
-.idea/
+# .NET User Secrets
+**/appsettings.Local.json
+**/secrets.json
 
+# ============================================
+# Build / dependencias
+# ============================================
+[Bb]in/
+[Oo]bj/
+node_modules/
+dist/
+build/
+
+# ============================================
 # Logs
+# ============================================
 logs/
 *.log
 
-# SQLite
-*.db
-*.db-shm
-*.db-wal
-
-# Environment
-.env
-
-# Production config
-appsettings.Production.json
+# ============================================
+# IDE
+# ============================================
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
