@@ -13,17 +13,20 @@ namespace KineticWorkspace.API.Services.Implementations
         private readonly IUserRepository _userRepository;
         private readonly IRefreshTokenRepository _refreshTokenRepository;
         private readonly ILogger<PasswordResetService> _logger;
+        private readonly IWebHostEnvironment _environment;
 
         public PasswordResetService(
             ApplicationDbContext context,
             IUserRepository userRepository,
             IRefreshTokenRepository refreshTokenRepository,
-            ILogger<PasswordResetService> logger)
+            ILogger<PasswordResetService> logger,
+            IWebHostEnvironment environment)
         {
             _context = context;
             _userRepository = userRepository;
             _refreshTokenRepository = refreshTokenRepository;
             _logger = logger;
+            _environment = environment;
         }
 
         public async Task<bool> ForgotPasswordAsync(string email)
@@ -37,15 +40,16 @@ namespace KineticWorkspace.API.Services.Implementations
                 return true;
             }
 
-            var token = Convert.ToBase64String(Guid.NewGuid().ToByteArray())
-                .Replace("+", "-")
-                .Replace("/", "_")
-                .TrimEnd('=');
+            // ✅ FIX C2: generar token con alta entropía criptográfica
+            var rawToken = GenerateSecureToken();
+
+            // ✅ FIX C2: en BD se guarda SOLO el hash, nunca el token plano
+            var tokenHash = TokenHasher.Hash(rawToken);
 
             var resetToken = new PasswordResetToken
             {
                 UserId = user.Id,
-                Token = token,
+                Token = tokenHash, // ← hash SHA-256 (hex, 64 chars)
                 ExpiresAt = DateTime.UtcNow.AddHours(1),
                 CreatedAt = DateTime.UtcNow
             };
@@ -57,17 +61,33 @@ namespace KineticWorkspace.API.Services.Implementations
                 "Token de recuperación generado para: {Email}. Expira: {ExpiresAt}",
                 user.Email, resetToken.ExpiresAt);
 
-            // ⚠️ TODO: Reemplazar por envío de email real
-            Console.WriteLine($"🔑 Token de recuperación para {user.Email}: {token}");
-            Console.WriteLine($"🔗 Link de recuperación: http://localhost:5134/api/auth/reset-password?token={Uri.EscapeDataString(token)}");
+            // ⚠️ TODO: Reemplazar por envío de email real.
+            // En dev, imprimimos el token en consola para pruebas locales.
+            // En producción NUNCA se expone — se envía por email al usuario.
+            if (_environment.IsDevelopment())
+            {
+                Console.WriteLine($"🔑 Token de recuperación para {user.Email}: {rawToken}");
+                Console.WriteLine($"🔗 Link de recuperación: http://localhost:5134/api/auth/reset-password?token={Uri.EscapeDataString(rawToken)}");
+            }
+            else
+            {
+                _logger.LogWarning(
+                    "⚠️ Password reset para {Email} ejecutado en entorno {Environment}. " +
+                    "El envío de email aún NO está implementado. " +
+                    "El usuario NO podrá completar el reset hasta que se implemente el envío real.",
+                    user.Email, _environment.EnvironmentName);
+            }
 
             return true;
         }
 
-        public async Task<bool> ResetPasswordAsync(string token, string newPassword)
+        public async Task<bool> ResetPasswordAsync(string rawToken, string newPassword)
         {
+            // ✅ FIX C2: hashear el token recibido antes de buscar en BD
+            var tokenHash = TokenHasher.Hash(rawToken);
+
             var resetToken = await _context.PasswordResetTokens
-                .FirstOrDefaultAsync(t => t.Token == token);
+                .FirstOrDefaultAsync(t => t.Token == tokenHash); // ← buscar por hash
 
             if (resetToken == null)
             {
@@ -122,6 +142,23 @@ namespace KineticWorkspace.API.Services.Implementations
                     throw;
                 }
             });
+        }
+
+        // ==================== HELPERS PRIVADOS ====================
+
+        /// <summary>
+        /// Genera un token URL-safe de alta entropía (512 bits).
+        /// Formato: base64url sin padding.
+        /// </summary>
+        private static string GenerateSecureToken()
+        {
+            var bytes = new byte[64]; // 512 bits
+            System.Security.Cryptography.RandomNumberGenerator.Fill(bytes);
+
+            return Convert.ToBase64String(bytes)
+                .Replace("+", "-")
+                .Replace("/", "_")
+                .TrimEnd('=');
         }
     }
 }
