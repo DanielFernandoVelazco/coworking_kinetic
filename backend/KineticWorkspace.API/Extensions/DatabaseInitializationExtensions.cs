@@ -1,3 +1,4 @@
+// Extensions/DatabaseInitializationExtensions.cs
 using Microsoft.EntityFrameworkCore;
 using KineticWorkspace.API.Data;
 
@@ -5,51 +6,60 @@ namespace KineticWorkspace.API.Extensions
 {
     public static class DatabaseInitializationExtensions
     {
+        /// <summary>
+        /// Inicializa la base de datos aplicando migraciones pendientes.
+        /// ⚠️ SOLO debe llamarse en Development. En producción las migraciones
+        /// se aplican vía CI/CD con `dotnet ef database update`.
+        /// </summary>
         public static async Task InitializeDatabaseAsync(this WebApplication app)
         {
+            // Guarda defensiva: nunca correr en producción
+            if (!app.Environment.IsDevelopment())
+            {
+                app.Logger.LogInformation(
+                    "Saltando InitializeDatabaseAsync (entorno: {Env}). " +
+                    "Las migraciones deben aplicarse vía CI/CD.",
+                    app.Environment.EnvironmentName);
+                return;
+            }
+
             using var scope = app.Services.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
             try
             {
-                logger.LogInformation("Iniciando creacion/verificacion de la base de datos...");
+                logger.LogInformation("Aplicando migraciones pendientes...");
 
-                var created = await dbContext.Database.EnsureCreatedAsync();
+                var pending = await dbContext.Database.GetPendingMigrationsAsync();
+                var pendingList = pending.ToList();
 
-                if (created)
-                    logger.LogInformation("Base de datos y tablas creadas exitosamente");
+                if (pendingList.Any())
+                {
+                    logger.LogInformation(
+                        "Migraciones pendientes: {Count} ({Names})",
+                        pendingList.Count,
+                        string.Join(", ", pendingList));
+
+                    await dbContext.Database.MigrateAsync();
+                    logger.LogInformation("Migraciones aplicadas exitosamente");
+                }
                 else
-                    logger.LogInformation("La base de datos ya existe, verificando tablas...");
-
-                try
                 {
-                    var usersCount = await dbContext.Users.CountAsync();
-                    logger.LogInformation("Tabla Users encontrada con {Count} registros", usersCount);
-                }
-                catch (Exception ex)
-                {
-                    logger.LogWarning("Error al verificar tabla Users: {Message}", ex.Message);
-                    logger.LogInformation("Recreando la base de datos...");
-                    await dbContext.Database.EnsureDeletedAsync();
-                    await dbContext.Database.EnsureCreatedAsync();
-                    logger.LogInformation("Base de datos recreada exitosamente");
+                    logger.LogInformation("No hay migraciones pendientes");
                 }
 
-                logger.LogInformation("Base de datos lista para usar");
+                logger.LogInformation("Base de datos lista");
 
+                // Seeder solo en desarrollo
                 var seeder = scope.ServiceProvider.GetRequiredService<DataSeeder>();
                 await seeder.SeedAllAsync();
             }
             catch (Exception ex)
             {
-                Serilog.Log.Error(ex, "Error al inicializar la base de datos");
-                logger.LogError(ex, "Error detallado: {Message}", ex.Message);
-
-                if (ex.InnerException != null)
-                    logger.LogError("Inner Exception: {Message}", ex.InnerException.Message);
-
-                logger.LogWarning("La aplicacion continuara, pero la base de datos puede no estar disponible");
+                logger.LogError(ex, "Error al inicializar la base de datos");
+                // En Development es OK fallar rápido
+                throw;
             }
         }
     }
