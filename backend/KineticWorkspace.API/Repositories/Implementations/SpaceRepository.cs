@@ -44,17 +44,16 @@ namespace KineticWorkspace.API.Repositories.Implementations
 
         public async Task<IEnumerable<Space>> GetAvailableSpacesAsync(DateTime startTime, DateTime endTime)
         {
+            // Nota: NO usamos Include aquí porque solo proyectamos/ordenamos por rating.
+            // Los includes se agregan después en el servicio si hacen falta.
             var spaces = await _dbSet
-                .Include(s => s.Reviews)
                 .Include(s => s.Amenities)
                 .Where(s => s.IsActive && s.IsAvailable && s.DeletedAt == null)
                 .Where(s => !s.Reservations.Any(r =>
                     r.Status != "Cancelled" &&
-                    r.Status != "Completed" &&
-                    ((startTime >= r.StartTime && startTime < r.EndTime) ||
-                     (endTime > r.StartTime && endTime <= r.EndTime) ||
-                     (startTime <= r.StartTime && endTime >= r.EndTime))))
-                .OrderByDescending(s => s.Reviews.Average(r => r.Rating))
+                    r.StartTime < endTime &&
+                    r.EndTime > startTime))
+                .OrderByDescending(s => s.Reviews.Any() ? s.Reviews.Average(r => (double?)r.Rating) : 0)
                 .ToListAsync();
 
             return spaces;
@@ -66,7 +65,7 @@ namespace KineticWorkspace.API.Repositories.Implementations
                 .Include(s => s.Reviews)
                 .Include(s => s.Amenities)
                 .Where(s => s.Type == type && s.IsActive && s.DeletedAt == null)
-                .OrderByDescending(s => s.Reviews.Average(r => r.Rating))
+                .OrderByDescending(s => s.Reviews.Any() ? s.Reviews.Average(r => (double?)r.Rating) : 0)
                 .ToListAsync();
         }
 
@@ -76,7 +75,7 @@ namespace KineticWorkspace.API.Repositories.Implementations
                 .Include(s => s.Reviews)
                 .Include(s => s.Amenities)
                 .Where(s => s.IsFeatured && s.IsActive && s.IsAvailable && s.DeletedAt == null)
-                .OrderByDescending(s => s.Reviews.Average(r => r.Rating))
+                .OrderByDescending(s => s.Reviews.Any() ? s.Reviews.Average(r => (double?)r.Rating) : 0)
                 .Take(limit)
                 .ToListAsync();
         }
@@ -87,7 +86,7 @@ namespace KineticWorkspace.API.Repositories.Implementations
                 .Include(s => s.Reviews)
                 .Include(s => s.Amenities)
                 .Where(s => s.City == city && s.IsActive && s.DeletedAt == null)
-                .OrderByDescending(s => s.Reviews.Average(r => r.Rating))
+                .OrderByDescending(s => s.Reviews.Any() ? s.Reviews.Average(r => (double?)r.Rating) : 0)
                 .ToListAsync();
         }
 
@@ -100,28 +99,28 @@ namespace KineticWorkspace.API.Repositories.Implementations
                 .FirstOrDefaultAsync(s => s.Id == spaceId && s.DeletedAt == null);
         }
 
-        public async Task<bool> IsSpaceAvailableAsync(int spaceId, DateTime startTime, DateTime endTime, int? excludeReservationId = null)
+        public async Task<bool> IsSpaceAvailableAsync(
+    int spaceId,
+    DateTime startTime,
+    DateTime endTime,
+    int? excludeReservationId = null)
         {
             var space = await _dbSet
-                .Include(s => s.Reservations)
                 .FirstOrDefaultAsync(s => s.Id == spaceId && s.IsActive && s.DeletedAt == null);
 
             if (space == null || !space.IsAvailable)
                 return false;
 
-            var query = space.Reservations.Where(r =>
-                r.Status != "Cancelled" &&
-                r.Status != "Completed" &&
-                ((startTime >= r.StartTime && startTime < r.EndTime) ||
-                 (endTime > r.StartTime && endTime <= r.EndTime) ||
-                 (startTime <= r.StartTime && endTime >= r.EndTime)));
+            var query = _context.Reservations
+                .Where(r => r.SpaceId == spaceId
+                         && r.Status != "Cancelled"
+                         && r.StartTime < endTime
+                         && r.EndTime > startTime);
 
             if (excludeReservationId.HasValue)
-            {
                 query = query.Where(r => r.Id != excludeReservationId.Value);
-            }
 
-            return !query.Any();
+            return !await query.AnyAsync();
         }
 
         public async Task<IEnumerable<Space>> SearchSpacesAsync(string searchTerm, string? city = null, string? type = null)
@@ -151,8 +150,8 @@ namespace KineticWorkspace.API.Repositories.Implementations
             }
 
             return await query
-                .OrderByDescending(s => s.Reviews.Average(r => r.Rating))
-                .ToListAsync();
+    .OrderByDescending(s => s.Reviews.Any() ? s.Reviews.Average(r => (double?)r.Rating) : 0)
+    .ToListAsync();
         }
 
         public async Task<bool> UpdateAvailabilityAsync(int spaceId, bool isAvailable)
@@ -172,7 +171,7 @@ namespace KineticWorkspace.API.Repositories.Implementations
                 .Include(s => s.Amenities)
                 .Where(s => s.IsActive && s.DeletedAt == null)
                 .Where(s => s.Reviews.Any())
-                .OrderByDescending(s => s.Reviews.Average(r => r.Rating))
+                .OrderByDescending(s => s.Reviews.Any() ? s.Reviews.Average(r => (double?)r.Rating) : 0)
                 .Take(limit)
                 .ToListAsync();
         }
