@@ -202,86 +202,144 @@ namespace KineticWorkspace.API.Services.Implementations.Admin
 
         public async Task<List<TopUserDto>> GetTopUsersAsync(int limit = 10)
         {
-            var reservations = await _context.Reservations
-                .Include(r => r.User)
-                .Where(r => r.User != null)
+            // ✅ FIX: separar agregación (SQL) de enriquecimiento (memoria).
+            // EF no traduce g.FirstOrDefault().User.X dentro de un GroupBy.
+
+            // 1. Agregación pura — traducible a SQL
+            var aggregates = await _context.Reservations
+                .Where(r => r.UserId > 0)
                 .GroupBy(r => r.UserId)
                 .Select(g => new
                 {
                     UserId = g.Key,
-                    UserName = g.FirstOrDefault() != null && g.FirstOrDefault()!.User != null
-                        ? $"{g.FirstOrDefault()!.User.FirstName} {g.FirstOrDefault()!.User.LastName}"
-                        : "Unknown",
-                    Email = g.FirstOrDefault() != null && g.FirstOrDefault()!.User != null
-                        ? g.FirstOrDefault()!.User.Email
-                        : "unknown@email.com",
                     TotalReservations = g.Count(),
                     TotalSpent = g.Sum(r => r.TotalPrice),
                     LastActivity = g.Max(r => r.CreatedAt)
                 })
-                .OrderByDescending(u => u.TotalReservations)
+                .OrderByDescending(x => x.TotalReservations)
                 .Take(limit)
                 .ToListAsync();
 
-            var result = new List<TopUserDto>();
+            if (!aggregates.Any())
+                return new List<TopUserDto>();
 
-            foreach (var item in reservations)
-            {
-                result.Add(new TopUserDto
+            // 2. Traer datos descriptivos de los usuarios involucrados
+            var userIds = aggregates.Select(a => a.UserId).ToList();
+
+            var users = await _context.Users
+                .Where(u => userIds.Contains(u.Id))
+                .Select(u => new
                 {
-                    UserId = item.UserId,
-                    UserName = item.UserName,
-                    Email = item.Email,
-                    TotalReservations = item.TotalReservations,
-                    TotalSpent = item.TotalSpent,
-                    LastActivity = item.LastActivity
-                });
-            }
+                    u.Id,
+                    u.FirstName,
+                    u.LastName,
+                    u.Email
+                })
+                .ToDictionaryAsync(u => u.Id);
+
+            // 3. Merge en memoria
+            var result = aggregates
+                .Select(a =>
+                {
+                    users.TryGetValue(a.UserId, out var user);
+                    return new TopUserDto
+                    {
+                        UserId = a.UserId,
+                        UserName = user != null ? $"{user.FirstName} {user.LastName}" : "Unknown",
+                        Email = user?.Email ?? "unknown@email.com",
+                        TotalReservations = a.TotalReservations,
+                        TotalSpent = a.TotalSpent,
+                        LastActivity = a.LastActivity
+                    };
+                })
+                .ToList();
 
             return result;
         }
 
         public async Task<List<TopSpaceDto>> GetTopSpacesAsync(int limit = 10)
         {
-            var spaces = await _context.Reservations
-                .Include(r => r.Space)
-                .Where(r => r.Space != null)
+            // ✅ FIX: mismo patrón que GetTopUsersAsync.
+
+            // 1. Agregación pura
+            var aggregates = await _context.Reservations
+                .Where(r => r.SpaceId > 0)
                 .GroupBy(r => r.SpaceId)
                 .Select(g => new
                 {
                     SpaceId = g.Key,
-                    SpaceName = g.FirstOrDefault() != null && g.FirstOrDefault()!.Space != null
-                        ? g.FirstOrDefault()!.Space.Name
-                        : "Unknown",
-                    SpaceType = g.FirstOrDefault() != null && g.FirstOrDefault()!.Space != null
-                        ? g.FirstOrDefault()!.Space.Type
-                        : "Unknown",
                     TotalReservations = g.Count(),
                     TotalRevenue = g.Sum(r => r.TotalPrice),
-                    TotalHoursBooked = g.Sum(r => EF.Functions.DateDiffHour(r.StartTime, r.EndTime)),
-                    AverageRating = g.FirstOrDefault() != null && g.FirstOrDefault()!.Space != null
-                        ? g.FirstOrDefault()!.Space.AverageRating
-                        : 0
+                    // ✅ FIX: DateDiffHour no es portable con Pomelo.
+                    // Sumamos en .NET después de traer los timestamps (ver paso 2b).
                 })
-                .OrderByDescending(s => s.TotalReservations)
+                .OrderByDescending(x => x.TotalReservations)
                 .Take(limit)
                 .ToListAsync();
 
-            var result = new List<TopSpaceDto>();
+            if (!aggregates.Any())
+                return new List<TopSpaceDto>();
 
-            foreach (var item in spaces)
-            {
-                result.Add(new TopSpaceDto
+            var spaceIds = aggregates.Select(a => a.SpaceId).ToList();
+
+            // 2a. Datos descriptivos de los espacios
+            var spaces = await _context.Spaces
+                .Where(s => spaceIds.Contains(s.Id))
+                .Select(s => new
                 {
-                    SpaceId = item.SpaceId,
-                    SpaceName = item.SpaceName,
-                    SpaceType = item.SpaceType,
-                    TotalReservations = item.TotalReservations,
-                    TotalRevenue = item.TotalRevenue,
-                    TotalHoursBooked = item.TotalHoursBooked,
-                    AverageRating = item.AverageRating
-                });
-            }
+                    s.Id,
+                    s.Name,
+                    s.Type
+                })
+                .ToDictionaryAsync(s => s.Id);
+
+            // 2b. Calcular TotalHoursBooked y AverageRating por separado.
+            // Traemos las reservas involucradas (solo los campos necesarios)
+            // y calculamos en memoria. Son a lo sumo `limit` espacios * N reservas.
+            var reservationData = await _context.Reservations
+                .Where(r => spaceIds.Contains(r.SpaceId))
+                .Select(r => new
+                {
+                    r.SpaceId,
+                    r.StartTime,
+                    r.EndTime
+                })
+                .ToListAsync();
+
+            var hoursBySpace = reservationData
+                .GroupBy(r => r.SpaceId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => (int)g.Sum(r => (r.EndTime - r.StartTime).TotalHours));
+
+            // 3. Ratings — query separada para no mezclar agregados
+            var ratingsBySpace = await _context.Reviews
+                .Where(r => spaceIds.Contains(r.SpaceId))
+                .GroupBy(r => r.SpaceId)
+                .Select(g => new
+                {
+                    SpaceId = g.Key,
+                    AverageRating = g.Average(r => (double)r.Rating)
+                })
+                .ToDictionaryAsync(x => x.SpaceId, x => x.AverageRating);
+
+            // 4. Merge en memoria
+            var result = aggregates
+                .Select(a =>
+                {
+                    spaces.TryGetValue(a.SpaceId, out var space);
+                    return new TopSpaceDto
+                    {
+                        SpaceId = a.SpaceId,
+                        SpaceName = space?.Name ?? "Unknown",
+                        SpaceType = space?.Type ?? "Unknown",
+                        TotalReservations = a.TotalReservations,
+                        TotalRevenue = a.TotalRevenue,
+                        TotalHoursBooked = hoursBySpace.TryGetValue(a.SpaceId, out var h) ? h : 0,
+                        AverageRating = ratingsBySpace.TryGetValue(a.SpaceId, out var r) ? r : 0
+                    };
+                })
+                .ToList();
 
             return result;
         }
