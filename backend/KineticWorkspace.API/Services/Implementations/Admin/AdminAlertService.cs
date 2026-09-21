@@ -105,34 +105,30 @@ namespace KineticWorkspace.API.Services.Implementations.Admin
 
         public async Task<int> BroadcastAlertAsync(AlertRequestDto request)
         {
-            var users = await _context.Users
-                .Where(u => u.IsActive && u.DeletedAt == null)
-                .ToListAsync();
+            // ✅ FIX C5: INSERT ... SELECT en una sola query. Evita cargar
+            // N entidades User en memoria y N inserts individuales.
+            var createdAt = DateTime.UtcNow;
+            var actionUrl = request.ActionUrl ?? (object)DBNull.Value;
+            var actionLabel = request.ActionLabel ?? (object)DBNull.Value;
 
-            var alerts = new List<Alert>();
-            foreach (var user in users)
-            {
-                alerts.Add(new Alert
-                {
-                    UserId = user.Id,
-                    Title = request.Title,
-                    Message = request.Message,
-                    Type = request.Type,
-                    Category = request.Category,
-                    ActionUrl = request.ActionUrl,
-                    ActionLabel = request.ActionLabel,
-                    CreatedAt = DateTime.UtcNow
-                });
-            }
-
-            await _context.Alerts.AddRangeAsync(alerts);
-            await _context.SaveChangesAsync();
+            var rowsAffected = await _context.Database.ExecuteSqlRawAsync(@"
+        INSERT INTO Alerts (UserId, Title, Message, Type, Category, ActionUrl, ActionLabel, IsRead, CreatedAt)
+        SELECT Id, {0}, {1}, {2}, {3}, {4}, {5}, 0, {6}
+        FROM Users
+        WHERE IsActive = 1 AND DeletedAt IS NULL",
+                request.Title,
+                request.Message,
+                request.Type,
+                request.Category,
+                actionUrl,
+                actionLabel,
+                createdAt);
 
             _logger.LogInformation(
                 "Alerta masiva enviada a {Count} usuarios: {Title}",
-                users.Count, request.Title);
+                rowsAffected, request.Title);
 
-            return users.Count;
+            return rowsAffected;
         }
 
         public async Task<AlertResponseDto?> GetAlertByIdAsync(int id)
