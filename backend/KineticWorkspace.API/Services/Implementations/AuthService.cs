@@ -122,7 +122,8 @@ namespace KineticWorkspace.API.Services.Implementations
 
         public async Task<LoginResponseDto> RefreshTokenAsync(RefreshTokenRequestDto request)
         {
-            var refreshTokenEntity = await _refreshTokenRepository.GetByTokenAsync(request.RefreshToken);
+            var tokenHash = TokenHasher.Hash(request.RefreshToken);
+            var refreshTokenEntity = await _refreshTokenRepository.GetByTokenHashAsync(tokenHash);
 
             if (refreshTokenEntity == null || !refreshTokenEntity.IsActive)
             {
@@ -196,18 +197,20 @@ namespace KineticWorkspace.API.Services.Implementations
         /// </summary>
         private async Task<string> CreateRefreshTokenAsync(int userId)
         {
-            var refreshToken = _jwtHelper.GenerateRefreshToken();
+            // El token plano SOLO se devuelve al cliente; en BD se guarda el hash
+            var rawToken = _jwtHelper.GenerateRefreshToken();
+            var tokenHash = TokenHasher.Hash(rawToken);
 
             var refreshTokenEntity = new RefreshToken
             {
                 UserId = userId,
-                Token = refreshToken,
+                Token = tokenHash, // ← hash, no el token plano
                 ExpiresAt = DateTime.UtcNow.AddDays(7)
             };
 
             await _refreshTokenRepository.AddAsync(refreshTokenEntity);
 
-            return refreshToken;
+            return rawToken; // ← el cliente recibe el token plano
         }
     }
 }
