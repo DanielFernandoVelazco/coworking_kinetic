@@ -31,8 +31,8 @@ namespace KineticWorkspace.API.Services.Implementations
         public Task<ReservationSummaryDto> GetReservationSummaryAsync(int userId)
             => _userService.GetReservationSummaryAsync(userId);
 
-        public Task<ReservationResponseDto?> GetReservationByIdAsync(int id)
-            => _userService.GetReservationByIdAsync(id);
+        public Task<ReservationResponseDto?> GetReservationByIdAsync(int id, int userId, bool isAdmin = false)
+    => _userService.GetReservationByIdAsync(id, userId, isAdmin);
 
         public Task<IEnumerable<ReservationResponseDto>> GetSpaceReservationsAsync(int spaceId)
             => _userService.GetSpaceReservationsAsync(spaceId);
