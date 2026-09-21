@@ -196,20 +196,20 @@ namespace KineticWorkspace.API.Repositories.Implementations
             return stats.ToDictionary(x => x.Type, x => x.Count);
         }
 
-        public async Task<bool> IsSpaceReservedAsync(int spaceId, DateTime startTime, DateTime endTime, int? excludeReservationId = null)
+        public async Task<bool> IsSpaceReservedAsync(
+    int spaceId,
+    DateTime startTime,
+    DateTime endTime,
+    int? excludeReservationId = null)
         {
             var query = _dbSet
-                .Where(r => r.SpaceId == spaceId &&
-                           r.Status != "Cancelled" &&
-                           r.Status != "Completed" &&
-                           ((startTime >= r.StartTime && startTime < r.EndTime) ||
-                            (endTime > r.StartTime && endTime <= r.EndTime) ||
-                            (startTime <= r.StartTime && endTime >= r.EndTime)));
+                .Where(r => r.SpaceId == spaceId
+                         && r.Status != "Cancelled"
+                         && r.StartTime < endTime
+                         && r.EndTime > startTime);
 
             if (excludeReservationId.HasValue)
-            {
                 query = query.Where(r => r.Id != excludeReservationId.Value);
-            }
 
             return await query.AnyAsync();
         }
