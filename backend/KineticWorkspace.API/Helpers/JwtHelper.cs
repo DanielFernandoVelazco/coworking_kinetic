@@ -50,7 +50,13 @@ namespace KineticWorkspace.API.Helpers
 
         public string GenerateRefreshToken()
         {
-            return Convert.ToBase64String(Guid.NewGuid().ToByteArray());
+            // 64 bytes = 512 bits de entropía criptográfica
+            var bytes = new byte[64];
+            System.Security.Cryptography.RandomNumberGenerator.Fill(bytes);
+            return Convert.ToBase64String(bytes)
+                .Replace("+", "-")
+                .Replace("/", "_")
+                .TrimEnd('='); // URL-safe
         }
     }
 }
