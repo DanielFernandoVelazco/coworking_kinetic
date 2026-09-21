@@ -88,13 +88,10 @@ namespace KineticWorkspace.API.Services.Implementations
                 existingSpace.ImageUrls = string.Join(",", request.ImageUrls);
             }
 
+            // ✅ FIX: null = "no cambiar", [] = "vaciar", [1,2,3] = "reemplazar"
             if (request.AmenityIds != null)
             {
                 existingSpace.Amenities = await _amenityService.ResolveAmenitiesAsync(request.AmenityIds);
-            }
-            else
-            {
-                existingSpace.Amenities = new List<Amenity>();
             }
 
             await _spaceRepository.UpdateAsync(existingSpace);
