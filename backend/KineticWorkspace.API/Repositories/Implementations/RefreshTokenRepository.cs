@@ -11,11 +11,11 @@ namespace KineticWorkspace.API.Repositories.Implementations
         {
         }
 
-        public async Task<RefreshToken?> GetByTokenAsync(string token)
+        public async Task<RefreshToken?> GetByTokenHashAsync(string tokenHash)
         {
             return await _dbSet
                 .Include(rt => rt.User)
-                .FirstOrDefaultAsync(rt => rt.Token == token);
+                .FirstOrDefaultAsync(rt => rt.Token == tokenHash);
         }
 
         public async Task<bool> RevokeAsync(int id)
