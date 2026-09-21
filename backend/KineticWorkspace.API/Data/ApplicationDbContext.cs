@@ -22,6 +22,8 @@ namespace KineticWorkspace.API.Data
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
         public DbSet<Alert> Alerts { get; set; }
+        public DbSet<InvoiceCounter> InvoiceCounters { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
