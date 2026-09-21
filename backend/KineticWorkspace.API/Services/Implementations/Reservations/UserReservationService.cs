@@ -5,6 +5,7 @@ using KineticWorkspace.API.Models.DTOs.Reservations;
 using KineticWorkspace.API.Models.Entities;
 using KineticWorkspace.API.Repositories.Interfaces;
 using KineticWorkspace.API.Services.Interfaces.Reservations;
+using KineticWorkspace.API.Exceptions;
 
 namespace KineticWorkspace.API.Services.Implementations.Reservations
 {
@@ -75,10 +76,23 @@ namespace KineticWorkspace.API.Services.Implementations.Reservations
             return summary;
         }
 
-        public async Task<ReservationResponseDto?> GetReservationByIdAsync(int id)
+        public async Task<ReservationResponseDto?> GetReservationByIdAsync(int id, int userId, bool isAdmin = false)
         {
             var reservation = await _reservationRepository.GetReservationWithDetailsAsync(id);
-            return reservation != null ? _mapper.Map<ReservationResponseDto>(reservation) : null;
+
+            if (reservation == null) return null;
+
+            // ✅ FIX IDOR: validar ownership salvo que sea admin
+            if (!isAdmin && reservation.UserId != userId)
+            {
+                _logger.LogWarning(
+                    "Acceso denegado: usuario {UserId} intentó ver reserva {ReservationId} que pertenece a {OwnerId}",
+                    userId, id, reservation.UserId);
+
+                throw new ForbiddenException("No tienes permiso para ver esta reservación");
+            }
+
+            return _mapper.Map<ReservationResponseDto>(reservation);
         }
 
         public async Task<IEnumerable<ReservationResponseDto>> GetSpaceReservationsAsync(int spaceId)
