@@ -10,7 +10,7 @@ namespace KineticWorkspace.API.Services.Interfaces.Reservations
         Task<IEnumerable<ReservationResponseDto>> GetUserReservationsAsync(int userId);
         Task<IEnumerable<ReservationResponseDto>> GetUpcomingReservationsAsync(int userId, int limit = 10);
         Task<ReservationSummaryDto> GetReservationSummaryAsync(int userId);
-        Task<ReservationResponseDto?> GetReservationByIdAsync(int id);
+        Task<ReservationResponseDto?> GetReservationByIdAsync(int id, int userId, bool isAdmin = false);
         Task<IEnumerable<ReservationResponseDto>> GetSpaceReservationsAsync(int spaceId);
         Task<ReservationResponseDto> CreateReservationAsync(ReservationRequestDto request, int userId);
         Task<ReservationResponseDto?> UpdateReservationAsync(int id, ReservationRequestDto request, int userId, bool isAdmin = false);
