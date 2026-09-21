@@ -73,97 +73,131 @@ namespace KineticWorkspace.API.Services.Implementations.Payments
             var strategy = _context.Database.CreateExecutionStrategy();
 
             return await strategy.ExecuteAsync(async () =>
-            {
-                using var transaction = await _context.Database.BeginTransactionAsync();
+{
+    await using var transaction = await _context.Database.BeginTransactionAsync();
 
-                try
-                {
-                    // 1. Crear la reserva definitiva
-                    var reservation = new Reservation
-                    {
-                        UserId = preReservation.UserId,
-                        SpaceId = preReservation.SpaceId,
-                        StartTime = preReservation.StartTime,
-                        EndTime = preReservation.EndTime,
-                        Status = "Confirmed",
-                        Notes = preReservation.Notes,
-                        NumberOfGuests = preReservation.NumberOfGuests,
-                        TotalPrice = preReservation.TotalPrice,
-                        CreatedAt = DateTime.UtcNow,
-                        UpdatedAt = DateTime.UtcNow
-                    };
+    try
+    {
+        // ✅ FIX C1: Verificar disponibilidad ANTES de crear la reserva.
+        // Es un chequeo defensivo contra doble booking entre la creación
+        // de la pre-reserva y la confirmación del pago (hasta 30 min de ventana).
+        var hasOverlap = await _context.Reservations
+            .AnyAsync(r => r.SpaceId == preReservation.SpaceId
+                        && r.Status != "Cancelled"
+                        && r.Status != "Completed"
+                        && r.StartTime < preReservation.EndTime
+                        && r.EndTime > preReservation.StartTime);
 
-                    await _context.Reservations.AddAsync(reservation);
-                    await _context.SaveChangesAsync();
-                    _logger.LogInformation("Reserva creada: {ReservationId}", reservation.Id);
+        if (hasOverlap)
+        {
+            _logger.LogWarning(
+                "Doble booking detectado para PreReservation {PreReservationId}. " +
+                "Espacio {SpaceId} ya reservado en el rango.",
+                preReservation.Id, preReservation.SpaceId);
 
-                    // 2. Crear la factura
-                    var invoice = await _invoiceService.CreateInvoiceAsync(
-                        preReservation.UserId,
-                        reservation.Id,
-                        preReservation.TotalPrice,
-                        preReservation.PaymentMethod ?? "CreditCard",
-                        transactionId);
-                    _logger.LogInformation("Factura creada: {InvoiceNumber}", invoice.InvoiceNumber);
+            preReservation.Status = "Cancelled";
+            preReservation.CancellationReason = "El espacio fue reservado por otro usuario durante el proceso de pago";
+            preReservation.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
 
-                    await _invoiceService.MarkInvoiceAsPaidAsync(invoice.Id, transactionId);
+            await transaction.CommitAsync();
 
-                    // 3. Crear el pago
-                    var payment = new Payment
-                    {
-                        ReservationId = reservation.Id,
-                        UserId = preReservation.UserId,
-                        InvoiceId = invoice.Id,
-                        Amount = preReservation.TotalPrice,
-                        Status = "Completed",
-                        PaymentMethod = preReservation.PaymentMethod ?? "CreditCard",
-                        TransactionId = transactionId,
-                        PaymentIntentId = preReservation.PaymentIntentId,
-                        CreatedAt = DateTime.UtcNow,
-                        CompletedAt = DateTime.UtcNow
-                    };
+            throw new InvalidOperationException(
+                "El espacio ya no está disponible. La pre-reserva ha sido cancelada. " +
+                "Por favor, elige otro horario o espacio.");
+        }
 
-                    await _context.Payments.AddAsync(payment);
-                    await _context.SaveChangesAsync();
-                    _logger.LogInformation("Pago creado: {PaymentId}", payment.Id);
+        // 1. Crear la reserva definitiva
+        var reservation = new Reservation
+        {
+            UserId = preReservation.UserId,
+            SpaceId = preReservation.SpaceId,
+            StartTime = preReservation.StartTime,
+            EndTime = preReservation.EndTime,
+            Status = "Confirmed",
+            Notes = preReservation.Notes,
+            NumberOfGuests = preReservation.NumberOfGuests,
+            TotalPrice = preReservation.TotalPrice,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        await _context.Reservations.AddAsync(reservation);
 
-                    // 4. Actualizar pre-reserva
-                    preReservation.Status = "Paid";
-                    preReservation.PaidAmount = preReservation.TotalPrice;
-                    preReservation.PaidAt = DateTime.UtcNow;
-                    preReservation.TransactionId = transactionId;
-                    preReservation.UpdatedAt = DateTime.UtcNow;
+        // ✅ Necesitamos el reservation.Id para la factura y el pago,
+        // así que forzamos un SaveChanges AQUÍ. Es el único punto donde
+        // necesitamos el ID generado por la BD antes de continuar.
+        await _context.SaveChangesAsync();
+        _logger.LogInformation("Reserva creada: {ReservationId}", reservation.Id);
 
-                    await _context.SaveChangesAsync();
+        // 2. Crear la factura (SIN SaveChanges interno — solo AddAsync)
+        var invoice = await _invoiceService.CreateInvoiceAsync(
+            preReservation.UserId,
+            reservation.Id,
+            preReservation.TotalPrice,
+            preReservation.PaymentMethod ?? "CreditCard",
+            transactionId);
+        _logger.LogInformation("Factura preparada: {InvoiceNumber}", invoice.InvoiceNumber);
 
-                    await transaction.CommitAsync();
+        // Marcar factura como pagada (SIN SaveChanges interno — solo modifica entidad en contexto)
+        await _invoiceService.MarkInvoiceAsPaidAsync(invoice.Id, transactionId);
 
-                    _logger.LogInformation(
-                        "✅ Pago completado exitosamente. Reserva: {ReservationId}, Factura: {InvoiceNumber}",
-                        reservation.Id, invoice.InvoiceNumber);
+        // 3. Crear el pago
+        var payment = new Payment
+        {
+            ReservationId = reservation.Id,
+            UserId = preReservation.UserId,
+            InvoiceId = invoice.Id,
+            Amount = preReservation.TotalPrice,
+            Status = "Completed",
+            PaymentMethod = preReservation.PaymentMethod ?? "CreditCard",
+            TransactionId = transactionId,
+            PaymentIntentId = preReservation.PaymentIntentId,
+            CreatedAt = DateTime.UtcNow,
+            CompletedAt = DateTime.UtcNow
+        };
+        await _context.Payments.AddAsync(payment);
 
-                    return new PreReservationConfirmResponseDto
-                    {
-                        ReservationId = reservation.Id,
-                        InvoiceId = invoice.Id,
-                        InvoiceNumber = invoice.InvoiceNumber,
-                        Status = "Completed",
-                        TotalAmount = preReservation.TotalPrice,
-                        PaidAmount = preReservation.TotalPrice,
-                        PaidAt = DateTime.UtcNow,
-                        PaymentMethod = preReservation.PaymentMethod ?? "CreditCard",
-                        TransactionId = transactionId
-                    };
-                }
-                catch (Exception ex)
-                {
-                    await transaction.RollbackAsync();
-                    _logger.LogError(ex,
-                        "Error al confirmar pago para PreReservationId: {PreReservationId}",
-                        request.PreReservationId);
-                    throw;
-                }
-            });
+        // 4. Actualizar pre-reserva
+        preReservation.Status = "Paid";
+        preReservation.PaidAmount = preReservation.TotalPrice;
+        preReservation.PaidAt = DateTime.UtcNow;
+        preReservation.TransactionId = transactionId;
+        preReservation.UpdatedAt = DateTime.UtcNow;
+
+        // ✅ FIX: un ÚNICO SaveChanges para factura + pago + pre-reserva.
+        // Todo se persiste atómicamente o nada.
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Pago creado: {PaymentId}", payment.Id);
+
+        await transaction.CommitAsync();
+
+        _logger.LogInformation(
+            "✅ Pago completado exitosamente. Reserva: {ReservationId}, Factura: {InvoiceNumber}",
+            reservation.Id, invoice.InvoiceNumber);
+
+        return new PreReservationConfirmResponseDto
+        {
+            ReservationId = reservation.Id,
+            InvoiceId = invoice.Id,
+            InvoiceNumber = invoice.InvoiceNumber,
+            Status = "Completed",
+            TotalAmount = preReservation.TotalPrice,
+            PaidAmount = preReservation.TotalPrice,
+            PaidAt = DateTime.UtcNow,
+            PaymentMethod = preReservation.PaymentMethod ?? "CreditCard",
+            TransactionId = transactionId
+        };
+    }
+    catch (Exception ex)
+    {
+        await transaction.RollbackAsync();
+        _logger.LogError(ex,
+            "Error al confirmar pago para PreReservationId: {PreReservationId}",
+            request.PreReservationId);
+        throw;
+    }
+});
         }
     }
 }
