@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using KineticWorkspace.API.Models.DTOs.Reservations;
 using KineticWorkspace.API.Services.Interfaces;
+using KineticWorkspace.API.Extensions;
 
 namespace KineticWorkspace.API.Controllers
 {
@@ -160,19 +161,14 @@ namespace KineticWorkspace.API.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetReservationById(int id)
         {
-            try
-            {
-                var reservation = await _reservationService.GetReservationByIdAsync(id);
-                if (reservation == null)
-                    return NotFound(new { message = $"Reservación con ID {id} no encontrada" });
+            var userId = User.GetUserId();
+            var isAdmin = User.IsInRole("Admin");
 
-                return Ok(reservation);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error al obtener reservación por ID: {Id}", id);
-                return StatusCode(500, new { message = "Error interno del servidor" });
-            }
+            var reservation = await _reservationService.GetReservationByIdAsync(id, userId, isAdmin);
+            if (reservation == null)
+                return NotFound(new { message = $"Reservación con ID {id} no encontrada" });
+
+            return Ok(reservation);
         }
 
         // ==================== Crear reserva ====================
