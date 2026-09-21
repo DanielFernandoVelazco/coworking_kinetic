@@ -1,4 +1,5 @@
 using AutoMapper;
+using KineticWorkspace.API.Exceptions;
 using KineticWorkspace.API.Models.DTOs.Reservations;
 using KineticWorkspace.API.Repositories.Interfaces;
 using KineticWorkspace.API.Services.Interfaces.Reservations;
@@ -8,15 +9,18 @@ namespace KineticWorkspace.API.Services.Implementations.Reservations
     public class AdminReservationService : IAdminReservationService
     {
         private readonly IReservationRepository _reservationRepository;
+        private readonly ISpaceRepository _spaceRepository;
         private readonly IMapper _mapper;
         private readonly ILogger<AdminReservationService> _logger;
 
         public AdminReservationService(
             IReservationRepository reservationRepository,
+            ISpaceRepository spaceRepository,
             IMapper mapper,
             ILogger<AdminReservationService> logger)
         {
             _reservationRepository = reservationRepository;
+            _spaceRepository = spaceRepository;
             _mapper = mapper;
             _logger = logger;
         }
@@ -33,7 +37,28 @@ namespace KineticWorkspace.API.Services.Implementations.Reservations
             if (reservation == null) return false;
 
             if (reservation.Status != "Pending")
-                throw new InvalidOperationException("Solo se pueden confirmar reservaciones pendientes");
+                throw new BusinessException("Solo se pueden confirmar reservaciones pendientes");
+
+            // ✅ FIX: validar solapamiento antes de confirmar.
+            // Excluimos esta misma reserva (id) porque ya existe en BD con estado Pending,
+            // y queremos que el check ignore su propio rango.
+            var isAvailable = await _spaceRepository.IsSpaceAvailableAsync(
+                reservation.SpaceId,
+                reservation.StartTime,
+                reservation.EndTime,
+                excludeReservationId: id);
+
+            if (!isAvailable)
+            {
+                _logger.LogWarning(
+                    "No se pudo confirmar reservación {ReservationId}. " +
+                    "Espacio {SpaceId} ya ocupado en el rango {Start} - {End}. Admin: {AdminId}",
+                    id, reservation.SpaceId, reservation.StartTime, reservation.EndTime, adminUserId);
+
+                throw new BusinessException(
+                    "El espacio ya está reservado en ese horario por otra reservación confirmada. " +
+                    "No se puede confirmar.");
+            }
 
             reservation.Status = "Confirmed";
             reservation.UpdatedAt = DateTime.UtcNow;
