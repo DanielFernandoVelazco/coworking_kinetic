@@ -1,4 +1,4 @@
-// backend/KineticWorkspace.API/Services/Implementations/InvoiceService.cs
+// Services/Implementations/InvoiceService.cs
 using Microsoft.EntityFrameworkCore;
 using KineticWorkspace.API.Data;
 using KineticWorkspace.API.Models.Entities;
@@ -17,81 +17,103 @@ namespace KineticWorkspace.API.Services.Implementations
             _logger = logger;
         }
 
+        /// <summary>
+        /// Genera el siguiente número de factura del año usando un contador atómico.
+        /// Debe llamarse DENTRO de una transacción para que el incremento
+        /// se revierta si el resto de la operación falla.
+        /// </summary>
         public async Task<string> GenerateInvoiceNumberAsync()
         {
             var year = DateTime.UtcNow.Year;
-            var prefix = $"INV-{year}-";
 
-            var lastInvoice = await _context.Invoices
-                .Where(i => i.InvoiceNumber.StartsWith(prefix))
-                .OrderByDescending(i => i.InvoiceNumber)
-                .FirstOrDefaultAsync();
+            // ✅ FIX C6: incremento atómico con UPDATE ... RETURNING
+            // MySQL 8+ soporta RETURNING con esta sintaxis vía EF
+            // Alternativa portable: UPDATE + SELECT dentro de la misma transacción.
 
-            int nextNumber = 1;
-            if (lastInvoice != null)
+            var affected = await _context.Database.ExecuteSqlRawAsync(
+                "UPDATE InvoiceCounters SET LastNumber = LastNumber + 1 WHERE Year = {0}",
+                year);
+
+            if (affected == 0)
             {
-                var lastNumber = lastInvoice.InvoiceNumber.Replace(prefix, "");
-                if (int.TryParse(lastNumber, out int num))
+                // No existe fila para este año → crearla (por si no se sembró)
+                try
                 {
-                    nextNumber = num + 1;
+                    await _context.InvoiceCounters.AddAsync(new InvoiceCounter
+                    {
+                        Year = year,
+                        LastNumber = 1
+                    });
+                    await _context.SaveChangesAsync();
+
+                    _logger.LogInformation("InvoiceCounter {Year} creado con LastNumber=1", year);
+                    return $"INV-{year}-0001";
+                }
+                catch (DbUpdateException)
+                {
+                    // Race: otro request lo creó → reintentar el UPDATE
+                    await _context.Database.ExecuteSqlRawAsync(
+                        "UPDATE InvoiceCounters SET LastNumber = LastNumber + 1 WHERE Year = {0}",
+                        year);
                 }
             }
 
-            return $"{prefix}{nextNumber:D4}";
+            // Leer el número actualizado
+            var counter = await _context.InvoiceCounters
+                .AsNoTracking()
+                .FirstAsync(c => c.Year == year);
+
+            var invoiceNumber = $"INV-{year}-{counter.LastNumber:D4}";
+            _logger.LogInformation("Número de factura generado: {InvoiceNumber}", invoiceNumber);
+            return invoiceNumber;
         }
 
-        public async Task<Invoice> CreateInvoiceAsync(int userId, int reservationId, decimal totalAmount, string paymentMethod, string? transactionId)
+        public async Task<Invoice> CreateInvoiceAsync(
+    int userId,
+    int reservationId,
+    decimal totalAmount,
+    string paymentMethod,
+    string? transactionId)
         {
-            try
+            var invoiceNumber = await GenerateInvoiceNumberAsync();
+
+            var invoice = new Invoice
             {
-                var invoiceNumber = await GenerateInvoiceNumberAsync();
+                InvoiceNumber = invoiceNumber,
+                UserId = userId,
+                ReservationId = reservationId,
+                TotalAmount = totalAmount,
+                Status = "Pending",
+                PaymentMethod = paymentMethod,
+                TransactionId = transactionId,
+                CreatedAt = DateTime.UtcNow,
+                DueDate = DateTime.UtcNow.AddDays(15)
+            };
 
-                var invoice = new Invoice
-                {
-                    InvoiceNumber = invoiceNumber,
-                    UserId = userId,
-                    ReservationId = reservationId,
-                    TotalAmount = totalAmount,
-                    Status = "Pending",
-                    PaymentMethod = paymentMethod,
-                    TransactionId = transactionId,
-                    CreatedAt = DateTime.UtcNow,
-                    DueDate = DateTime.UtcNow.AddDays(15)
-                };
+            await _context.Invoices.AddAsync(invoice);
 
-                await _context.Invoices.AddAsync(invoice);
-                await _context.SaveChangesAsync();
+            // ✅ FIX: sin SaveChanges. El llamador controla la transacción.
+            // Si este método se usa fuera de una transacción, el llamador DEBE llamar SaveChanges.
 
-                _logger.LogInformation($"Factura creada: {invoiceNumber} para usuario {userId}");
-                return invoice;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Error al crear factura para usuario {userId}");
-                throw;
-            }
+            _logger.LogInformation(
+                "Factura preparada (pendiente de guardar): {InvoiceNumber} para usuario {UserId}",
+                invoiceNumber, userId);
+
+            return invoice;
         }
 
         public async Task<bool> MarkInvoiceAsPaidAsync(int invoiceId, string transactionId)
         {
-            try
-            {
-                var invoice = await _context.Invoices.FindAsync(invoiceId);
-                if (invoice == null) return false;
+            var invoice = await _context.Invoices.FindAsync(invoiceId);
+            if (invoice == null) return false;
 
-                invoice.Status = "Paid";
-                invoice.PaidAt = DateTime.UtcNow;
-                invoice.TransactionId = transactionId ?? invoice.TransactionId;
+            invoice.Status = "Paid";
+            invoice.PaidAt = DateTime.UtcNow;
+            invoice.TransactionId = transactionId ?? invoice.TransactionId;
 
-                await _context.SaveChangesAsync();
-                _logger.LogInformation($"Factura marcada como pagada: {invoice.InvoiceNumber}");
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Error al marcar factura como pagada: {invoiceId}");
-                throw;
-            }
+            // ✅ FIX: sin SaveChanges. Solo modificamos la entidad en el contexto.
+            _logger.LogInformation("Factura marcada como pagada (pendiente de guardar): {InvoiceNumber}", invoice.InvoiceNumber);
+            return true;
         }
 
         public async Task<bool> MarkInvoiceAsCancelledAsync(int invoiceId)
