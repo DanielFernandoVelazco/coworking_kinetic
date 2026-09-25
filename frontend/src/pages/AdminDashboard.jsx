@@ -198,16 +198,6 @@ const AdminDashboard = () => {
         }).format(amount);
     };
 
-    const formatDateShort = (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    };
-
     const CustomTooltip = ({ active, payload, label }) => {
         if (active && payload && payload.length) {
             return (
