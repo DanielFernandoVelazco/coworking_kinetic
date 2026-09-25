@@ -21,6 +21,7 @@ const PaymentStep = ({
     error,
     formatDate,
 }) => {
+    const { user } = useAuth();
     return (
         <>
             {/* Resumen del item */}
@@ -62,8 +63,8 @@ const PaymentStep = ({
                             key={method.value}
                             onClick={() => setPaymentMethod(method.value)}
                             className={`p-4 rounded-xl border-2 transition-all text-center ${paymentMethod === method.value
-                                    ? 'border-primary bg-primary/5'
-                                    : 'border-outline-variant hover:border-primary/50'
+                                ? 'border-primary bg-primary/5'
+                                : 'border-outline-variant hover:border-primary/50'
                                 }`}
                         >
                             <span className="material-symbols-outlined text-2xl block mb-1">
@@ -127,7 +128,7 @@ const PaymentStep = ({
                         <label className="text-body-xs text-on-surface-variant block mb-1">Email</label>
                         <input
                             type="email"
-                            value={localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).email : ''}
+                            value={user?.email || ''}
                             className="w-full bg-surface-container-lowest border-b border-outline-variant px-0 py-2 text-on-surface focus:border-primary focus:outline-none transition-all"
                             placeholder="tu@email.com"
                             disabled
