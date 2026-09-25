@@ -33,9 +33,9 @@ const PaymentModal = ({ item, onClose, onSuccess, onError }) => {
     });
 
     const [cardData, setCardData] = useState({
-        cardNumber: '4242 4242 4242 4242',
-        cardExpiry: '12/26',
-        cardCvv: '123',
+        cardNumber: '',
+        cardExpiry: '',
+        cardCvv: '',
     });
 
     const handleBillingChange = useCallback((e) => {
