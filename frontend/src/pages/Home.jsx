@@ -180,8 +180,7 @@ const Home = () => {
     };
 
     if (!user && !loading) {
-        navigate('/login');
-        return null;
+        return <Navigate to="/login" replace />;                  // ← declarativo
     }
 
     return (
