@@ -24,7 +24,9 @@ export const preReservationsService = {
     confirmPayment: (data) => request.post(`${API_URL}/confirm`, data),
 
     cancel: (id, reason = null) =>
-        request.post(`${API_URL}/${id}/cancel`, reason ? { reason } : {}),
+        request.post(`${API_URL}/${id}/cancel`, reason ?? null, {
+            headers: { 'Content-Type': 'application/json' },
+        }),
 
     cleanExpired: () => request.post(`${API_URL}/clean-expired`),
 
