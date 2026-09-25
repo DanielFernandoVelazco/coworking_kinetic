@@ -7,7 +7,8 @@ import { useTheme } from '../context/ThemeContext';
 
 const Register = () => {
     const navigate = useNavigate();
-    const { isDark } = useTheme(); // ✅ Ahora funciona
+    const { register } = useAuth();                   // ← usar el método del context
+    const { isDark } = useTheme();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [formData, setFormData] = useState({
@@ -29,32 +30,29 @@ const Register = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        setLoading(true);
 
         if (formData.password !== formData.confirmPassword) {
             setError('Las contraseñas no coinciden');
-            setLoading(false);
             return;
         }
 
         if (formData.password.length < 6) {
             setError('La contraseña debe tener al menos 6 caracteres');
-            setLoading(false);
             return;
         }
 
-        try {
-            const { confirmPassword, ...userData } = formData;
-            const response = await axios.post('/api/auth/register', userData);
+        setLoading(true);
 
-            if (response.data) {
-                navigate('/login', { state: { message: 'Registro exitoso. Ahora puedes iniciar sesión.' } });
-            }
-        } catch (error) {
-            const message = error.response?.data?.message || 'Error al registrar usuario';
-            setError(message);
-        } finally {
-            setLoading(false);
+        const { confirmPassword, ...userData } = formData;
+        const result = await register(userData);     // ← AuthContext.register
+
+        setLoading(false);
+
+        if (result.success) {
+            // El context ya guardó los tokens y seteó el user
+            navigate('/');                            // ← va directo al home
+        } else {
+            setError(result.error || 'Error al registrar usuario');
         }
     };
 
