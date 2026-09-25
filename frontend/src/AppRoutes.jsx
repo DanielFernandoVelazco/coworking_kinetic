@@ -24,44 +24,27 @@ import NotFound from './pages/NotFound';
 import AdminAmenities from './pages/AdminAmenities';
 import AdminAlerts from './pages/AdminAlerts';
 
-// Loading Component
+// Loading
 const LoadingSpinner = () => (
     <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
     </div>
 );
 
-// Protected Route Component
+// Protected Route
 const ProtectedRoute = ({ children }) => {
     const { isAuthenticated, loading } = useAuth();
-
-    if (loading) {
-        return <LoadingSpinner />;
-    }
-
-    if (!isAuthenticated) {
-        return <Navigate to="/login" replace />;
-    }
-
+    if (loading) return <LoadingSpinner />;
+    if (!isAuthenticated) return <Navigate to="/login" replace />;
     return children;
 };
 
-// Admin Route Component
+// Admin Route
 const AdminRoute = ({ children }) => {
     const { isAuthenticated, user, loading } = useAuth();
-
-    if (loading) {
-        return <LoadingSpinner />;
-    }
-
-    if (!isAuthenticated) {
-        return <Navigate to="/login" replace />;
-    }
-
-    if (!user?.isAdmin) {
-        return <Navigate to="/" replace />;
-    }
-
+    if (loading) return <LoadingSpinner />;
+    if (!isAuthenticated) return <Navigate to="/login" replace />;
+    if (!user?.isAdmin) return <Navigate to="/" replace />;
     return children;
 };
 
@@ -78,75 +61,22 @@ const AppRoutes = () => {
                 <Route path="catalog" element={<Catalog />} />
                 <Route path="spaces/:id" element={<SpaceDetails />} />
 
-                {/* Protected Routes */}
-                <Route path="profile" element={
-                    <ProtectedRoute>
-                        <Profile />
-                    </ProtectedRoute>
-                } />
+                {/* Protected */}
+                <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                <Route path="reservations" element={<ProtectedRoute><Reservations /></ProtectedRoute>} />
+                <Route path="cart" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
+                <Route path="alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
 
-                <Route path="reservations" element={
-                    <ProtectedRoute>
-                        <Reservations />
-                    </ProtectedRoute>
-                } />
+                {/* Admin */}
+                <Route path="admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+                <Route path="admin/reservations" element={<AdminRoute><AdminReservations /></AdminRoute>} />
+                <Route path="admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
+                <Route path="admin/spaces" element={<AdminRoute><AdminSpaces /></AdminRoute>} />
+                <Route path="admin/amenities" element={<AdminRoute><AdminAmenities /></AdminRoute>} />
+                <Route path="admin/alerts" element={<AdminRoute><AdminAlerts /></AdminRoute>} />
 
-                <Route path="cart" element={
-                    <ProtectedRoute>
-                        <CartPage />
-                    </ProtectedRoute>
-                } />
-
-                {/* Alerts Route */}
-                <Route path="alerts" element={
-                    <ProtectedRoute>
-                        <Alerts />
-                    </ProtectedRoute>
-                } />
-
-                {/* Admin Routes */}
-                <Route path="admin" element={
-                    <AdminRoute>
-                        <AdminDashboard />
-                    </AdminRoute>
-                } />
-
-                <Route path="admin/reservations" element={
-                    <AdminRoute>
-                        <AdminReservations />
-                    </AdminRoute>
-                } />
-
-                <Route path="admin/users" element={
-                    <AdminRoute>
-                        <AdminUsers />
-                    </AdminRoute>
-                } />
-
-                {/* Admin Spaces */}
-                <Route path="admin/spaces" element={
-                    <AdminRoute>
-                        <AdminSpaces />
-                    </AdminRoute>
-                } />
-
-                {/* ALERTAS */}
-                <Route path="admin/alerts" element={
-                    <AdminRoute>
-                        <AdminAlerts />
-                    </AdminRoute>
-                } />
-
-                {/* Redirecciones */}
-                <Route path="admin/reservas" element={
-                    <Navigate to="/admin/reservations" replace />
-                } />
-
-                <Route path="admin/amenities" element={
-                    <AdminRoute>
-                        <AdminAmenities />
-                    </AdminRoute>
-                } />
+                {/* Redirección legacy */}
+                <Route path="admin/reservas" element={<Navigate to="/admin/reservations" replace />} />
             </Route>
 
             {/* 404 */}
