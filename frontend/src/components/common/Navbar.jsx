@@ -28,21 +28,33 @@ const Navbar = () => {
                     </Link>
                     {isAuthenticated && (
                         <div className="hidden md:flex gap-6 items-center">
-                            <Link to="/" className="text-sm md:text-base text-on-surface-variant dark:text-on-dark-surface-variant hover:text-primary dark:hover:text-primary-dark transition-colors">
+                            <Link
+                                to="/"
+                                className="text-sm md:text-base text-on-surface-variant dark:text-on-dark-surface-variant hover:text-primary dark:hover:text-primary-dark transition-colors"
+                            >
                                 Home
                             </Link>
-                            {user?.notAdmin && (
-                                <>
-                                    <Link to="/catalog" className="text-sm md:text-base text-on-surface-variant dark:text-on-dark-surface-variant hover:text-primary dark:hover:text-primary-dark transition-colors">
-                                        Workspaces
-                                    </Link>
-                                    <Link to="/reservations" className="text-sm md:text-base text-on-surface-variant dark:text-on-dark-surface-variant hover:text-primary dark:hover:text-primary-dark transition-colors">
-                                        My Reservations
-                                    </Link>
-                                </>
+
+                            {/* Links públicos - siempre visibles */}
+                            <Link
+                                to="/catalog"
+                                className="text-sm md:text-base text-on-surface-variant dark:text-on-dark-surface-variant hover:text-primary dark:hover:text-primary-dark transition-colors"
+                            >
+                                Workspaces
+                            </Link>
+
+                            {/* Links de usuario autenticado */}
+                            {isAuthenticated && !user?.isAdmin && (
+                                <Link
+                                    to="/reservations"
+                                    className="text-sm md:text-base text-on-surface-variant dark:text-on-dark-surface-variant hover:text-primary dark:hover:text-primary-dark transition-colors"
+                                >
+                                    My Reservations
+                                </Link>
                             )}
 
-                            {user?.isAdmin && (
+                            {/* Links de admin */}
+                            {isAuthenticated && user?.isAdmin && (
                                 <>
                                     <Link to="/admin" className="text-sm md:text-base text-on-surface-variant dark:text-on-dark-surface-variant hover:text-primary dark:hover:text-primary-dark transition-colors">
                                         Dashboard
