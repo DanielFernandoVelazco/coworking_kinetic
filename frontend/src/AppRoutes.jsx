@@ -23,6 +23,11 @@ import AdminSpaces from './pages/AdminSpaces';
 import NotFound from './pages/NotFound';
 import AdminAmenities from './pages/AdminAmenities';
 import AdminAlerts from './pages/AdminAlerts';
+import About from './pages/About';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
+import HelpCenter from './pages/HelpCenter';
+import Contact from './pages/Contact';
 
 // Loading
 const LoadingSpinner = () => (
@@ -60,6 +65,13 @@ const AppRoutes = () => {
                 <Route index element={<Home />} />
                 <Route path="catalog" element={<Catalog />} />
                 <Route path="spaces/:id" element={<SpaceDetails />} />
+
+                {/* Rutas públicas del footer */}
+                <Route path="about" element={<About />} />
+                <Route path="privacy" element={<PrivacyPolicy />} />
+                <Route path="terms" element={<TermsOfService />} />
+                <Route path="help" element={<HelpCenter />} />
+                <Route path="contact" element={<Contact />} />
 
                 {/* Protected */}
                 <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
