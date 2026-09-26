@@ -14,7 +14,7 @@ const Footer = () => {
                         KINETIC WORKSPACE
                     </span>
                     <span className="font-body-sm text-body-sm text-on-surface-variant dark:text-on-dark-surface-variant">
-                        © 2024 Kinetic Workspace. All rights reserved.
+                        © 2026 Kinetic Workspace. All rights reserved.
                     </span>
                 </div>
                 <div className="flex gap-8 flex-wrap justify-center">
