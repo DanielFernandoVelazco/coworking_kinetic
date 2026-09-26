@@ -67,7 +67,7 @@ namespace KineticWorkspace.API.Services.Implementations
             if (_environment.IsDevelopment())
             {
                 Console.WriteLine($"🔑 Token de recuperación para {user.Email}: {rawToken}");
-                Console.WriteLine($"🔗 Link de recuperación: http://localhost:5134/api/auth/reset-password?token={Uri.EscapeDataString(rawToken)}");
+                Console.WriteLine($"🔗 Link de recuperación: http://localhost:5173/reset-password?token={Uri.EscapeDataString(rawToken)}");
             }
             else
             {
