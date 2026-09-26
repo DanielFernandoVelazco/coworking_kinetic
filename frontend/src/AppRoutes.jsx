@@ -28,6 +28,8 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import HelpCenter from './pages/HelpCenter';
 import Contact from './pages/Contact';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 // Loading
 const LoadingSpinner = () => (
@@ -59,6 +61,8 @@ const AppRoutes = () => {
             {/* Auth Routes - Sin layout */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             {/* Main Routes - Con layout */}
             <Route path="/" element={<MainLayout />}>
