@@ -1,13 +1,12 @@
 // frontend/src/pages/Register.jsx
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
-// ✅ IMPORTAR CORRECTAMENTE
+import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
 const Register = () => {
     const navigate = useNavigate();
-    const { register } = useAuth();                   // ← usar el método del context
+    const { register } = useAuth();
     const { isDark } = useTheme();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
