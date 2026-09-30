@@ -343,11 +343,11 @@ MIT License — see [LICENSE](./LICENSE) for details.
 
 ## 👤 Author
 
-**⚠️ TU_NOMBRE**
+**DANIEL FERNANDO VELAZCO CACERES**
 
-- GitHub: [@⚠️TU_USUARIO](https://github.com/⚠️TU_USUARIO)
-- LinkedIn: [⚠️TU_LINKEDIN](https://linkedin.com/in/⚠️TU_LINKEDIN)
-- Email: ⚠️TU_EMAIL
+- GitHub: https://github.com/DanielFernandoVelazco
+- LinkedIn: https://www.linkedin.com/in/daniel-fernando-velazco-caceres/?isSelfProfile=true
+- Email: daniel.fernando.velazco@gmail.com
 
 ---
 
