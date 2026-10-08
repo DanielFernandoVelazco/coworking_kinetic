@@ -293,11 +293,11 @@ body {
   background-color: #d46b50;
 }
 
-.hover\\:bg-primary-dark:hover {
+.hover\:bg-primary-dark:hover {
   background-color: #c0573e;
 }
 
-.hover\\:bg-primary:hover {
+.hover\:bg-primary:hover {
   background-color: #a03f28;
 }
 
@@ -360,4 +360,218 @@ body {
 .dark input:focus-visible,
 .dark textarea:focus-visible {
   outline-color: #c0573e;
+}
+
+/* =====================================================
+   REACT DATEPICKER - Kinetic Workspace Theme
+   v2 — Especificidad reforzada + soporte light/dark
+   ===================================================== */
+
+/* ---------- Contenedor principal ---------- */
+.kinetic-calendar-wrapper,
+.kinetic-calendar-wrapper .react-datepicker,
+.kinetic-calendar-wrapper .react-datepicker.kinetic-calendar {
+  font-family: 'Work Sans', sans-serif !important;
+  border: 1px solid var(--color-outline-variant) !important;
+  border-radius: 0.75rem !important;
+  background-color: var(--color-surface-container-lowest) !important;
+  width: 100% !important;
+  color: var(--color-on-surface) !important;
+  padding: 0 !important;
+}
+
+.kinetic-calendar-wrapper .react-datepicker__month-container {
+  width: 100% !important;
+  background-color: var(--color-surface-container-lowest) !important;
+}
+
+/* ---------- Header ---------- */
+.kinetic-calendar-wrapper .react-datepicker__header {
+  background-color: var(--color-surface-container-lowest) !important;
+  border-bottom: 1px solid var(--color-outline-variant) !important;
+  padding: 1rem 0.75rem 0.5rem !important;
+  border-top-left-radius: 0.75rem !important;
+  border-top-right-radius: 0.75rem !important;
+}
+
+.kinetic-calendar-wrapper .react-datepicker__current-month,
+.kinetic-calendar-wrapper .react-datepicker-time__header,
+.kinetic-calendar-wrapper .react-datepicker-year-header {
+  color: var(--color-on-surface) !important;
+  font-weight: 600 !important;
+  font-size: 0.95rem !important;
+  padding-bottom: 0.5rem !important;
+  font-family: 'Manrope', sans-serif !important;
+}
+
+/* ---------- Días de la semana ---------- */
+.kinetic-calendar-wrapper .react-datepicker__day-name,
+.kinetic-calendar-wrapper .kinetic-weekday {
+  color: var(--color-on-surface-variant) !important;
+  font-size: 0.72rem !important;
+  font-weight: 600 !important;
+  width: 2.25rem !important;
+  line-height: 2.25rem !important;
+  margin: 0.1rem !important;
+  text-transform: uppercase !important;
+}
+
+/* ---------- Días normales ---------- */
+.kinetic-calendar-wrapper .react-datepicker__day,
+.kinetic-calendar-wrapper .kinetic-day {
+  color: var(--color-on-surface) !important;
+  width: 2.25rem !important;
+  line-height: 2.25rem !important;
+  margin: 0.1rem !important;
+  border-radius: 0.5rem !important;
+  transition: background-color 0.15s, color 0.15s !important;
+  font-size: 0.85rem !important;
+  font-weight: 500 !important;
+  background-color: transparent !important;
+}
+
+.kinetic-calendar-wrapper .react-datepicker__day:hover,
+.kinetic-calendar-wrapper .kinetic-day:hover {
+  background-color: var(--color-surface-container-high) !important;
+  color: var(--color-on-surface) !important;
+}
+
+/* ---------- Días fuera del mes ---------- */
+.kinetic-calendar-wrapper .react-datepicker__day--outside-month {
+  color: var(--color-on-surface-variant) !important;
+  opacity: 0.35 !important;
+}
+
+/* ---------- Días deshabilitados ---------- */
+.kinetic-calendar-wrapper .react-datepicker__day--disabled,
+.kinetic-calendar-wrapper .react-datepicker__day--disabled:hover {
+  color: var(--color-on-surface-variant) !important;
+  opacity: 0.25 !important;
+  cursor: not-allowed !important;
+  background-color: transparent !important;
+}
+
+/* ---------- Día HOY (no seleccionado) ---------- */
+.kinetic-calendar-wrapper .react-datepicker__day--today:not(.react-datepicker__day--selected):not(.react-datepicker__day--range-start):not(.react-datepicker__day--range-end):not(.react-datepicker__day--in-range):not(.react-datepicker__day--in-selecting-range) {
+  color: var(--color-primary) !important;
+  font-weight: 700 !important;
+  background-color: transparent !important;
+  position: relative;
+}
+
+.kinetic-calendar-wrapper .react-datepicker__day--today:not(.react-datepicker__day--selected):not(.react-datepicker__day--range-start):not(.react-datepicker__day--range-end):not(.react-datepicker__day--in-range):not(.react-datepicker__day--in-selecting-range)::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: var(--color-primary);
+}
+
+/* ---------- Días inicio/fin del rango ---------- */
+.kinetic-calendar-wrapper .react-datepicker__day--selected,
+.kinetic-calendar-wrapper .react-datepicker__day--range-start,
+.kinetic-calendar-wrapper .react-datepicker__day--range-end,
+.kinetic-calendar-wrapper .react-datepicker__day--selecting-range-start,
+.kinetic-calendar-wrapper .react-datepicker__day--selecting-range-end {
+  background-color: var(--color-primary) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  border-radius: 0.5rem !important;
+}
+
+.dark .kinetic-calendar-wrapper .react-datepicker__day--selected,
+.dark .kinetic-calendar-wrapper .react-datepicker__day--range-start,
+.dark .kinetic-calendar-wrapper .react-datepicker__day--range-end,
+.dark .kinetic-calendar-wrapper .react-datepicker__day--selecting-range-start,
+.dark .kinetic-calendar-wrapper .react-datepicker__day--selecting-range-end,
+html.dark .kinetic-calendar-wrapper .react-datepicker__day--selected,
+html.dark .kinetic-calendar-wrapper .react-datepicker__day--range-start,
+html.dark .kinetic-calendar-wrapper .react-datepicker__day--range-end,
+html.dark .kinetic-calendar-wrapper .react-datepicker__day--selecting-range-start,
+html.dark .kinetic-calendar-wrapper .react-datepicker__day--selecting-range-end {
+  background-color: var(--color-primary-dark) !important;
+  color: #ffffff !important;
+}
+
+/* ---------- Días intermedios del rango ---------- */
+.kinetic-calendar-wrapper .react-datepicker__day--in-range,
+.kinetic-calendar-wrapper .react-datepicker__day--in-selecting-range,
+.kinetic-calendar-wrapper .kinetic-day--in-range {
+  background-color: rgba(160, 63, 40, 0.15) !important;
+  color: var(--color-on-surface) !important;
+  border-radius: 0 !important;
+}
+
+.dark .kinetic-calendar-wrapper .react-datepicker__day--in-range,
+.dark .kinetic-calendar-wrapper .react-datepicker__day--in-selecting-range,
+.dark .kinetic-calendar-wrapper .kinetic-day--in-range,
+html.dark .kinetic-calendar-wrapper .react-datepicker__day--in-range,
+html.dark .kinetic-calendar-wrapper .react-datepicker__day--in-selecting-range,
+html.dark .kinetic-calendar-wrapper .kinetic-day--in-range {
+  background-color: rgba(192, 87, 62, 0.35) !important;
+  color: #ffffff !important;
+}
+
+.kinetic-calendar-wrapper .react-datepicker__day--in-range:hover,
+.kinetic-calendar-wrapper .react-datepicker__day--in-selecting-range:hover {
+  background-color: rgba(160, 63, 40, 0.30) !important;
+}
+
+.dark .kinetic-calendar-wrapper .react-datepicker__day--in-range:hover,
+.dark .kinetic-calendar-wrapper .react-datepicker__day--in-selecting-range:hover,
+html.dark .kinetic-calendar-wrapper .react-datepicker__day--in-range:hover,
+html.dark .kinetic-calendar-wrapper .react-datepicker__day--in-selecting-range:hover {
+  background-color: rgba(192, 87, 62, 0.55) !important;
+}
+
+/* ---------- Esquinas redondeadas rango ---------- */
+.kinetic-calendar-wrapper .react-datepicker__day--range-start {
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  border-top-left-radius: 0.5rem !important;
+  border-bottom-left-radius: 0.5rem !important;
+}
+
+.kinetic-calendar-wrapper .react-datepicker__day--range-end {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  border-top-right-radius: 0.5rem !important;
+  border-bottom-right-radius: 0.5rem !important;
+}
+
+.kinetic-calendar-wrapper .react-datepicker__day--range-start.react-datepicker__day--range-end {
+  border-radius: 0.5rem !important;
+}
+
+/* ---------- Flechas de navegación ---------- */
+.kinetic-calendar-wrapper .react-datepicker__navigation {
+  top: 1.15rem !important;
+  height: 1.5rem !important;
+  width: 1.5rem !important;
+}
+
+.kinetic-calendar-wrapper .react-datepicker__navigation-icon::before {
+  border-color: var(--color-on-surface-variant) !important;
+  border-width: 2px 2px 0 0 !important;
+  height: 7px !important;
+  width: 7px !important;
+}
+
+.kinetic-calendar-wrapper .react-datepicker__navigation:hover *::before {
+  border-color: var(--color-primary) !important;
+}
+
+/* ---------- Ocultar triángulo por defecto ---------- */
+.kinetic-calendar-wrapper .react-datepicker__triangle {
+  display: none !important;
+}
+
+/* ---------- Focus ---------- */
+.kinetic-calendar-wrapper .react-datepicker__day:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 2px var(--color-primary) !important;
 }
