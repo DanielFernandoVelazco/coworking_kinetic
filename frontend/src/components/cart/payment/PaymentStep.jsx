@@ -1,5 +1,6 @@
 // frontend/src/components/cart/payment/PaymentStep.jsx
 import React from 'react';
+import { useAuth } from '../../../context/AuthContext';
 
 const PAYMENT_METHODS = [
     { value: 'CreditCard', label: '💳 Credit Card', icon: 'credit_card' },
