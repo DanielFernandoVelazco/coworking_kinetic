@@ -19,61 +19,107 @@ namespace KineticWorkspace.API.Services.Implementations
 
         /// <summary>
         /// Genera el siguiente número de factura del año usando un contador atómico.
-        /// Debe llamarse DENTRO de una transacción para que el incremento
-        /// se revierta si el resto de la operación falla.
+        /// Se auto-recupera si el contador está desincronizado con las facturas existentes.
         /// </summary>
         public async Task<string> GenerateInvoiceNumberAsync()
         {
             var year = DateTime.UtcNow.Year;
+            const int maxRetries = 3;
 
-            // ✅ FIX C6: incremento atómico con UPDATE ... RETURNING
-            // MySQL 8+ soporta RETURNING con esta sintaxis vía EF
-            // Alternativa portable: UPDATE + SELECT dentro de la misma transacción.
-
-            var affected = await _context.Database.ExecuteSqlRawAsync(
-                "UPDATE InvoiceCounters SET LastNumber = LastNumber + 1 WHERE Year = {0}",
-                year);
-
-            if (affected == 0)
+            for (int attempt = 0; attempt < maxRetries; attempt++)
             {
-                // No existe fila para este año → crearla (por si no se sembró)
-                try
-                {
-                    await _context.InvoiceCounters.AddAsync(new InvoiceCounter
-                    {
-                        Year = year,
-                        LastNumber = 1
-                    });
-                    await _context.SaveChangesAsync();
+                // 1. Intentar incrementar (si la fila existe)
+                var affected = await _context.Database.ExecuteSqlRawAsync(
+                    "UPDATE InvoiceCounters SET LastNumber = LastNumber + 1 WHERE Year = {0}",
+                    year);
 
-                    _logger.LogInformation("InvoiceCounter {Year} creado con LastNumber=1", year);
-                    return $"INV-{year}-0001";
-                }
-                catch (DbUpdateException)
+                // 2. Si no existe la fila, crearla sincronizada con las facturas existentes
+                if (affected == 0)
                 {
-                    // Race: otro request lo creó → reintentar el UPDATE
+                    var maxExisting = await GetMaxInvoiceNumberForYearAsync(year);
+
+                    try
+                    {
+                        await _context.Database.ExecuteSqlRawAsync(
+                            "INSERT INTO InvoiceCounters (Year, LastNumber) VALUES ({0}, {1})",
+                            year, maxExisting);
+                    }
+                    catch (DbUpdateException)
+                    {
+                        // Race: otro proceso la creó primero → continuar
+                    }
+
+                    // Después de crear, hacer el UPDATE otra vez para obtener el número
                     await _context.Database.ExecuteSqlRawAsync(
                         "UPDATE InvoiceCounters SET LastNumber = LastNumber + 1 WHERE Year = {0}",
                         year);
                 }
+
+                // 3. Leer el valor actual
+                var counter = await _context.InvoiceCounters
+                    .FromSqlRaw("SELECT * FROM InvoiceCounters WHERE Year = {0}", year)
+                    .AsNoTracking()
+                    .FirstAsync();
+
+                var invoiceNumber = $"INV-{year}-{counter.LastNumber:D4}";
+
+                // 4. Verificar que NO exista ya en Invoices
+                var alreadyExists = await _context.Invoices
+                    .AnyAsync(i => i.InvoiceNumber == invoiceNumber);
+
+                if (!alreadyExists)
+                {
+                    _logger.LogInformation("Número de factura generado: {InvoiceNumber}", invoiceNumber);
+                    return invoiceNumber;
+                }
+
+                // Si ya existe → el counter está desincronizado → resync y reintentar
+                _logger.LogWarning(
+                    "InvoiceNumber {InvoiceNumber} ya existe. Resincronizando counter...",
+                    invoiceNumber);
+
+                var maxExistingSync = await GetMaxInvoiceNumberForYearAsync(year);
+                await _context.Database.ExecuteSqlRawAsync(
+                    "UPDATE InvoiceCounters SET LastNumber = {0} WHERE Year = {1}",
+                    maxExistingSync, year);
             }
 
-            // Leer el número actualizado
-            var counter = await _context.InvoiceCounters
-                .AsNoTracking()
-                .FirstAsync(c => c.Year == year);
+            throw new InvalidOperationException(
+                $"No se pudo generar un número de factura único después de {maxRetries} intentos.");
+        }
 
-            var invoiceNumber = $"INV-{year}-{counter.LastNumber:D4}";
-            _logger.LogInformation("Número de factura generado: {InvoiceNumber}", invoiceNumber);
-            return invoiceNumber;
+        /// <summary>
+        /// Obtiene el número más alto de factura existente para un año dado.
+        /// Ej: si existen INV-2026-0001 y INV-2026-0007, devuelve 7.
+        /// </summary>
+        private async Task<int> GetMaxInvoiceNumberForYearAsync(int year)
+        {
+            var prefix = $"INV-{year}-";
+
+            var numbers = await _context.Invoices
+                .Where(i => i.InvoiceNumber.StartsWith(prefix))
+                .Select(i => i.InvoiceNumber)
+                .ToListAsync();
+
+            if (!numbers.Any()) return 0;
+
+            var max = 0;
+            foreach (var number in numbers)
+            {
+                var suffix = number.Substring(prefix.Length);
+                if (int.TryParse(suffix, out var n) && n > max)
+                    max = n;
+            }
+
+            return max;
         }
 
         public async Task<Invoice> CreateInvoiceAsync(
-    int userId,
-    int reservationId,
-    decimal totalAmount,
-    string paymentMethod,
-    string? transactionId)
+            int userId,
+            int reservationId,
+            decimal totalAmount,
+            string paymentMethod,
+            string? transactionId)
         {
             var invoiceNumber = await GenerateInvoiceNumberAsync();
 
@@ -92,8 +138,8 @@ namespace KineticWorkspace.API.Services.Implementations
 
             await _context.Invoices.AddAsync(invoice);
 
-            // ✅ FIX: sin SaveChanges. El llamador controla la transacción.
-            // Si este método se usa fuera de una transacción, el llamador DEBE llamar SaveChanges.
+            // ✅ SIN SaveChanges. El llamador controla la transacción.
+            // ⚠️ IMPORTANTE: el llamador DEBE llamar SaveChanges antes de usar invoice.Id
 
             _logger.LogInformation(
                 "Factura preparada (pendiente de guardar): {InvoiceNumber} para usuario {UserId}",
@@ -111,8 +157,9 @@ namespace KineticWorkspace.API.Services.Implementations
             invoice.PaidAt = DateTime.UtcNow;
             invoice.TransactionId = transactionId ?? invoice.TransactionId;
 
-            // ✅ FIX: sin SaveChanges. Solo modificamos la entidad en el contexto.
-            _logger.LogInformation("Factura marcada como pagada (pendiente de guardar): {InvoiceNumber}", invoice.InvoiceNumber);
+            _logger.LogInformation(
+                "Factura marcada como pagada (pendiente de guardar): {InvoiceNumber}",
+                invoice.InvoiceNumber);
             return true;
         }
 
